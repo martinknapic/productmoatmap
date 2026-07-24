@@ -93,10 +93,9 @@ const map = new maplibregl.Map({
 
 map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), "top-right");
 
-// ---------- Markers & popups ----------
+// ---------- Markers ----------
 
 const activeMarkers = new Map(); // person index → maplibregl.Marker
-let openPopup = null;
 
 // ---------- Layer setup — runs on every style.load ----------
 
@@ -136,7 +135,7 @@ function setupMapLayers() {
   // Clear markers before re-adding layers
   for (const [, marker] of activeMarkers) marker.remove();
   activeMarkers.clear();
-  if (openPopup) { openPopup.remove(); openPopup = null; }
+  closeSidePanel();
 
   map.addSource("people", {
     type: "geojson",
@@ -226,26 +225,53 @@ function toggleMapTheme() {
   map.setStyle(STYLES[currentTheme]);
 }
 
-// ---------- HTML avatar markers for unclustered people ----------
+// ---------- Side panel ----------
 
-function profileCardHTML(person) {
+function showSidePanel(person) {
+  const panel = document.getElementById("side-panel");
   const location = [person.city, person.country].filter(Boolean).join(", ");
-  return `
-    <div class="profile-card">
-      <div class="profile-top">
-        ${avatarHTML(person, "profile-avatar")}
+
+  let hash = 0;
+  for (let i = 0; i < person.name.length; i++) hash = (hash * 31 + person.name.charCodeAt(i)) >>> 0;
+  const hue = AVATAR_HUES[hash % AVATAR_HUES.length];
+  const hue2 = (hue + 40) % 360;
+
+  const avatarEl = person.photo
+    ? `<img class="sp-avatar-img" src="${person.photo}" alt="${person.name}">`
+    : `<div class="sp-avatar-initials" style="${avatarStyle(person.name)}">${initials(person.name)}</div>`;
+
+  panel.innerHTML = `
+    <div class="sp-header" style="background: linear-gradient(135deg, hsl(${hue},68%,62%), hsl(${hue2},72%,38%))">
+      <button class="sp-close" onclick="closeSidePanel()">✕</button>
+      <div class="sp-avatar-wrap">
+        ${avatarEl}
+        <div class="sp-online-dot"></div>
+      </div>
+    </div>
+    <div class="sp-body">
+      <div class="sp-top-row">
         <div>
-          <div class="profile-name">${person.name}</div>
-          <div class="profile-role">${person.role || ""}</div>
+          <div class="sp-name">${person.name}</div>
+          <div class="sp-role">${person.role || ""}</div>
         </div>
+        <button class="sp-bookmark" title="Save">🔖</button>
       </div>
-      <div class="profile-meta">
-        ${person.company ? `<span>🏢 ${person.company}</span>` : ""}
+      ${location || person.company ? `
+      <div class="sp-meta">
         ${location ? `<span>📍 ${location}</span>` : ""}
-      </div>
-      ${person.snippet ? `<div class="profile-snippet">${person.snippet}</div>` : ""}
+        ${person.company ? `<span>🏢 ${person.company}</span>` : ""}
+      </div>` : ""}
+      ${person.snippet ? `<div class="sp-snippet">${person.snippet}</div>` : ""}
     </div>`;
+
+  panel.classList.add("open");
 }
+
+function closeSidePanel() {
+  document.getElementById("side-panel").classList.remove("open");
+}
+
+// ---------- HTML avatar markers for unclustered people ----------
 
 function syncMarkers() {
   if (!map.getLayer("unclustered-point")) return;
@@ -269,15 +295,7 @@ function syncMarkers() {
 
     el.addEventListener("click", (ev) => {
       ev.stopPropagation();
-      if (openPopup) openPopup.remove();
-      openPopup = new maplibregl.Popup({
-        className: "profile-popup",
-        offset: 52,
-        maxWidth: "320px"
-      })
-        .setLngLat(f.geometry.coordinates)
-        .setHTML(profileCardHTML(person))
-        .addTo(map);
+      showSidePanel(person);
     });
 
     activeMarkers.set(idx, marker);
