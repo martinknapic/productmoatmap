@@ -222,6 +222,60 @@ html, body {
   padding-top: 10px;
 }
 
+/* ---------- Theme toggle button ---------- */
+
+.theme-toggle {
+  position: fixed;
+  top: 100px;
+  right: 10px;
+  z-index: 10;
+  width: 30px;
+  height: 30px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+  transition: background 0.2s;
+  padding: 0;
+  line-height: 1;
+}
+
+.theme-toggle:hover {
+  background: rgba(91, 140, 255, 0.25);
+}
+
+/* ---------- Light mode overrides ---------- */
+
+body.map-light {
+  --bg: #f0f4fa;
+  --panel: rgba(240, 245, 255, 0.92);
+  --panel-border: rgba(60, 100, 200, 0.2);
+  --text: #1a2a4a;
+  --text-dim: #445580;
+  --accent: #2563eb;
+  --accent-2: #0891b2;
+}
+
+body.map-light #map {
+  background: radial-gradient(ellipse at 50% 40%, #c8dff0 0%, #e8f2fa 65%);
+}
+
+body.map-light .person-label {
+  color: #1a2a4a;
+  background: rgba(240, 248, 255, 0.9);
+  text-shadow: none;
+}
+
+body.map-light .maplibregl-popup.profile-popup .maplibregl-popup-tip {
+  border-top-color: rgba(240, 245, 255, 0.92);
+}
+
 /* ---------- MapLibre chrome ---------- */
 .maplibregl-ctrl-attrib {
   background: rgba(8, 12, 24, 0.6) !important;

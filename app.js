@@ -38,12 +38,7 @@ function avatarStyle(name) {
 }
 
 function initials(name) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map(w => w[0].toUpperCase())
-    .join("");
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("");
 }
 
 function avatarHTML(person, cls) {
@@ -78,9 +73,17 @@ statsEl.textContent = `${features.length} product managers on the map`;
 
 // ---------- Map ----------
 
+const STYLES = {
+  dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
+  light: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+};
+
+let currentTheme = "dark";
+let mapListenersAdded = false;
+
 const map = new maplibregl.Map({
   container: "map",
-  style: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
+  style: STYLES.dark,
   center: [8.2, 30],
   zoom: 1.6,
   minZoom: 0.8,
@@ -90,18 +93,50 @@ const map = new maplibregl.Map({
 
 map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), "top-right");
 
-map.on("style.load", () => {
+// ---------- Markers & popups ----------
+
+const activeMarkers = new Map(); // person index → maplibregl.Marker
+let openPopup = null;
+
+// ---------- Layer setup — runs on every style.load ----------
+
+async function handleClusterClick(e) {
+  const feature = map.queryRenderedFeatures(e.point, { layers: ["clusters"] })[0];
+  const zoom = await map.getSource("people").getClusterExpansionZoom(feature.properties.cluster_id);
+  map.easeTo({ center: feature.geometry.coordinates, zoom: zoom + 0.4, duration: 900 });
+}
+function handleClusterEnter() { map.getCanvas().style.cursor = "pointer"; }
+function handleClusterLeave() { map.getCanvas().style.cursor = ""; }
+
+function setupMapLayers() {
   map.setProjection({ type: "globe" });
 
-  map.setSky({
-    "sky-color": "#05070f",
-    "sky-horizon-blend": 0.6,
-    "horizon-color": "#3d6bd6",
-    "horizon-fog-blend": 0.6,
-    "fog-color": "#0b1026",
-    "fog-ground-blend": 0.4,
-    "atmosphere-blend": ["interpolate", ["linear"], ["zoom"], 0, 1, 8, 1, 11, 0]
-  });
+  if (currentTheme === "dark") {
+    map.setSky({
+      "sky-color": "#05070f",
+      "sky-horizon-blend": 0.6,
+      "horizon-color": "#3d6bd6",
+      "horizon-fog-blend": 0.6,
+      "fog-color": "#0b1026",
+      "fog-ground-blend": 0.4,
+      "atmosphere-blend": ["interpolate", ["linear"], ["zoom"], 0, 1, 8, 1, 11, 0]
+    });
+  } else {
+    map.setSky({
+      "sky-color": "#d4e8f7",
+      "sky-horizon-blend": 0.5,
+      "horizon-color": "#f0f6ff",
+      "horizon-fog-blend": 0.5,
+      "fog-color": "#e8f2fb",
+      "fog-ground-blend": 0.4,
+      "atmosphere-blend": ["interpolate", ["linear"], ["zoom"], 0, 1, 8, 1, 11, 0]
+    });
+  }
+
+  // Clear markers before re-adding layers
+  for (const [, marker] of activeMarkers) marker.remove();
+  activeMarkers.clear();
+  if (openPopup) { openPopup.remove(); openPopup = null; }
 
   map.addSource("people", {
     type: "geojson",
@@ -161,26 +196,37 @@ map.on("style.load", () => {
     paint: { "circle-radius": 1, "circle-opacity": 0 }
   });
 
-  map.on("click", "clusters", async (e) => {
-    const feature = map.queryRenderedFeatures(e.point, { layers: ["clusters"] })[0];
-    const zoom = await map.getSource("people").getClusterExpansionZoom(feature.properties.cluster_id);
-    map.easeTo({ center: feature.geometry.coordinates, zoom: zoom + 0.4, duration: 900 });
-  });
+  // Remove then re-add layer-specific listeners so they don't stack on theme switch.
+  map.off("click", "clusters", handleClusterClick);
+  map.off("mouseenter", "clusters", handleClusterEnter);
+  map.off("mouseleave", "clusters", handleClusterLeave);
+  map.on("click", "clusters", handleClusterClick);
+  map.on("mouseenter", "clusters", handleClusterEnter);
+  map.on("mouseleave", "clusters", handleClusterLeave);
 
-  map.on("mouseenter", "clusters", () => (map.getCanvas().style.cursor = "pointer"));
-  map.on("mouseleave", "clusters", () => (map.getCanvas().style.cursor = ""));
+  // Map movement listeners — add once only.
+  if (!mapListenersAdded) {
+    map.on("move", syncMarkers);
+    map.on("moveend", syncMarkers);
+    map.on("sourcedata", (e) => {
+      if (e.sourceId === "people" && e.isSourceLoaded) syncMarkers();
+    });
+    mapListenersAdded = true;
+  }
+}
 
-  map.on("move", syncMarkers);
-  map.on("moveend", syncMarkers);
-  map.on("sourcedata", (e) => {
-    if (e.sourceId === "people" && e.isSourceLoaded) syncMarkers();
-  });
-});
+map.on("style.load", setupMapLayers);
+
+// ---------- Theme toggle ----------
+
+function toggleMapTheme() {
+  currentTheme = currentTheme === "dark" ? "light" : "dark";
+  document.getElementById("theme-toggle").textContent = currentTheme === "dark" ? "☀" : "🌙";
+  document.body.classList.toggle("map-light", currentTheme === "light");
+  map.setStyle(STYLES[currentTheme]);
+}
 
 // ---------- HTML avatar markers for unclustered people ----------
-
-const activeMarkers = new Map(); // person index → maplibregl.Marker
-let openPopup = null;
 
 function profileCardHTML(person) {
   const location = [person.city, person.country].filter(Boolean).join(", ");
