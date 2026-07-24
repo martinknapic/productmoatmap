@@ -69,7 +69,7 @@ PEOPLE.forEach((person, i) => {
 });
 
 const statsEl = document.getElementById("stats");
-statsEl.textContent = `${features.length} product managers on the map`;
+statsEl.textContent = `${features.length} product people on the map`;
 
 // ---------- Map ----------
 
