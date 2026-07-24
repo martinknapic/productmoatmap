@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProductMoat — Product Managers Around the World</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="map"></div>
+
+  <header class="overlay-header">
+    <div class="brand">
+      <span class="brand-dot"></span>
+      <h1>ProductMoat</h1>
+    </div>
+    <p class="tagline">Product managers around the world</p>
+    <p class="stats" id="stats"></p>
+  </header>
+
+  <div class="hint" id="hint">
+    <span>Drag to spin the globe &middot; Scroll to zoom &middot; Click a cluster to dive in</span>
+  </div>
+
+  <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
