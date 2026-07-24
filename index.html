@@ -24,7 +24,15 @@
   </div>
 
   <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
-  <script src="data.js"></script>
+  <script>
+    (function () {
+      var ds = new URLSearchParams(location.search).get('dataset');
+      document.write('<scr\x69pt src="' + (ds === 'stress' ? 'data.stress.js' : 'data.js') + '"><\/scr\x69pt>');
+      if (ds === 'stress') {
+        document.write('<scr\x69pt>var PEOPLE = PEOPLE_STRESS_TEST;<\/scr\x69pt>');
+      }
+    })();
+  </script>
   <script src="app.js"></script>
 </body>
 </html>
