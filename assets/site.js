@@ -201,14 +201,16 @@ function initPerson() {
     </section>
 
     <section class="qna">
-      <div class="wrap" style="padding:0">
-        ${p.questions.map((qa, i) => `
-          <div class="qa-item">
-            <div class="qa-num">${String(i + 1).padStart(2, "0")} / ${String(p.questions.length).padStart(2, "0")}</div>
-            <h3>${escapeHTML(qa.q)}</h3>
-            <p>${escapeHTML(qa.a)}</p>
-          </div>
-        `).join("")}
+      <div class="wrap">
+        <div class="qna-inner">
+          ${p.questions.map((qa, i) => `
+            <div class="qa-item">
+              <div class="qa-num">${String(i + 1).padStart(2, "0")} / ${String(p.questions.length).padStart(2, "0")}</div>
+              <h3>${escapeHTML(qa.q)}</h3>
+              <p>${escapeHTML(qa.a)}</p>
+            </div>
+          `).join("")}
+        </div>
       </div>
     </section>
   `;
