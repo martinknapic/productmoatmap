@@ -254,10 +254,11 @@
 
 .chip {
   font-family: var(--font-mono);
+  font-weight: 500;
   font-size: 13.5px;
   padding: 9px 16px;
   border: 1px solid var(--line-soft);
-  color: var(--ink-body);
+  color: var(--ink);
   text-transform: uppercase;
   letter-spacing: 0.01em;
   transition: all 0.15s ease;
@@ -357,12 +358,14 @@ footer {
 
 .footer-links {
   display: flex;
-  gap: 24px;
+  flex-wrap: wrap;
+  gap: 10px 24px;
   font-family: var(--font-mono);
   font-size: 13.5px;
   text-transform: uppercase;
   color: var(--ink-body);
 }
+.footer-links a { white-space: nowrap; }
 .footer-links a:hover { color: var(--ink); }
 
 /* ================= Person page ================= */
@@ -674,7 +677,23 @@ footer {
     padding-top: 12px;
     border-top: 1px solid var(--line-soft);
   }
-  .stats-row > div { padding: 18px 20px; }
+  .hero-cta { flex-wrap: nowrap; }
+  .hero-cta .btn {
+    flex: 1 1 0;
+    padding: 13px 8px;
+    font-size: 11px;
+    letter-spacing: 0.01em;
+    justify-content: center;
+    white-space: nowrap;
+  }
+  .stats-row { flex-direction: column; }
+  .stats-row > div {
+    width: 100%;
+    padding: 16px 0;
+    border-right: none;
+    border-top: 1px solid var(--line-soft);
+  }
+  .stats-row > div:first-child { border-top: none; padding-top: 0; }
   .meta-item { border-right: none; margin-right: 0; padding-right: 0; width: 50%; }
   .avatar-xl { width: 76px; height: 76px; font-size: 26px; }
   .profile-nav { flex-direction: column; gap: 14px; }
