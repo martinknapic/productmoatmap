@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<!-- productmoat.com -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProductMoat — Product People Around the World</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="assets/swiss.css?v=9">
+  <link rel="stylesheet" href="assets/site.css?v=9">
+  <link rel="stylesheet" href="style.css?v=9">
+</head>
+<body class="map-page">
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="logo" href="index.html"><span class="logo-mark"></span>ProductMoat</a>
+      <div class="nav-links">
+        <a href="index.html#directory">Interviews</a>
+        <a href="map.html">Map</a>
+        <a href="index.html#about">About</a>
+      </div>
+      <button class="theme-btn" id="theme-btn" onclick="toggleMapTheme()">LIGHT</button>
+    </div>
+  </nav>
+
+  <div class="map-subheader">
+    <div class="wrap map-subheader-inner">
+      <div class="map-tagline">Product people around the world</div>
+      <div class="map-stats" id="stats"></div>
+      <div class="map-hint" id="hint">Drag to spin the globe &middot; Scroll to zoom &middot; Click a cluster to dive in</div>
+    </div>
+  </div>
+
+  <div class="map-container">
+    <div id="map"></div>
+  </div>
+
+  <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
+  <script src="assets/site.js?v=9"></script>
+  <script src="assets/people-data.js?v=9"></script>
+  <script>initTheme();</script>
+  <script>
+    (function () {
+      var ds = new URLSearchParams(location.search).get('dataset');
+      document.write('<scr\x69pt src="' + (ds === 'stress' ? 'data.stress.js' : 'data.js') + '"><\/scr\x69pt>');
+      if (ds === 'stress') {
+        document.write('<scr\x69pt>var PEOPLE = PEOPLE_STRESS_TEST;<\/scr\x69pt>');
+      }
+    })();
+  </script>
+  <script src="app.js?v=9"></script>
+  <div id="side-panel"></div>
+</body>
+</html>

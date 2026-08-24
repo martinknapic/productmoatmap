@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProductMoat — Interview</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="assets/swiss.css?v=9">
+  <link rel="stylesheet" href="assets/site.css?v=9">
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="logo" href="index.html"><span class="logo-mark"></span>ProductMoat</a>
+      <div class="nav-links">
+        <a href="index.html#directory">Interviews</a>
+        <a href="map.html">Map</a>
+        <a href="index.html#about">About</a>
+      </div>
+      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">LIGHT</button>
+    </div>
+  </nav>
+
+  <div id="person-root"></div>
+
+  <div class="wrap">
+    <div class="profile-nav" id="profile-nav"></div>
+  </div>
+
+  <footer>
+    <div class="wrap footer-inner">
+      <p class="footer-blurb">
+        ProductMoat is an ongoing interview series exploring the essence of product management
+        and product design at the intersection of AI.
+      </p>
+      <div class="footer-links">
+        <a href="map.html">World map</a>
+        <a href="https://www.linkedin.com/in/martinknapic" target="_blank" rel="noopener">LinkedIn</a>
+        <a href="mailto:hello@productmoat.com">hello@productmoat.com</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
+  <script src="assets/people-data.js?v=9"></script>
+  <script src="assets/site.js?v=9"></script>
+  <script>
+    initTheme();
+    initPerson();
+  </script>
+</body>
+</html>

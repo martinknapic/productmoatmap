@@ -27,15 +27,8 @@ function jitter(index, coords) {
 }
 
 // ---------- Avatars ----------
-
-const AVATAR_HUES = [212, 262, 172, 340, 28, 200, 292, 152, 8, 232];
-
-function avatarStyle(name) {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
-  const hue = AVATAR_HUES[hash % AVATAR_HUES.length];
-  return `background: linear-gradient(135deg, hsl(${hue}, 72%, 52%), hsl(${(hue + 40) % 360}, 68%, 40%))`;
-}
+// Flat ink-on-paper medallions (see .person-avatar / .sp-avatar-initials in style.css) —
+// no per-person color, consistent with the rest of the site's monochrome system.
 
 function initials(name) {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("");
@@ -45,26 +38,65 @@ function avatarHTML(person, cls) {
   if (person.photo) {
     return `<div class="${cls}"><img src="${person.photo}" alt="${person.name}"></div>`;
   }
-  return `<div class="${cls}" style="${avatarStyle(person.name)}">${initials(person.name)}</div>`;
+  return `<div class="${cls}">${initials(person.name)}</div>`;
 }
+
+// ---------- Theme colors for MapLibre paint properties ----------
+// MapLibre's WebGL canvas can't read CSS custom properties, so cluster/sky colors are
+// mirrored here to match the tokens in assets/swiss.css.
+
+const THEME_COLORS = {
+  dark: {
+    accent: "#e6432b",
+    ink: "#f4f3ee",
+    paper: "#121212",
+    clusterSteps: ["#3a3a38", "#6b2620", "#a8362a", "#e6432b"]
+  },
+  light: {
+    accent: "#b3311f",
+    ink: "#111111",
+    paper: "#f2f1ec",
+    clusterSteps: ["#cfcdc2", "#8a4038", "#9c352a", "#b3311f"]
+  }
+};
+
+// ---------- Merge in the interview portal's people ----------
+// Every published interview (assets/people-data.js) also appears on the globe, adapted
+// into the same shape as the demo PEOPLE dataset. `slug` is carried through so the side
+// panel can link back to the full interview.
+
+function interviewToPersonShape(p) {
+  const [city, country] = p.location.split(",").map(s => s.trim());
+  return {
+    name: p.name, role: p.role, city, country, company: p.company,
+    snippet: p.snippet, photo: p.photo, lng: p.lng, lat: p.lat, slug: p.slug
+  };
+}
+
+const ALL_PEOPLE = PEOPLE.concat(
+  (typeof INTERVIEWS !== "undefined" ? INTERVIEWS : []).map(interviewToPersonShape)
+);
 
 // ---------- Data → GeoJSON ----------
 
 const features = [];
+const coordsByIndex = {};
 const countries = new Set();
 
-PEOPLE.forEach((person, i) => {
+ALL_PEOPLE.forEach((person, i) => {
   const base = resolveCoords(person);
   if (!base) {
     console.warn(`No coordinates found for ${person.name} — skipped.`);
     return;
   }
   if (person.country) countries.add(person.country.trim().toLowerCase());
+  const coords = jitter(i, base);
+  coordsByIndex[i] = coords;
   features.push({
     type: "Feature",
     id: i,
     properties: { index: i },
-    geometry: { type: "Point", coordinates: jitter(i, base) }
+    geometry: { type: "Point", coordinates: coords }
   });
 });
 
@@ -78,12 +110,12 @@ const STYLES = {
   light: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
 };
 
-let currentTheme = "dark";
+let currentTheme = document.body.classList.contains("light") ? "light" : "dark";
 let mapListenersAdded = false;
 
 const map = new maplibregl.Map({
   container: "map",
-  style: STYLES.dark,
+  style: STYLES[currentTheme],
   center: [8.2, 30],
   zoom: 1.6,
   minZoom: 0.8,
@@ -109,25 +141,26 @@ function handleClusterLeave() { map.getCanvas().style.cursor = ""; }
 
 function setupMapLayers() {
   map.setProjection({ type: "globe" });
+  const c = THEME_COLORS[currentTheme];
 
   if (currentTheme === "dark") {
     map.setSky({
-      "sky-color": "#05070f",
-      "sky-horizon-blend": 0.6,
-      "horizon-color": "#3d6bd6",
-      "horizon-fog-blend": 0.6,
-      "fog-color": "#0b1026",
-      "fog-ground-blend": 0.4,
+      "sky-color": "#121212",
+      "sky-horizon-blend": 0.5,
+      "horizon-color": "#2a2a28",
+      "horizon-fog-blend": 0.5,
+      "fog-color": "#121212",
+      "fog-ground-blend": 0.3,
       "atmosphere-blend": ["interpolate", ["linear"], ["zoom"], 0, 1, 8, 1, 11, 0]
     });
   } else {
     map.setSky({
-      "sky-color": "#d4e8f7",
+      "sky-color": "#f2f1ec",
       "sky-horizon-blend": 0.5,
-      "horizon-color": "#f0f6ff",
+      "horizon-color": "#e9e7de",
       "horizon-fog-blend": 0.5,
-      "fog-color": "#e8f2fb",
-      "fog-ground-blend": 0.4,
+      "fog-color": "#f2f1ec",
+      "fog-ground-blend": 0.3,
       "atmosphere-blend": ["interpolate", ["linear"], ["zoom"], 0, 1, 8, 1, 11, 0]
     });
   }
@@ -151,8 +184,8 @@ function setupMapLayers() {
     source: "people",
     filter: ["has", "point_count"],
     paint: {
-      "circle-color": "#5b8cff",
-      "circle-opacity": 0.25,
+      "circle-color": c.accent,
+      "circle-opacity": 0.18,
       "circle-radius": ["step", ["get", "point_count"], 26, 5, 32, 15, 40, 50, 50]
     }
   });
@@ -165,11 +198,11 @@ function setupMapLayers() {
     paint: {
       "circle-color": [
         "step", ["get", "point_count"],
-        "#4f7df2", 5, "#7a5cf0", 15, "#c04ad4", 50, "#e8447a"
+        c.clusterSteps[0], 5, c.clusterSteps[1], 15, c.clusterSteps[2], 50, c.clusterSteps[3]
       ],
       "circle-radius": ["step", ["get", "point_count"], 17, 5, 22, 15, 28, 50, 36],
       "circle-stroke-width": 2,
-      "circle-stroke-color": "rgba(255,255,255,0.85)"
+      "circle-stroke-color": c.paper
     }
   });
 
@@ -217,11 +250,12 @@ function setupMapLayers() {
 map.on("style.load", setupMapLayers);
 
 // ---------- Theme toggle ----------
+// toggleTheme() (from assets/site.js) flips the shared 'light' class + localStorage;
+// this wraps it to also restyle the map itself.
 
 function toggleMapTheme() {
-  currentTheme = currentTheme === "dark" ? "light" : "dark";
-  document.getElementById("theme-toggle").textContent = currentTheme === "dark" ? "☀" : "🌙";
-  document.body.classList.toggle("map-light", currentTheme === "light");
+  toggleTheme();
+  currentTheme = document.body.classList.contains("light") ? "light" : "dark";
   map.setStyle(STYLES[currentTheme]);
 }
 
@@ -231,22 +265,14 @@ function showSidePanel(person) {
   const panel = document.getElementById("side-panel");
   const location = [person.city, person.country].filter(Boolean).join(", ");
 
-  let hash = 0;
-  for (let i = 0; i < person.name.length; i++) hash = (hash * 31 + person.name.charCodeAt(i)) >>> 0;
-  const hue = AVATAR_HUES[hash % AVATAR_HUES.length];
-  const hue2 = (hue + 40) % 360;
-
   const avatarEl = person.photo
     ? `<img class="sp-avatar-img" src="${person.photo}" alt="${person.name}">`
-    : `<div class="sp-avatar-initials" style="${avatarStyle(person.name)}">${initials(person.name)}</div>`;
+    : `<div class="sp-avatar-initials">${initials(person.name)}</div>`;
 
   panel.innerHTML = `
-    <div class="sp-header" style="background: linear-gradient(135deg, hsl(${hue},68%,62%), hsl(${hue2},72%,38%))">
-      <button class="sp-close" onclick="closeSidePanel()">✕</button>
-      <div class="sp-avatar-wrap">
-        ${avatarEl}
-        <div class="sp-online-dot"></div>
-      </div>
+    <div class="sp-header">
+      <button class="sp-close" onclick="closeSidePanel()">[ Close ]</button>
+      <div class="sp-avatar-wrap">${avatarEl}</div>
     </div>
     <div class="sp-body">
       <div class="sp-top-row">
@@ -254,18 +280,15 @@ function showSidePanel(person) {
           <div class="sp-name">${person.name}</div>
           <div class="sp-role">${person.role || ""}</div>
         </div>
-        <a class="sp-linkedin" href="https://linkedin.com/in/martinknapic" target="_blank" rel="noopener" title="LinkedIn profile">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="#0a66c2">
-            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-          </svg>
-        </a>
+        <a class="bracket-link" href="https://linkedin.com/in/martinknapic" target="_blank" rel="noopener">[ LinkedIn ]</a>
       </div>
       ${location || person.company ? `
       <div class="sp-meta">
-        ${location ? `<span>📍 ${location}</span>` : ""}
-        ${person.company ? `<span>🏢 ${person.company}</span>` : ""}
+        ${location ? `<div class="meta-item"><div class="meta-label">Location</div><div class="meta-value">${location}</div></div>` : ""}
+        ${person.company ? `<div class="meta-item"><div class="meta-label">Company</div><div class="meta-value">${person.company}</div></div>` : ""}
       </div>` : ""}
       ${person.snippet ? `<div class="sp-snippet">${person.snippet}</div>` : ""}
+      ${person.slug ? `<a class="btn btn-primary sp-interview-link" href="person.html?slug=${person.slug}">Read the full interview &rarr;</a>` : ""}
     </div>`;
 
   panel.classList.add("open");
@@ -288,7 +311,7 @@ function syncMarkers() {
     visibleIds.add(idx);
     if (activeMarkers.has(idx)) continue;
 
-    const person = PEOPLE[idx];
+    const person = ALL_PEOPLE[idx];
     const el = document.createElement("div");
     el.className = "person-marker";
     el.innerHTML = `${avatarHTML(person, "person-avatar")}<div class="person-label">${person.name}</div>`;
@@ -334,7 +357,21 @@ map.on("moveend", () => spinGlobe());
   })
 );
 
+// ---------- Deep link from a profile page's mini-map (map.html?slug=...) ----------
+
+const deepLinkSlug = new URLSearchParams(location.search).get("slug");
+
 map.on("load", () => {
-  spinGlobe();
-  setTimeout(() => document.getElementById("hint").classList.add("hidden"), 12000);
+  if (deepLinkSlug) {
+    userInteracted = true;
+    document.getElementById("hint").classList.add("hidden");
+    const idx = ALL_PEOPLE.findIndex(p => p.slug === deepLinkSlug);
+    if (idx !== -1 && coordsByIndex[idx]) {
+      map.once("moveend", () => showSidePanel(ALL_PEOPLE[idx]));
+      map.flyTo({ center: coordsByIndex[idx], zoom: 10.5, duration: 2200 });
+    }
+  } else {
+    spinGlobe();
+    setTimeout(() => document.getElementById("hint").classList.add("hidden"), 12000);
+  }
 });

@@ -1,42 +1,82 @@
 <!DOCTYPE html>
-<!-- productmoat.com -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ProductMoat — Product People Around the World</title>
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css">
-  <link rel="stylesheet" href="style.css">
+  <title>ProductMoat — Product People, in the Age of AI</title>
+  <meta name="description" content="Conversations with product managers and product people around the world, on building product at the intersection of AI.">
+  <link rel="stylesheet" href="assets/swiss.css?v=9">
+  <link rel="stylesheet" href="assets/site.css?v=9">
 </head>
 <body>
-  <div id="map"></div>
-
-  <header class="overlay-header">
-    <div class="brand">
-      <span class="brand-dot"></span>
-      <h1>ProductMoat</h1>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="logo" href="index.html"><span class="logo-mark"></span>ProductMoat</a>
+      <div class="nav-links">
+        <a href="index.html#directory">Interviews</a>
+        <a href="map.html">Map</a>
+        <a href="index.html#about">About</a>
+      </div>
+      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">LIGHT</button>
     </div>
-    <p class="tagline">Product people around the world</p>
-    <p class="stats" id="stats"></p>
+  </nav>
+
+  <header class="hero">
+    <div class="wrap hero-inner">
+      <div class="hero-main">
+        <div class="eyebrow"><span class="num">01.</span> Interview series &middot; est. 2026</div>
+        <h1>Product people,<br>in the age of AI.</h1>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="#directory">Browse interviews</a>
+          <a class="btn btn-ghost" href="map.html">Explore the map</a>
+        </div>
+      </div>
+      <div class="hero-side">
+        <div class="label-mono">About this issue</div>
+        <p>
+          Conversations with product managers and product people around the world — how
+          they think, what they've shipped, and how AI is reshaping the craft of building
+          product. A new interview, published regularly.
+        </p>
+      </div>
+    </div>
+    <div class="wrap">
+      <div class="stats-row" id="stats-row"></div>
+    </div>
   </header>
 
-  <div class="hint" id="hint">
-    <span>Drag to spin the globe &middot; Scroll to zoom &middot; Click a cluster to dive in</span>
-  </div>
+  <main class="wrap">
+    <div id="featured-slot"></div>
 
-  <button class="theme-toggle" id="theme-toggle" onclick="toggleMapTheme()" title="Toggle map theme">☀</button>
+    <section id="directory">
+      <div class="section-head">
+        <h2>All conversations</h2>
+        <p>Filter by focus area to find people working closest to your own problem space.</p>
+      </div>
+      <div class="chip-row" id="chip-row"></div>
+      <div class="grid" id="grid"></div>
+    </section>
+  </main>
 
-  <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
+  <footer id="about">
+    <div class="wrap footer-inner">
+      <p class="footer-blurb">
+        ProductMoat is an ongoing interview series exploring the essence of product management
+        and product design at the intersection of AI — one conversation at a time.
+      </p>
+      <div class="footer-links">
+        <a href="map.html">World map</a>
+        <a href="https://www.linkedin.com/in/martinknapic" target="_blank" rel="noopener">LinkedIn</a>
+        <a href="mailto:hello@productmoat.com">hello@productmoat.com</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/people-data.js?v=9"></script>
+  <script src="assets/site.js?v=9"></script>
   <script>
-    (function () {
-      var ds = new URLSearchParams(location.search).get('dataset');
-      document.write('<scr\x69pt src="' + (ds === 'stress' ? 'data.stress.js' : 'data.js') + '"><\/scr\x69pt>');
-      if (ds === 'stress') {
-        document.write('<scr\x69pt>var PEOPLE = PEOPLE_STRESS_TEST;<\/scr\x69pt>');
-      }
-    })();
+    initTheme();
+    initHome();
   </script>
-  <script src="app.js"></script>
-  <div id="side-panel"></div>
 </body>
 </html>
