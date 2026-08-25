@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recommend a Product Hero — ProductMoat</title>
+  <meta name="description" content="Know a product person who deserves the spotlight? Suggest who ProductMoat should interview next.">
+  <link rel="stylesheet" href="assets/swiss.css?v=13">
+  <link rel="stylesheet" href="assets/site.css?v=23">
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="logo" href="index.html"><span class="logo-mark"></span>ProductMoat</a>
+      <div class="nav-links">
+        <a href="index.html#directory">Interviews</a>
+        <a href="map.html">Map</a>
+        <a href="about.html">About</a>
+        <a href="apply.html">Apply</a>
+      </div>
+      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">LIGHT</button>
+    </div>
+  </nav>
+
+  <section class="apply-hero">
+    <div class="wrap">
+      <a class="back-link" href="apply.html">&larr; Back to the application</a>
+      <div class="eyebrow"><span class="num">07.</span> Recommend someone</div>
+      <h1>Know a product hero we should talk to?</h1>
+      <p class="about-lede">
+        You don't have to be the one applying. If there's someone whose story you think
+        product people deserve to hear, point us to their LinkedIn and we'll take it
+        from there.
+      </p>
+    </div>
+  </section>
+
+  <main class="wrap">
+    <form id="recommend-form" novalidate>
+
+      <fieldset class="form-fieldset">
+        <div class="fieldset-head">
+          <h2>Who should we talk to?</h2>
+          <p>Just their LinkedIn is enough to get started.</p>
+        </div>
+        <div class="form-grid">
+          <div class="form-field full">
+            <label for="r-linkedin">Their LinkedIn URL <span class="req">*</span></label>
+            <input type="url" id="r-linkedin" name="candidateLinkedin" placeholder="https://www.linkedin.com/in/…" required>
+          </div>
+          <div class="form-field full">
+            <label for="r-name">Their name <span class="hint-inline">(optional)</span></label>
+            <input type="text" id="r-name" name="candidateName">
+          </div>
+          <div class="form-field full">
+            <label for="r-why">Why them? <span class="hint-inline">(optional)</span></label>
+            <textarea id="r-why" name="reason" rows="3" maxlength="500" placeholder="What makes their story worth telling?"></textarea>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="form-fieldset">
+        <div class="fieldset-head">
+          <h2>About you</h2>
+          <p>Optional — only used if we want to follow up with you about the recommendation.</p>
+        </div>
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="r-your-name">Your name <span class="hint-inline">(optional)</span></label>
+            <input type="text" id="r-your-name" name="yourName">
+          </div>
+          <div class="form-field">
+            <label for="r-your-email">Your email <span class="hint-inline">(optional)</span></label>
+            <input type="email" id="r-your-email" name="yourEmail" autocomplete="email">
+          </div>
+        </div>
+        <div class="form-checkbox-row">
+          <input type="checkbox" id="r-anonymous" name="stayAnonymous">
+          <label for="r-anonymous">Keep me anonymous — don't mention my name to them if we reach out.</label>
+        </div>
+      </fieldset>
+
+      <div class="form-submit-row">
+        <button type="submit" class="btn btn-primary">Send recommendation</button>
+        <p class="hint-inline">We read every recommendation ourselves — no guarantee of a feature, but every good lead gets a look.</p>
+      </div>
+    </form>
+
+    <div class="apply-success" id="recommend-success" hidden>
+      <div class="eyebrow"><span class="num">✓</span> Received</div>
+      <h2>Thanks — got it.</h2>
+      <p>We'll take a look. If it's a fit, we'll reach out to them directly.</p>
+      <a class="btn btn-ghost" href="index.html">&larr; Back to all conversations</a>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap footer-inner">
+      <p class="footer-blurb">
+        ProductMoat is an ongoing interview series exploring the essence of product management
+        and product design at the intersection of AI.
+      </p>
+      <div class="footer-links">
+        <a href="map.html">World map</a>
+        <a href="https://www.linkedin.com/in/martinknapic" target="_blank" rel="noopener">LinkedIn</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/site.js?v=17"></script>
+  <script>
+    initTheme();
+    initRecommend();
+  </script>
+</body>
+</html>

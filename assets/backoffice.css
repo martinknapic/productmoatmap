@@ -1,0 +1,321 @@
+/* ProductMoat Backoffice — login + dashboard (tokens from swiss.css) */
+
+/* ---------- Shared form field (duplicated minimally from site.css so the
+   backoffice stays independent of the public site's form styling) ---------- */
+
+.form-field { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+
+.form-field label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-dim);
+}
+
+.form-field input {
+  font: inherit;
+  font-size: 15px;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--line-soft);
+  padding: 12px 14px;
+  transition: border-color 0.15s ease;
+}
+
+.form-field input:focus { outline: none; border-color: var(--ink); }
+
+/* ---------- Login page ---------- */
+
+.bo-login-body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.bo-login-card {
+  width: 100%;
+  max-width: 380px;
+  border: 1px solid var(--line);
+  padding: 40px 36px;
+}
+
+.bo-login-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-bottom: 24px;
+}
+
+.bo-login-eyebrow { margin-bottom: 6px; }
+
+.bo-login-card h1 {
+  font-weight: 700;
+  font-size: 28px;
+  letter-spacing: -0.01em;
+}
+
+.bo-login-hint {
+  margin-top: 8px;
+  margin-bottom: 28px;
+  color: var(--ink-dim);
+  font-size: 14px;
+}
+
+.bo-login-error {
+  color: var(--accent);
+  font-size: 13.5px;
+  margin: -8px 0 16px;
+}
+
+.bo-login-submit { width: 100%; justify-content: center; margin-top: 4px; }
+
+.bo-login-note {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink-dim);
+}
+
+.bo-login-note code {
+  font-family: var(--font-mono);
+  background: var(--paper-alt);
+  padding: 1px 5px;
+}
+
+/* ---------- Dashboard shell ---------- */
+
+.bo-nav-right { display: flex; align-items: center; gap: 16px; }
+
+.bo-nav-tag {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-left: 4px;
+}
+
+.bo-user {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+
+.bo-logout { padding: 8px 16px; font-size: 12.5px; }
+
+.bo-main { padding: 40px 32px 80px; }
+
+.bo-subnav {
+  display: flex;
+  gap: 24px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-dim);
+}
+
+.bo-subnav a {
+  padding-bottom: 3px;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.bo-subnav a:hover { color: var(--ink); }
+.bo-subnav a.bo-subnav-active { color: var(--ink); border-bottom-color: var(--ink); }
+
+.bo-section { margin-bottom: 56px; }
+
+.bo-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.bo-section-head h2 {
+  font-weight: 700;
+  font-size: 22px;
+}
+
+.bo-count {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--ink-dim);
+  margin-left: 4px;
+}
+
+.bo-section-note {
+  font-size: 13.5px;
+  color: var(--ink-dim);
+}
+
+/* .avatar's base shape (circle, flex-center) comes from swiss.css; the public
+   site's site.css normally sets its size, which isn't loaded here. */
+.avatar { width: 40px; height: 40px; font-size: 14px; }
+
+/* ---------- Table ---------- */
+
+.bo-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+}
+
+.bo-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.bo-table th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-dim);
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper-alt);
+}
+
+.bo-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--ink-body);
+  vertical-align: top;
+}
+
+.bo-table tr:last-child td { border-bottom: none; }
+
+.bo-cell-strong { color: var(--ink); font-weight: 700; white-space: nowrap; }
+.bo-cell-dim { color: var(--ink-dim); font-size: 13px; }
+.bo-cell-reason { white-space: normal; min-width: 220px; max-width: 320px; }
+
+/* ---------- Pagination ---------- */
+
+.bo-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.bo-page-size {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bo-page-size label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-dim);
+}
+
+.bo-page-size select {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 6px 8px;
+  border: 1px solid var(--line-soft);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+.bo-page-size select:focus { outline: none; border-color: var(--ink); }
+
+.bo-page-nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.bo-page-info {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+
+.bo-page-btn {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink-body);
+  padding: 6px 4px;
+}
+.bo-page-btn:hover:not(:disabled) { color: var(--accent); }
+.bo-page-btn:disabled { color: var(--line-soft); cursor: default; }
+
+.bo-empty {
+  padding: 32px;
+  text-align: center;
+  color: var(--ink-dim);
+  font-size: 14px;
+}
+
+.bo-row-remove {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+.bo-row-remove:hover { color: var(--accent); }
+
+/* ---------- Badges ---------- */
+
+.bo-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 3px 7px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.bo-status-select {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  letter-spacing: 0.03em;
+  padding: 5px 8px;
+  border: 1px solid var(--line-soft);
+  background: var(--paper);
+  color: var(--ink-body);
+  cursor: pointer;
+}
+.bo-status-select:focus { outline: none; border-color: var(--ink); }
+
+.bo-status-accepted, .bo-status-contacted { border-color: var(--ink); color: var(--ink); font-weight: 700; }
+.bo-status-rejected, .bo-status-declined { color: var(--ink-dim); }
+
+@media (max-width: 860px) {
+  .bo-nav .nav-inner { flex-wrap: wrap; row-gap: 12px; padding: 14px 20px; }
+  .bo-subnav {
+    order: 3;
+    flex-basis: 100%;
+    padding-top: 12px;
+    border-top: 1px solid var(--line-soft);
+  }
+}
+
+@media (max-width: 760px) {
+  .bo-main { padding: 28px 20px 60px; }
+  .bo-login-card { padding: 32px 24px; }
+}

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Applications — ProductMoat Backoffice</title>
+  <link rel="stylesheet" href="../assets/swiss.css?v=13">
+  <link rel="stylesheet" href="../assets/backoffice.css?v=6">
+</head>
+<body class="light">
+  <nav class="nav bo-nav">
+    <div class="nav-inner">
+      <div class="logo"><span class="logo-mark"></span>ProductMoat <span class="bo-nav-tag">Backoffice</span></div>
+      <div class="bo-subnav">
+        <a href="applications.html" class="bo-subnav-active">Applications</a>
+        <a href="recommendations.html">Recommendations</a>
+        <a href="profiles.html">Profiles</a>
+      </div>
+      <div class="bo-nav-right">
+        <span class="bo-user" id="bo-user"></span>
+        <button class="btn btn-ghost bo-logout" id="bo-logout">Log out</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="wrap bo-main">
+    <div class="bo-section-head">
+      <h2>Applications <span class="bo-count" id="bo-app-count"></span></h2>
+    </div>
+    <div class="bo-table-wrap">
+      <table class="bo-table" id="bo-applications-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Name</th>
+            <th>Role / Company</th>
+            <th>Location</th>
+            <th>Focus</th>
+            <th>Experience</th>
+            <th>LinkedIn</th>
+            <th>Contact</th>
+            <th>Submitted</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="bo-applications-body"></tbody>
+      </table>
+      <p class="bo-empty" id="bo-applications-empty" hidden>No applications.</p>
+    </div>
+    <div class="bo-pagination" id="bo-applications-pagination"></div>
+  </main>
+
+  <script src="../assets/backoffice-data.js?v=1"></script>
+  <script src="../assets/backoffice.js?v=6"></script>
+  <script>initBackofficeApplications();</script>
+</body>
+</html>

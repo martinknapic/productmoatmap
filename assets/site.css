@@ -742,6 +742,47 @@ footer {
 .apply-hero .about-lede { margin-top: 18px; }
 .apply-hero-links { display: flex; gap: 24px; margin-top: 20px; flex-wrap: wrap; }
 
+.recommend-callout {
+  background: var(--paper-alt);
+  border-bottom: 1px solid var(--line);
+}
+
+.recommend-callout-inner {
+  padding: 26px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.recommend-callout-inner .label-mono { margin-bottom: 4px; }
+.recommend-callout-inner p { font-size: 16px; font-weight: 700; }
+.recommend-callout-inner .btn { flex-shrink: 0; }
+
+.form-checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.form-checkbox-row input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.form-checkbox-row label {
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-body);
+  cursor: pointer;
+}
+
 .req { color: var(--accent); }
 
 .hint-inline {

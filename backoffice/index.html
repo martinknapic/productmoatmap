@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Log in — ProductMoat Backoffice</title>
+  <link rel="stylesheet" href="../assets/swiss.css?v=13">
+  <link rel="stylesheet" href="../assets/backoffice.css?v=6">
+</head>
+<body class="bo-login-body">
+  <div class="bo-login-card">
+    <div class="bo-login-logo"><span class="logo-mark"></span>ProductMoat</div>
+    <div class="label-mono bo-login-eyebrow">Backoffice</div>
+    <h1>Log in</h1>
+    <p class="bo-login-hint">Internal only. Not linked from the public site.</p>
+
+    <form id="bo-login-form" novalidate>
+      <div class="form-field">
+        <label for="bo-username">Username</label>
+        <input type="text" id="bo-username" name="username" autocomplete="username" required>
+      </div>
+      <div class="form-field">
+        <label for="bo-password">Password</label>
+        <input type="password" id="bo-password" name="password" autocomplete="current-password" required>
+      </div>
+      <p class="bo-login-error" id="bo-login-error" hidden>Wrong username or password.</p>
+      <button type="submit" class="btn btn-primary bo-login-submit">Log in</button>
+    </form>
+
+    <p class="bo-login-note">
+      Demo credentials: <code>martin</code> / <code>productmoat</code>. This is a
+      client-side placeholder gate, not real security — replace it before any real
+      applicant data lives here.
+    </p>
+  </div>
+
+  <script src="../assets/backoffice.js?v=6"></script>
+  <script>initBackofficeLogin();</script>
+</body>
+</html>

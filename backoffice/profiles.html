@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Profiles — ProductMoat Backoffice</title>
+  <link rel="stylesheet" href="../assets/swiss.css?v=13">
+  <link rel="stylesheet" href="../assets/backoffice.css?v=6">
+</head>
+<body class="light">
+  <nav class="nav bo-nav">
+    <div class="nav-inner">
+      <div class="logo"><span class="logo-mark"></span>ProductMoat <span class="bo-nav-tag">Backoffice</span></div>
+      <div class="bo-subnav">
+        <a href="applications.html">Applications</a>
+        <a href="recommendations.html">Recommendations</a>
+        <a href="profiles.html" class="bo-subnav-active">Profiles</a>
+      </div>
+      <div class="bo-nav-right">
+        <span class="bo-user" id="bo-user"></span>
+        <button class="btn btn-ghost bo-logout" id="bo-logout">Log out</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="wrap bo-main">
+    <div class="bo-section-head">
+      <h2>Published profiles <span class="bo-count" id="bo-profile-count"></span></h2>
+      <p class="bo-section-note">Live interviews from assets/people-data.js — edit that file to add, edit, or remove a profile.</p>
+    </div>
+    <div class="bo-table-wrap">
+      <table class="bo-table" id="bo-profiles-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Name</th>
+            <th>Role / Company</th>
+            <th>Location</th>
+            <th>Focus</th>
+            <th>Experience</th>
+            <th>Questions</th>
+            <th>Published</th>
+            <th>LinkedIn</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="bo-profiles-body"></tbody>
+      </table>
+      <p class="bo-empty" id="bo-profiles-empty" hidden>No published profiles.</p>
+    </div>
+    <div class="bo-pagination" id="bo-profiles-pagination"></div>
+  </main>
+
+  <script src="../assets/people-data.js?v=11"></script>
+  <script src="../assets/backoffice.js?v=6"></script>
+  <script>initBackofficeProfiles();</script>
+</body>
+</html>

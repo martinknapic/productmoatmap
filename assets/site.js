@@ -500,3 +500,34 @@ function initApply() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 }
+
+// ---------- Recommend page ----------
+// Same no-backend stub pattern as initApply(): validate, log, swap to a
+// confirmation state.
+
+function initRecommend() {
+  const form = document.getElementById("recommend-form");
+  if (!form) return;
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    form.classList.add("was-validated");
+    if (!form.reportValidity()) return;
+
+    const data = new FormData(form);
+    const recommendation = {
+      candidateLinkedin: data.get("candidateLinkedin").trim(),
+      candidateName: data.get("candidateName").trim(),
+      reason: data.get("reason").trim(),
+      yourName: data.get("yourName").trim(),
+      yourEmail: data.get("yourEmail").trim(),
+      stayAnonymous: data.get("stayAnonymous") === "on"
+    };
+
+    console.log("ProductMoat recommendation (no backend wired yet):", recommendation);
+
+    form.hidden = true;
+    document.getElementById("recommend-success").hidden = false;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+}

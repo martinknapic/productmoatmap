@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Recommendations — ProductMoat Backoffice</title>
+  <link rel="stylesheet" href="../assets/swiss.css?v=13">
+  <link rel="stylesheet" href="../assets/backoffice.css?v=6">
+</head>
+<body class="light">
+  <nav class="nav bo-nav">
+    <div class="nav-inner">
+      <div class="logo"><span class="logo-mark"></span>ProductMoat <span class="bo-nav-tag">Backoffice</span></div>
+      <div class="bo-subnav">
+        <a href="applications.html">Applications</a>
+        <a href="recommendations.html" class="bo-subnav-active">Recommendations</a>
+        <a href="profiles.html">Profiles</a>
+      </div>
+      <div class="bo-nav-right">
+        <span class="bo-user" id="bo-user"></span>
+        <button class="btn btn-ghost bo-logout" id="bo-logout">Log out</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="wrap bo-main">
+    <div class="bo-section-head">
+      <h2>Recommendations <span class="bo-count" id="bo-rec-count"></span></h2>
+    </div>
+    <div class="bo-table-wrap">
+      <table class="bo-table" id="bo-recommendations-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Candidate</th>
+            <th>LinkedIn</th>
+            <th>Recommended by</th>
+            <th>Reason</th>
+            <th>Submitted</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="bo-recommendations-body"></tbody>
+      </table>
+      <p class="bo-empty" id="bo-recommendations-empty" hidden>No recommendations.</p>
+    </div>
+    <div class="bo-pagination" id="bo-recommendations-pagination"></div>
+  </main>
+
+  <script src="../assets/backoffice-data.js?v=1"></script>
+  <script src="../assets/backoffice.js?v=6"></script>
+  <script>initBackofficeRecommendations();</script>
+</body>
+</html>
