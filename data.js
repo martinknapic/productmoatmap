@@ -4,88 +4,11 @@
 // from CITY_COORDS, then COMPANY_HQ, then COUNTRY_COORDS (see below).
 // To update the dataset, regenerate this array from your CSV (same column order).
 
-const PEOPLE = [
-  {
-    name: "Sonia Wieser",
-    role: "Product Manager",
-    city: "Zürich",
-    country: "Switzerland",
-    company: "",
-    snippet: "Focuses on collaboration and positivity while solving complex product problems."
-  },
-  {
-    name: "Neelima Dahiya",
-    role: "Senior Product Manager, AI (Information Retrieval)",
-    city: "Lausanne",
-    country: "Switzerland",
-    company: "Google",
-    snippet: "Leads AI-focused information retrieval products at Google, started October 2025."
-  },
-  {
-    name: "Axelle Justafré",
-    role: "Senior Global Product Manager",
-    city: "",
-    country: "",
-    company: "Logitech",
-    snippet: "Also leads a part-time sustainability program alongside her PM role."
-  },
-  {
-    name: "Irene Ackermann",
-    role: "Product Manager Passenger Information",
-    city: "Zurich",
-    country: "Switzerland",
-    company: "Zürcher Verkehrsverbund ZVV",
-    snippet: "Background spans digital innovation, AI projects, and generative AI initiatives."
-  },
-  {
-    name: "Lina Yakunina",
-    role: "Product Manager",
-    city: "",
-    country: "",
-    company: "Sherpany",
-    snippet: "Builds B2B SaaS features focused on customer needs and AI capabilities."
-  },
-  {
-    name: "Tobias Zellweger",
-    role: "Product Manager Online Platforms",
-    city: "",
-    country: "Switzerland",
-    company: "aha! Allergiezentrum Schweiz",
-    snippet: "Manages online platforms for the Swiss Allergy Centre, focused on digital innovation."
-  },
-  {
-    name: "Pascal Hofmann",
-    role: "Product Manager",
-    city: "Zürich",
-    country: "",
-    company: "Google",
-    snippet: "Studied business at Oxford's Said Business School before joining Google."
-  },
-  {
-    name: "Céline Rihs",
-    role: "Product & Data Manager",
-    city: "",
-    country: "Switzerland",
-    company: "MOVE Mobility",
-    snippet: "Previously managed e-mobility products at Romande Energie in Morges."
-  },
-  {
-    name: "Abdul Rahman",
-    role: "Product Manager",
-    city: "Zürich",
-    country: "Switzerland",
-    company: "Westermo Neratec AG",
-    snippet: "Works at the intersection of business and technology across product roles."
-  },
-  {
-    name: "Stef D.",
-    role: "Product Manager (Home Appliance)",
-    city: "Zürich",
-    country: "Switzerland",
-    company: "Samsung Switzerland",
-    snippet: "Home appliance PM based in Zurich with Samsung Switzerland."
-  }
-];
+// The original demo batch (10 fake Swiss product managers, none with a photo) has been
+// removed. Real people now come from assets/people-data.js (INTERVIEWS) and are merged
+// in by app.js. Add real, photographed people here if you want entries on the globe
+// that aren't full published interviews.
+const PEOPLE = [];
 
 // City name → [lng, lat]. Add cities here as your dataset grows.
 const CITY_COORDS = {

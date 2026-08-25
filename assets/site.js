@@ -19,6 +19,42 @@ function escapeHTML(str) {
   return div.innerHTML;
 }
 
+// ---------- Lightbox (full-size profile photo) ----------
+
+function getLightbox() {
+  let overlay = document.getElementById("lightbox-overlay");
+  if (overlay) return overlay;
+
+  overlay = document.createElement("div");
+  overlay.id = "lightbox-overlay";
+  overlay.className = "lightbox-overlay";
+  overlay.innerHTML = `<button class="lightbox-close" aria-label="Close">[ Close ]</button><img class="lightbox-img">`;
+  document.body.appendChild(overlay);
+
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) closeLightbox();
+  });
+  overlay.querySelector(".lightbox-close").addEventListener("click", closeLightbox);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeLightbox();
+  });
+
+  return overlay;
+}
+
+function openLightbox(src, alt) {
+  const overlay = getLightbox();
+  const img = overlay.querySelector(".lightbox-img");
+  img.src = src;
+  img.alt = alt;
+  overlay.classList.add("open");
+}
+
+function closeLightbox() {
+  const overlay = document.getElementById("lightbox-overlay");
+  if (overlay) overlay.classList.remove("open");
+}
+
 // ---------- Theme ----------
 
 function initTheme() {
@@ -200,20 +236,48 @@ function initPerson() {
       </div>
     </section>
 
+    <section class="foreword">
+      <div class="wrap">
+        <div class="foreword-inner">
+          <div class="label-mono">Foreword</div>
+          <p>${escapeHTML(p.foreword)}</p>
+          <div class="foreword-byline">&mdash; Martin Knapic, ProductMoat</div>
+        </div>
+      </div>
+    </section>
+
     <section class="qna">
       <div class="wrap">
         <div class="qna-inner">
-          ${p.questions.map((qa, i) => `
-            <div class="qa-item">
-              <div class="qa-num">${String(i + 1).padStart(2, "0")} / ${String(p.questions.length).padStart(2, "0")}</div>
-              <h3>${escapeHTML(qa.q)}</h3>
-              <p>${escapeHTML(qa.a)}</p>
-            </div>
-          `).join("")}
+          ${(() => {
+            const total = p.sections.reduce((n, s) => n + s.questions.length, 0);
+            let count = 0;
+            return p.sections.map(section => `
+              <div class="qna-section">
+                <h2 class="qna-section-title">${escapeHTML(section.title)}</h2>
+                ${section.questions.map(qa => {
+                  count += 1;
+                  return `
+                    <div class="qa-item">
+                      <div class="qa-num">${String(count).padStart(2, "0")} / ${String(total).padStart(2, "0")}</div>
+                      <h3>${escapeHTML(qa.q)}</h3>
+                      <p>${escapeHTML(qa.a)}</p>
+                    </div>
+                  `;
+                }).join("")}
+              </div>
+            `).join("");
+          })()}
         </div>
       </div>
     </section>
   `;
+
+  if (p.photo) {
+    const avatarEl = root.querySelector(".avatar-xl");
+    avatarEl.classList.add("has-photo");
+    avatarEl.addEventListener("click", () => openLightbox(p.photo, p.name));
+  }
 
   if (hasCoords) initMiniGlobe(p);
   renderProfileNav(p);
@@ -318,4 +382,121 @@ function renderProfileNav(current) {
 function formatDate(iso) {
   const d = new Date(iso + "T00:00:00");
   return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
+// ---------- Apply page ----------
+// No backend yet: on submit this builds the same shape as an INTERVIEWS entry
+// (see assets/people-data.js) plus private contact fields, logs it for whoever's
+// wiring up the real submission handler, and swaps in a confirmation state.
+
+function qaRowTemplate(list) {
+  const row = document.createElement("div");
+  row.className = "qa-form-item";
+  row.innerHTML = `
+    <div class="qa-form-item-head">
+      <span class="hint-inline">Question ${list.children.length + 1}</span>
+      <button type="button" class="qa-remove">[ Remove ]</button>
+    </div>
+    <div class="form-field full">
+      <label>Question</label>
+      <input type="text" class="qa-q" placeholder="A question you'd want to be asked">
+    </div>
+    <div class="form-field full">
+      <label>Your answer</label>
+      <textarea class="qa-a" rows="3" placeholder="A few sentences in your own words"></textarea>
+    </div>
+  `;
+  row.querySelector(".qa-remove").addEventListener("click", () => {
+    row.remove();
+    renumberQaRows(list);
+  });
+  return row;
+}
+
+function renumberQaRows(list) {
+  list.querySelectorAll(".qa-form-item").forEach((row, i) => {
+    row.querySelector(".qa-form-item-head .hint-inline").textContent = `Question ${i + 1}`;
+  });
+}
+
+function initApply() {
+  const form = document.getElementById("apply-form");
+  if (!form) return;
+
+  const qaLists = new Map();
+  form.querySelectorAll("[data-qa-list]").forEach(list => {
+    const sectionId = list.dataset.qaList;
+    qaLists.set(sectionId, list);
+    list.appendChild(qaRowTemplate(list));
+  });
+  form.querySelectorAll("[data-qa-add]").forEach(btn => {
+    const list = qaLists.get(btn.dataset.qaAdd);
+    btn.addEventListener("click", () => list.appendChild(qaRowTemplate(list)));
+  });
+
+  const snippet = document.getElementById("f-snippet");
+  const counter = document.getElementById("snippet-counter");
+  snippet.addEventListener("input", () => {
+    counter.textContent = `${snippet.value.length} / ${snippet.maxLength}`;
+  });
+
+  const photoInput = document.getElementById("f-photo");
+  const photoPreview = document.getElementById("photo-preview");
+  const photoFilename = document.getElementById("photo-filename");
+  photoInput.addEventListener("change", () => {
+    const file = photoInput.files[0];
+    if (!file) {
+      photoPreview.innerHTML = "＋";
+      photoFilename.textContent = "No file selected — falls back to initials.";
+      return;
+    }
+    photoFilename.textContent = file.name;
+    const reader = new FileReader();
+    reader.onload = () => { photoPreview.innerHTML = `<img src="${reader.result}" alt="">`; };
+    reader.readAsDataURL(file);
+  });
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    form.classList.add("was-validated");
+    if (!form.reportValidity()) return;
+
+    const data = new FormData(form);
+    const application = {
+      name: data.get("name").trim(),
+      role: data.get("role").trim(),
+      company: data.get("company").trim(),
+      location: data.get("location").trim(),
+      focusTag: data.get("focusTag"),
+      yearsExperience: Number(data.get("yearsExperience")),
+      links: {
+        linkedin: data.get("linkedin").trim(),
+        website: data.get("website").trim(),
+        twitter: data.get("twitter").trim()
+      },
+      snippet: data.get("snippet").trim(),
+      pullQuote: data.get("pullQuote").trim(),
+      sections: [...qaLists.entries()]
+        .map(([id, list]) => ({
+          id,
+          title: (SECTION_TITLES && SECTION_TITLES[id]) || id,
+          questions: [...list.querySelectorAll(".qa-form-item")]
+            .map(row => ({
+              q: row.querySelector(".qa-q").value.trim(),
+              a: row.querySelector(".qa-a").value.trim()
+            }))
+            .filter(qa => qa.q || qa.a)
+        }))
+        .filter(section => section.questions.length > 0),
+      photoFileName: photoInput.files[0] ? photoInput.files[0].name : null,
+      contactEmail: data.get("contactEmail").trim(),
+      contactPhone: data.get("contactPhone").trim()
+    };
+
+    console.log("ProductMoat application (no backend wired yet):", application);
+
+    form.hidden = true;
+    document.getElementById("apply-success").hidden = false;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
 }

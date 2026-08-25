@@ -133,6 +133,7 @@ const activeMarkers = new Map(); // person index → maplibregl.Marker
 
 async function handleClusterClick(e) {
   const feature = map.queryRenderedFeatures(e.point, { layers: ["clusters"] })[0];
+  if (!feature) return;
   const zoom = await map.getSource("people").getClusterExpansionZoom(feature.properties.cluster_id);
   map.easeTo({ center: feature.geometry.coordinates, zoom: zoom + 0.4, duration: 900 });
 }
@@ -219,15 +220,6 @@ function setupMapLayers() {
     paint: { "text-color": "#ffffff" }
   });
 
-  // Invisible layer used only to query which points are unclustered in view.
-  map.addLayer({
-    id: "unclustered-point",
-    type: "circle",
-    source: "people",
-    filter: ["!", ["has", "point_count"]],
-    paint: { "circle-radius": 1, "circle-opacity": 0 }
-  });
-
   // Remove then re-add layer-specific listeners so they don't stack on theme switch.
   map.off("click", "clusters", handleClusterClick);
   map.off("mouseenter", "clusters", handleClusterEnter);
@@ -299,16 +291,29 @@ function closeSidePanel() {
 }
 
 // ---------- HTML avatar markers for unclustered people ----------
-
+// Deliberately uses querySourceFeatures (reads the loaded tile cache) rather than
+// queryRenderedFeatures (reads the WebGL render buffer): in globe projection,
+// queryRenderedFeatures reliably returns zero results for viewport/bbox-style queries
+// (point queries, like the cluster click handler's, are unaffected) — see MapLibre's
+// globe projection limitations. querySourceFeatures isn't scoped to the current
+// viewport or reliably screen-accurate at low globe zoom, so results are just deduped
+// by index; the dataset is small enough that mounting a marker per unclustered person
+// and letting maplibregl.Marker position (and occlude, on the far side of the globe)
+// it correctly is cheap and simpler than re-deriving screen bounds ourselves.
 function syncMarkers() {
-  if (!map.getLayer("unclustered-point")) return;
+  if (!map.getSource("people")) return;
 
-  const visible = map.queryRenderedFeatures({ layers: ["unclustered-point"] });
+  const seen = new Set();
   const visibleIds = new Set();
 
-  for (const f of visible) {
+  const leaves = map.querySourceFeatures("people", { filter: ["!", ["has", "point_count"]] });
+
+  for (const f of leaves) {
     const idx = f.properties.index;
+    if (seen.has(idx)) continue;
+    seen.add(idx);
     visibleIds.add(idx);
+
     if (activeMarkers.has(idx)) continue;
 
     const person = ALL_PEOPLE[idx];

@@ -7,7 +7,7 @@
   <title>ProductMoat — Product People Around the World</title>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css">
   <link rel="stylesheet" href="assets/swiss.css?v=13">
-  <link rel="stylesheet" href="assets/site.css?v=15">
+  <link rel="stylesheet" href="assets/site.css?v=22">
   <link rel="stylesheet" href="style.css?v=13">
 </head>
 <body class="map-page">
@@ -18,6 +18,7 @@
         <a href="index.html#directory">Interviews</a>
         <a href="map.html">Map</a>
         <a href="about.html">About</a>
+        <a href="apply.html">Apply</a>
       </div>
       <button class="theme-btn" id="theme-btn" onclick="toggleMapTheme()">LIGHT</button>
     </div>
@@ -36,19 +37,19 @@
   </div>
 
   <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
-  <script src="assets/site.js?v=13"></script>
-  <script src="assets/people-data.js?v=10"></script>
+  <script src="assets/site.js?v=16"></script>
+  <script src="assets/people-data.js?v=11"></script>
   <script>initTheme();</script>
   <script>
     (function () {
       var ds = new URLSearchParams(location.search).get('dataset');
-      document.write('<scr\x69pt src="' + (ds === 'stress' ? 'data.stress.js' : 'data.js') + '"><\/scr\x69pt>');
+      document.write('<scr\x69pt src="' + (ds === 'stress' ? 'data.stress.js?v=2' : 'data.js?v=2') + '"><\/scr\x69pt>');
       if (ds === 'stress') {
         document.write('<scr\x69pt>var PEOPLE = PEOPLE_STRESS_TEST;<\/scr\x69pt>');
       }
     })();
   </script>
-  <script src="app.js?v=10"></script>
+  <script src="app.js?v=11"></script>
   <div id="side-panel"></div>
 </body>
 </html>

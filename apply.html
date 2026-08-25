@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apply to be featured — ProductMoat</title>
+  <meta name="description" content="Apply to be interviewed for ProductMoat — an interview series for product people building at the intersection of AI.">
+  <link rel="stylesheet" href="assets/swiss.css?v=13">
+  <link rel="stylesheet" href="assets/site.css?v=22">
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="logo" href="index.html"><span class="logo-mark"></span>ProductMoat</a>
+      <div class="nav-links">
+        <a href="index.html#directory">Interviews</a>
+        <a href="map.html">Map</a>
+        <a href="about.html">About</a>
+        <a href="apply.html">Apply</a>
+      </div>
+      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">LIGHT</button>
+    </div>
+  </nav>
+
+  <section class="apply-hero">
+    <div class="wrap">
+      <div class="eyebrow"><span class="num">05.</span> Get featured</div>
+      <h1>Apply to be interviewed.</h1>
+      <p class="about-lede">
+        Tell us who you are and what you've built. If it looks like a fit, we'll reach
+        out to schedule the actual conversation — everything below is just to get a
+        feel for your work and your voice.
+      </p>
+      <div class="apply-hero-links">
+        <a class="bracket-link" href="why-apply.html">[ Why apply? ]</a>
+        <a class="bracket-link" href="process.html">[ The process ]</a>
+      </div>
+    </div>
+  </section>
+
+  <main class="wrap">
+    <form id="apply-form" novalidate>
+
+      <fieldset class="form-fieldset">
+        <div class="fieldset-head">
+          <h2>Your profile</h2>
+          <p>This is what would appear on your interview page.</p>
+        </div>
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="f-name">Full name <span class="req">*</span></label>
+            <input type="text" id="f-name" name="name" required autocomplete="name">
+          </div>
+          <div class="form-field">
+            <label for="f-role">Role / title <span class="req">*</span></label>
+            <input type="text" id="f-role" name="role" placeholder="e.g. Senior Product Manager" required>
+          </div>
+          <div class="form-field">
+            <label for="f-company">Company <span class="req">*</span></label>
+            <input type="text" id="f-company" name="company" required>
+          </div>
+          <div class="form-field">
+            <label for="f-location">Location <span class="req">*</span></label>
+            <input type="text" id="f-location" name="location" placeholder="City, Country" required>
+          </div>
+          <div class="form-field">
+            <label for="f-focus">Focus area <span class="req">*</span></label>
+            <select id="f-focus" name="focusTag" required>
+              <option value="" disabled selected>Select one</option>
+              <option value="ai">AI &amp; ML</option>
+              <option value="b2b">B2B SaaS</option>
+              <option value="design">Design Systems</option>
+              <option value="growth">Consumer &amp; Growth</option>
+              <option value="fintech">Fintech</option>
+              <option value="platform">Platform &amp; Infra</option>
+              <option value="marketplace">Marketplace</option>
+              <option value="health">Healthtech</option>
+              <option value="leadership">Product Leadership</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="f-years">Years of experience <span class="req">*</span></label>
+            <input type="number" id="f-years" name="yearsExperience" min="0" max="60" required>
+          </div>
+          <div class="form-field full">
+            <label for="f-photo">Headshot <span class="hint-inline">(optional)</span></label>
+            <div class="photo-field">
+              <div class="avatar photo-preview" id="photo-preview">＋</div>
+              <div class="photo-field-controls">
+                <label class="btn btn-ghost photo-btn" for="f-photo">Choose photo</label>
+                <input type="file" id="f-photo" name="photo" accept="image/*" class="visually-hidden">
+                <span class="hint-inline" id="photo-filename">No file selected — falls back to initials.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="form-fieldset">
+        <div class="fieldset-head">
+          <h2>Links</h2>
+          <p>Shown on your profile alongside your name.</p>
+        </div>
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="f-linkedin">LinkedIn URL <span class="req">*</span></label>
+            <input type="url" id="f-linkedin" name="linkedin" placeholder="https://www.linkedin.com/in/…" required>
+          </div>
+          <div class="form-field">
+            <label for="f-website">Website <span class="hint-inline">(optional)</span></label>
+            <input type="url" id="f-website" name="website" placeholder="https://…">
+          </div>
+          <div class="form-field">
+            <label for="f-twitter">X / Twitter <span class="hint-inline">(optional)</span></label>
+            <input type="url" id="f-twitter" name="twitter" placeholder="https://x.com/…">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="form-fieldset">
+        <div class="fieldset-head">
+          <h2>Your take</h2>
+          <p>A couple of lines used to introduce you in the directory.</p>
+        </div>
+        <div class="form-grid">
+          <div class="form-field full">
+            <label for="f-snippet">Short bio <span class="req">*</span></label>
+            <textarea id="f-snippet" name="snippet" rows="2" maxlength="200" required placeholder="One sentence on what you're known for or currently working on."></textarea>
+            <span class="hint-inline" id="snippet-counter">0 / 200</span>
+          </div>
+          <div class="form-field full">
+            <label for="f-quote">Pull quote <span class="hint-inline">(optional)</span></label>
+            <textarea id="f-quote" name="pullQuote" rows="2" maxlength="160" placeholder="One punchy line that sums up how you think."></textarea>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="form-fieldset">
+        <div class="fieldset-head">
+          <h2>Sample answers</h2>
+          <p>Optional, but it helps us get a feel for your voice. Add a question of your own under any section — we'll ask the full set in the actual interview.</p>
+        </div>
+
+        <div class="qa-section-block" data-section-id="into-product">
+          <h3 class="qa-section-heading">Into Product</h3>
+          <p class="qa-section-hint">Your personal path into product — how you got started, what nearly pulled you elsewhere, hobbies.</p>
+          <div class="qa-list" data-qa-list="into-product"></div>
+          <button type="button" class="btn btn-ghost qa-add" data-qa-add="into-product">+ Add a question</button>
+        </div>
+
+        <div class="qa-section-block" data-section-id="product-today">
+          <h3 class="qa-section-heading">The Product Today</h3>
+          <p class="qa-section-hint">What you're building — the product, industry, company and team size, competitive landscape, your users.</p>
+          <div class="qa-list" data-qa-list="product-today"></div>
+          <button type="button" class="btn btn-ghost qa-add" data-qa-add="product-today">+ Add a question</button>
+        </div>
+
+        <div class="qa-section-block" data-section-id="ai-in-the-work">
+          <h3 class="qa-section-heading">AI in the Work</h3>
+          <p class="qa-section-hint">How AI shows up in your product and your process, and how you keep up with how fast it's moving.</p>
+          <div class="qa-list" data-qa-list="ai-in-the-work"></div>
+          <button type="button" class="btn btn-ghost qa-add" data-qa-add="ai-in-the-work">+ Add a question</button>
+        </div>
+
+        <div class="qa-section-block" data-section-id="outlook">
+          <h3 class="qa-section-heading">Looking Ahead</h3>
+          <p class="qa-section-hint">What you think matters right now in product, and where you see it heading.</p>
+          <div class="qa-list" data-qa-list="outlook"></div>
+          <button type="button" class="btn btn-ghost qa-add" data-qa-add="outlook">+ Add a question</button>
+        </div>
+      </fieldset>
+
+      <fieldset class="form-fieldset">
+        <div class="fieldset-head">
+          <h2>Contact</h2>
+          <p>Private — used only to reach you about the interview, never shown on your profile.</p>
+        </div>
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="f-email">Email <span class="req">*</span></label>
+            <input type="email" id="f-email" name="contactEmail" required autocomplete="email">
+          </div>
+          <div class="form-field">
+            <label for="f-phone">Phone <span class="hint-inline">(optional)</span></label>
+            <input type="tel" id="f-phone" name="contactPhone" autocomplete="tel">
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="form-submit-row">
+        <button type="submit" class="btn btn-primary">Submit application</button>
+        <p class="hint-inline">We read every application ourselves — expect a reply within a couple of weeks either way.</p>
+      </div>
+    </form>
+
+    <div class="apply-success" id="apply-success" hidden>
+      <div class="eyebrow"><span class="num">✓</span> Received</div>
+      <h2>Thanks — got it.</h2>
+      <p>Your application is in. We read every one ourselves and will follow up by email if it looks like a fit.</p>
+      <a class="btn btn-ghost" href="index.html">&larr; Back to all conversations</a>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap footer-inner">
+      <p class="footer-blurb">
+        ProductMoat is an ongoing interview series exploring the essence of product management
+        and product design at the intersection of AI.
+      </p>
+      <div class="footer-links">
+        <a href="map.html">World map</a>
+        <a href="https://www.linkedin.com/in/martinknapic" target="_blank" rel="noopener">LinkedIn</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/people-data.js?v=11"></script>
+  <script src="assets/site.js?v=16"></script>
+  <script>
+    initTheme();
+    initApply();
+  </script>
+</body>
+</html>
