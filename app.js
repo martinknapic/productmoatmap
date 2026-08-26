@@ -113,11 +113,21 @@ const STYLES = {
 let currentTheme = document.body.classList.contains("light") ? "light" : "dark";
 let mapListenersAdded = false;
 
+// Bigger default globe on spacious viewports; scaled back down on small
+// screens so it still lands fully in view instead of overflowing.
+function getInitialZoom() {
+  const minDim = Math.min(window.innerWidth, window.innerHeight);
+  if (minDim < 480) return 1.65;
+  if (minDim < 700) return 1.9;
+  if (minDim < 1000) return 2.15;
+  return 2.35;
+}
+
 const map = new maplibregl.Map({
   container: "map",
   style: STYLES[currentTheme],
   center: [8.2, 30],
-  zoom: 1.6,
+  zoom: getInitialZoom(),
   minZoom: 0.8,
   maxZoom: 17,
   attributionControl: { compact: true }
