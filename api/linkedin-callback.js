@@ -17,8 +17,23 @@ const crypto = require("crypto");
 const COOKIE_NAME = "li_verify";
 const COOKIE_TTL_SECONDS = 300; // just long enough to survive the redirect + profile fetch
 
-function redirectToApply(res, query) {
-  res.setHeader("Location", `/apply.html?${query}`);
+// The frontend embeds which page started the OAuth flow into the `state`
+// param as `<nonce>:<page>` (the nonce is still what's checked for CSRF,
+// client-side). Whitelisted here so this can't be turned into an open
+// redirect by a crafted state value.
+const ALLOWED_PAGES = new Set(["apply", "recommend"]);
+
+function parseState(rawState) {
+  if (typeof rawState !== "string") return { nonce: null, page: "apply" };
+  const idx = rawState.indexOf(":");
+  if (idx === -1) return { nonce: rawState, page: "apply" };
+  const nonce = rawState.slice(0, idx);
+  const page = rawState.slice(idx + 1);
+  return { nonce, page: ALLOWED_PAGES.has(page) ? page : "apply" };
+}
+
+function redirectToApply(res, page, query) {
+  res.setHeader("Location", `/${page}.html?${query}`);
   res.status(302).end();
 }
 
@@ -30,21 +45,22 @@ function decodeIdToken(idToken) {
 
 module.exports = async (req, res) => {
   const { code, error, state } = req.query;
+  const { nonce, page } = parseState(state);
 
   if (error) {
     console.error("[linkedin-callback] denied by user:", error, req.query.error_description);
-    return redirectToApply(res, "li=denied");
+    return redirectToApply(res, page, "li=denied");
   }
   if (!code || typeof code !== "string") {
     console.error("[linkedin-callback] missing/invalid code param:", req.query);
-    return redirectToApply(res, "li=error");
+    return redirectToApply(res, page, "li=error");
   }
 
   const clientId = process.env.LINKEDIN_CLIENT_ID;
   const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
   if (!clientId || !clientSecret) {
     console.error("[linkedin-callback] missing env vars:", { hasClientId: !!clientId, hasClientSecret: !!clientSecret });
-    return redirectToApply(res, "li=error");
+    return redirectToApply(res, page, "li=error");
   }
 
   try {
@@ -66,13 +82,13 @@ module.exports = async (req, res) => {
     if (!tokenResp.ok) {
       const errBody = await tokenResp.text().catch(() => "<unreadable>");
       console.error("[linkedin-callback] token exchange failed:", tokenResp.status, errBody, "redirectUri used:", redirectUri);
-      return redirectToApply(res, "li=error");
+      return redirectToApply(res, page, "li=error");
     }
 
     const tokenData = await tokenResp.json();
     if (!tokenData.id_token) {
       console.error("[linkedin-callback] no id_token in token response:", Object.keys(tokenData));
-      return redirectToApply(res, "li=error");
+      return redirectToApply(res, page, "li=error");
     }
 
     const claims = decodeIdToken(tokenData.id_token);
@@ -94,10 +110,10 @@ module.exports = async (req, res) => {
     );
 
     const query = new URLSearchParams({ li: "ok" });
-    if (typeof state === "string") query.set("state", state);
-    return redirectToApply(res, query.toString());
+    if (nonce) query.set("state", nonce);
+    return redirectToApply(res, page, query.toString());
   } catch (err) {
     console.error("[linkedin-callback] unexpected exception:", err && err.stack || err);
-    return redirectToApply(res, "li=error");
+    return redirectToApply(res, page, "li=error");
   }
 };

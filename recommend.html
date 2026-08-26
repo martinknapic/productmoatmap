@@ -29,9 +29,8 @@
       <div class="eyebrow"><span class="num">07.</span> Recommend someone</div>
       <h1>Know a product hero we should talk to?</h1>
       <p class="about-lede">
-        You don't have to be the one applying. If there's someone whose story you think
-        product people deserve to hear, point us to their LinkedIn and we'll take it
-        from there.
+        You don't have to be the one applying. Sign in with LinkedIn so we know it's
+        really you, then point us to their profile and we'll take it from there.
       </p>
     </div>
   </section>
@@ -42,16 +41,19 @@
       <fieldset class="form-fieldset">
         <div class="fieldset-head">
           <h2>Who should we talk to?</h2>
-          <p>Just their LinkedIn is enough to get started.</p>
+          <p>Sign in with LinkedIn to verify it's you, then just their LinkedIn is enough to get started.</p>
+        </div>
+        <div class="li-gate" id="li-gate">
+          <button type="button" class="btn btn-primary li-btn" id="li-signin-btn">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 1 1 0-4.124 2.062 2.062 0 0 1 0 4.124zM7.119 20.452H3.554V9h3.565v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            Sign in with LinkedIn to recommend someone
+          </button>
+          <p class="hint-inline li-error" id="li-error" hidden>LinkedIn sign-in didn't go through — try again.</p>
         </div>
         <div class="form-grid">
           <div class="form-field full">
             <label for="r-linkedin">Their LinkedIn URL <span class="req">*</span></label>
             <input type="url" id="r-linkedin" name="candidateLinkedin" placeholder="https://www.linkedin.com/in/…" required>
-          </div>
-          <div class="form-field full">
-            <label for="r-name">Their name <span class="hint-inline">(optional)</span></label>
-            <input type="text" id="r-name" name="candidateName">
           </div>
           <div class="form-field full">
             <label for="r-why">Why them? <span class="hint-inline">(optional)</span></label>
@@ -63,16 +65,16 @@
       <fieldset class="form-fieldset">
         <div class="fieldset-head">
           <h2>About you</h2>
-          <p>Optional — only used if we want to follow up with you about the recommendation.</p>
+          <p>Populated from your LinkedIn sign-in — used only if we want to follow up about the recommendation.</p>
         </div>
         <div class="form-grid">
           <div class="form-field">
-            <label for="r-your-name">Your name <span class="hint-inline">(optional)</span></label>
-            <input type="text" id="r-your-name" name="yourName">
+            <label for="r-your-name">Your name</label>
+            <input type="text" id="r-your-name" name="yourName" readonly>
           </div>
           <div class="form-field">
-            <label for="r-your-email">Your email <span class="hint-inline">(optional)</span></label>
-            <input type="email" id="r-your-email" name="yourEmail" autocomplete="email">
+            <label for="r-your-email">Your email</label>
+            <input type="email" id="r-your-email" name="yourEmail" autocomplete="email" readonly>
           </div>
         </div>
         <div class="form-checkbox-row">
@@ -82,7 +84,10 @@
       </fieldset>
 
       <div class="form-submit-row">
-        <button type="submit" class="btn btn-primary">Send recommendation</button>
+        <span class="submit-wrap locked" id="submit-wrap">
+          <button type="submit" class="btn btn-primary" id="r-submit-btn" aria-disabled="true">Send recommendation</button>
+          <span class="submit-hint" role="tooltip">Sign in with LinkedIn to unlock this form</span>
+        </span>
         <p class="hint-inline">We read every recommendation ourselves — no guarantee of a feature, but every good lead gets a look.</p>
       </div>
     </form>
@@ -109,10 +114,11 @@
     </div>
   </footer>
 
-  <script src="assets/site.js?v=18"></script>
+  <script src="assets/site.js?v=19"></script>
   <script>
     initTheme();
     initRecommend();
+    initRecommendLinkedInGate();
   </script>
 </body>
 </html>

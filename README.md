@@ -80,44 +80,51 @@ Coordinates are resolved in this order: explicit `lng`/`lat` → `CITY_COORDS` �
 as the dataset grows. People in the same city are automatically spread apart slightly
 so they separate at high zoom.
 
-## LinkedIn verification on the Apply page (`apply.html`)
+## LinkedIn verification on the Apply and Recommend pages (`apply.html`, `recommend.html`)
 
-The "Apply to be featured" form is locked behind LinkedIn sign-in: every field renders
-dimmed and disabled until the applicant verifies who they are via LinkedIn OAuth, then
-the form unlocks with name/email pre-filled and their LinkedIn photo (if any) dropped
-into the headshot preview. This is an identity check only — it doesn't autofill the rest
-of the application, and no token or session is persisted beyond the OAuth redirect
-round-trip.
+Both the "Apply to be featured" form and the "Recommend a product hero" form are locked
+behind LinkedIn sign-in: every field renders dimmed and disabled until the visitor
+verifies who they are via LinkedIn OAuth. On `apply.html` the form then unlocks with
+name/email pre-filled (still editable) and their LinkedIn photo (if any) dropped into the
+headshot preview. On `recommend.html` the form unlocks with the recommender's own
+name/email pre-filled as **read-only** — the only thing they type is the candidate's
+LinkedIn URL and, optionally, why they're recommending them. This is an identity check
+only — it doesn't autofill the rest of either form, and no token or session is persisted
+beyond the OAuth redirect round-trip.
 
 ### Files
 
 | File | Purpose |
 |------|---------|
-| `apply.html` | Form markup — the `#li-gate` block (sign-in button / error / verified badge) |
-| `assets/site.js` | `initLinkedInGate()` — locks/unlocks the form, drives the OAuth redirect and profile fetch |
+| `apply.html` / `recommend.html` | Form markup — each has its own `#li-gate` block (sign-in button / error / verified badge) |
+| `assets/site.js` | `initLinkedInGate(opts)` — the shared lock/unlock + OAuth-redirect + profile-fetch logic; `initApplyLinkedInGate()` and `initRecommendLinkedInGate()` are thin per-page wrappers that call it with each page's field IDs and its own `onVerified` handler |
 | `assets/site.css` | `.li-gate`, `.li-badge`, disabled-state dimming, submit-button hover/focus hint |
-| `api/linkedin-callback.js` | Vercel Function — OAuth redirect target; exchanges the code for tokens server-side |
+| `api/linkedin-callback.js` | Vercel Function — OAuth redirect target; exchanges the code for tokens server-side, then redirects back to whichever page started the flow |
 | `api/linkedin-profile.js` | Vercel Function — hands the decoded profile back to the frontend after redirect |
 
 ### How it works
 
-1. `initLinkedInGate()` disables every form control on load and shows "Sign in with
-   LinkedIn to apply" above the profile fields.
+1. `initApplyLinkedInGate()` / `initRecommendLinkedInGate()` disable every form control on
+   load and show a "Sign in with LinkedIn" button above the fields.
 2. Clicking it redirects to LinkedIn's OAuth 2.0 authorize endpoint (`response_type=code`,
-   scopes `openid profile email`, plus a random `state` stashed in `sessionStorage` for
-   CSRF checking).
+   scopes `openid profile email`, plus `state` set to `<random-nonce>:<page>` — the nonce
+   is stashed in `sessionStorage` for CSRF checking, and `<page>` (`apply` or `recommend`)
+   tells the callback which page to send the visitor back to).
 3. LinkedIn redirects to `/api/linkedin-callback`, which exchanges the code for an access
    token + ID token using the Client Secret (server-side only), decodes the ID token, and
    packs `name`/`email`/`picture` into a short-lived, HMAC-signed, `HttpOnly` cookie —
-   never into the URL. It then redirects to `/apply.html?li=ok&state=…` (or `li=denied` /
-   `li=error` on failure).
-4. The frontend checks the echoed `state` against what it stashed, then calls
+   never into the URL. It then redirects to `/<page>.html?li=ok&state=<nonce>` (or
+   `li=denied` / `li=error` on failure); `<page>` is whitelisted server-side (`apply` or
+   `recommend`, defaulting to `apply`) so a crafted `state` can't be used as an open
+   redirect.
+4. The frontend checks the echoed `state` (nonce only) against what it stashed, then calls
    `/api/linkedin-profile`, which verifies the cookie's signature/expiry, returns the
    profile as JSON, and clears the cookie (one-time use).
-5. The form unlocks, name/email are pre-filled (still editable), the photo preview picks
-   up the LinkedIn picture if one came back (falls back to the existing upload/initials
-   flow if not), and the sign-in button is replaced with a "✓ Verified as … via LinkedIn"
-   badge.
+5. The form unlocks and each page's `onVerified` handler runs: `apply.html` pre-fills
+   name/email (editable) and drops the LinkedIn photo into the headshot preview if one came
+   back (falls back to upload/initials if not); `recommend.html` pre-fills its own
+   name/email as read-only. Either way the sign-in button is replaced with a
+   "✓ Verified as … via LinkedIn" badge.
 
 ### Required environment variables
 
@@ -129,9 +136,15 @@ Set these in the Vercel dashboard under **Project → Settings → Environment V
 | `LINKEDIN_CLIENT_ID` | From your LinkedIn app at https://www.linkedin.com/developers/apps — also hardcode this same value into the `LINKEDIN_CLIENT_ID` constant near the top of `assets/site.js` (it's public by design, so it ships in frontend JS; only the secret below is kept server-side) |
 | `LINKEDIN_CLIENT_SECRET` | From the same LinkedIn app page — used only inside `api/linkedin-callback.js` and `api/linkedin-profile.js`, never sent to the browser |
 
-In your LinkedIn app's **Auth** settings, add `https://productmoat.com/api/linkedin-callback`
-(and any Vercel preview domain you test against) to the list of authorized redirect URLs —
-LinkedIn rejects callbacks to unregistered URIs.
+In your LinkedIn app's **Auth** settings, add `https://www.productmoat.com/api/linkedin-callback`
+(and any Vercel preview domain you test against, e.g.
+`https://<preview-url>/api/linkedin-callback`) to the list of authorized redirect URLs —
+LinkedIn rejects callbacks whose `redirect_uri` isn't an exact, byte-for-byte match
+(scheme, `www` vs. no-`www`, and all), so this one entry covers both `apply.html` and
+`recommend.html` since they share the same callback route. A plain static server
+(`python3 -m http.server`, used for local UI iteration) can't run `/api/linkedin-callback`
+at all and `localhost` was never registered anyway — use `vercel dev` or a Preview
+deployment to test the OAuth round-trip end-to-end.
 
 ### Manual test checklist
 
@@ -154,6 +167,10 @@ LinkedIn rejects callbacks to unregistered URIs.
 - [ ] **Override LinkedIn photo** — after a successful sign-in with a photo, use "Choose
       photo" to upload a different image and confirm it replaces the LinkedIn photo in
       the preview.
+- [ ] **Recommend happy path** — load `recommend.html`, confirm all fields (including
+      "Their LinkedIn URL") are locked. Sign in, and confirm you land back on
+      `recommend.html` (not `apply.html`) with the form unlocked, "Your name"/"Your email"
+      pre-filled but not editable, and only "Their LinkedIn URL" required for submit.
 
 ## Backoffice login (`/backoffice`)
 

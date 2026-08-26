@@ -512,28 +512,31 @@ function initApply() {
 // your app's Client ID from https://www.linkedin.com/developers/apps.
 const LINKEDIN_CLIENT_ID = "778t1x9svtemxo";
 
-function initLinkedInGate() {
-  const form = document.getElementById("apply-form");
+// Generic gate: locks every field in `formId` (except the sign-in button and
+// the submit button, which gets an aria-disabled treatment instead) until the
+// visitor verifies via LinkedIn OAuth. `page` is embedded in the OAuth
+// `state` param so /api/linkedin-callback knows which page to redirect back
+// to — keep it in sync with ALLOWED_PAGES in that file. `onVerified(profile)`
+// lets each page fill in its own page-specific fields once verified.
+function initLinkedInGate({ page, formId, submitBtnId, onLocked, onVerified }) {
+  const form = document.getElementById(formId);
   const gate = document.getElementById("li-gate");
   if (!form || !gate) return;
 
   const signInBtn = document.getElementById("li-signin-btn");
   const errorEl = document.getElementById("li-error");
   const submitWrap = document.getElementById("submit-wrap");
-  const submitBtn = document.getElementById("f-submit-btn");
-  const photoBtn = document.querySelector(".photo-btn");
-  const photoPreview = document.getElementById("photo-preview");
-  const photoFilename = document.getElementById("photo-filename");
+  const submitBtn = document.getElementById(submitBtnId);
 
   function setLocked(locked) {
     form.querySelectorAll("input, select, textarea, button").forEach(el => {
       if (el === submitBtn || el.closest("#li-gate")) return;
       el.disabled = locked;
     });
-    if (photoBtn) photoBtn.classList.toggle("is-locked", locked);
     submitWrap.classList.toggle("locked", locked);
     if (locked) submitBtn.setAttribute("aria-disabled", "true");
     else submitBtn.removeAttribute("aria-disabled");
+    if (onLocked) onLocked(locked);
   }
 
   setLocked(true);
@@ -544,37 +547,29 @@ function initLinkedInGate() {
 
   function startSignIn() {
     errorEl.hidden = true;
-    const state = crypto.randomUUID();
-    sessionStorage.setItem("li_oauth_state", state);
+    const nonce = crypto.randomUUID();
+    sessionStorage.setItem("li_oauth_state", nonce);
     const redirectUri = `${window.location.origin}/api/linkedin-callback`;
     const params = new URLSearchParams({
       response_type: "code",
       client_id: LINKEDIN_CLIENT_ID,
       redirect_uri: redirectUri,
       scope: "openid profile email",
-      state
+      state: `${nonce}:${page}`
     });
     window.location.href = `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
   }
 
   signInBtn.addEventListener("click", startSignIn);
 
-  function applyProfile(profile) {
-    document.getElementById("f-name").value = profile.name || "";
-    document.getElementById("f-email").value = profile.email || "";
-    if (profile.picture) {
-      photoPreview.innerHTML = `<img src="${profile.picture}" alt="">`;
-      photoFilename.textContent = "Using your LinkedIn photo — choose a file to replace it.";
-    }
-    setLocked(false);
-    gate.innerHTML = `<div class="li-badge"><span class="li-badge-check">&check;</span> Verified as ${escapeHTML(profile.name || "LinkedIn member")} via LinkedIn</div>`;
-  }
-
   async function completeSignIn() {
     try {
       const resp = await fetch("/api/linkedin-profile", { credentials: "same-origin" });
       if (!resp.ok) throw new Error("not verified");
-      applyProfile(await resp.json());
+      const profile = await resp.json();
+      setLocked(false);
+      gate.innerHTML = `<div class="li-badge"><span class="li-badge-check">&check;</span> Verified as ${escapeHTML(profile.name || "LinkedIn member")} via LinkedIn</div>`;
+      if (onVerified) onVerified(profile);
     } catch (err) {
       showError();
     }
@@ -602,9 +597,42 @@ function initLinkedInGate() {
   completeSignIn();
 }
 
+function initApplyLinkedInGate() {
+  initLinkedInGate({
+    page: "apply",
+    formId: "apply-form",
+    submitBtnId: "f-submit-btn",
+    onLocked(locked) {
+      const photoBtn = document.querySelector(".photo-btn");
+      if (photoBtn) photoBtn.classList.toggle("is-locked", locked);
+    },
+    onVerified(profile) {
+      document.getElementById("f-name").value = profile.name || "";
+      document.getElementById("f-email").value = profile.email || "";
+      if (profile.picture) {
+        document.getElementById("photo-preview").innerHTML = `<img src="${profile.picture}" alt="">`;
+        document.getElementById("photo-filename").textContent = "Using your LinkedIn photo — choose a file to replace it.";
+      }
+    }
+  });
+}
+
+function initRecommendLinkedInGate() {
+  initLinkedInGate({
+    page: "recommend",
+    formId: "recommend-form",
+    submitBtnId: "r-submit-btn",
+    onVerified(profile) {
+      document.getElementById("r-your-name").value = profile.name || "";
+      document.getElementById("r-your-email").value = profile.email || "";
+    }
+  });
+}
+
 // ---------- Recommend page ----------
 // Same no-backend stub pattern as initApply(): validate, log, swap to a
-// confirmation state.
+// confirmation state. Gated behind initRecommendLinkedInGate() — yourName/
+// yourEmail arrive pre-filled (and read-only) from the verified profile.
 
 function initRecommend() {
   const form = document.getElementById("recommend-form");
@@ -612,13 +640,16 @@ function initRecommend() {
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
+
+    const submitBtn = document.getElementById("r-submit-btn");
+    if (submitBtn && submitBtn.getAttribute("aria-disabled") === "true") return;
+
     form.classList.add("was-validated");
     if (!form.reportValidity()) return;
 
     const data = new FormData(form);
     const recommendation = {
       candidateLinkedin: data.get("candidateLinkedin").trim(),
-      candidateName: data.get("candidateName").trim(),
       reason: data.get("reason").trim(),
       yourName: data.get("yourName").trim(),
       yourEmail: data.get("yourEmail").trim(),
