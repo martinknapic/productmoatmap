@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="face-top" x1="23" y1="55" x2="177" y2="55" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#bfe6fd"/>
+      <stop offset="1" stop-color="#7db8f5"/>
+    </linearGradient>
+    <linearGradient id="face-right" x1="100" y1="100" x2="177" y2="145" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6f8ff8"/>
+      <stop offset="1" stop-color="#8a6df2"/>
+    </linearGradient>
+    <linearGradient id="face-left" x1="23" y1="55" x2="100" y2="190" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6a5cec"/>
+      <stop offset="1" stop-color="#5237c4"/>
+    </linearGradient>
+  </defs>
+
+  <polygon points="100,10 177,55 100,100 23,55" fill="url(#face-top)"/>
+  <polygon points="177,55 177,145 100,190 100,100" fill="url(#face-right)"/>
+  <polygon points="23,55 100,100 100,190 23,145" fill="url(#face-left)"/>
+
+  <path d="M100,100 L177,55 M100,100 L100,190 M100,100 L23,55" stroke="#2c1f7a" stroke-opacity="0.18" stroke-width="2"/>
+
+  <path d="M60,75 L100,100 L100,145 L138,168" fill="none" stroke="#eef4ff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+</svg>
