@@ -155,24 +155,60 @@ LinkedIn rejects callbacks to unregistered URIs.
       photo" to upload a different image and confirm it replaces the LinkedIn photo in
       the preview.
 
+## Backoffice login (`/backoffice`)
+
+The backoffice used to gate itself with a hardcoded username/password checked in
+client-side JS — real applicant data was never meant to sit behind that. It's now real
+LinkedIn sign-in, restricted by an allow-list to just the email(s) you configure, with
+a server-enforced session (not just a client-side check).
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `backoffice/index.html` | Login page — "Sign in with LinkedIn" button, no more password form |
+| `assets/backoffice.js` | `initBackofficeLogin()` (starts the OAuth redirect) / `boCurrentGuard()` (fetches identity, wires sign-out) |
+| `api/backoffice-callback.js` | Vercel Function — OAuth callback; checks the verified email against `BACKOFFICE_ALLOWED_EMAIL`, issues a signed session cookie |
+| `api/backoffice-me.js` | Returns the current session's name/email as JSON, for the "Logged in as …" display |
+| `api/backoffice-logout.js` | Clears the session cookie |
+| `middleware.js` | Vercel Routing Middleware — checks the session cookie **before** serving `applications.html`, `recommendations.html`, or `profiles.html`, redirecting to the login page otherwise. This is the actual security boundary; `assets/backoffice.js`'s own check is just for UI (who's logged in, wiring sign-out) |
+| `package.json` | Exists only to install `@vercel/functions`, which `middleware.js` needs for its `next()` pass-through helper — Vercel's framework-agnostic Routing Middleware API requires it. Nothing else about the site gets a build step; every other page is still plain static HTML/CSS/JS |
+
+Reuses the same LinkedIn app/credentials as the Apply page's verification gate (same
+`LINKEDIN_CLIENT_ID` / `LINKEDIN_CLIENT_SECRET`) — no new LinkedIn app needed. Add
+`https://www.productmoat.com/api/backoffice-callback` to that app's authorized redirect
+URLs alongside the existing `/api/linkedin-callback` one.
+
+### Required environment variable
+
+| Variable | Value |
+|----------|-------|
+| `BACKOFFICE_ALLOWED_EMAIL` | The email address your LinkedIn account uses (comma-separate if you ever add a co-admin). Anyone who signs in with a different LinkedIn account gets bounced back to the login page with "not authorized," even though they successfully authenticated |
+
+Session cookies are signed with the existing `LINKEDIN_CLIENT_SECRET` (no new secret
+needed) and last 7 days.
+
 ## Run locally
 
 ```bash
 python3 -m http.server 8765
 ```
 
-Then open http://localhost:8765. Note: the LinkedIn sign-in flow needs the `/api`
-functions, which a plain static server can't run — use `vercel dev` (or a Preview
-deployment) to test that part end-to-end.
+Then open http://localhost:8765. Note: the LinkedIn sign-in flow (both the Apply page
+and the backoffice) needs the `/api` functions and `middleware.js`, which a plain static
+server can't run — use `vercel dev` (or a Preview deployment) to test those parts
+end-to-end.
 
 ## Deploy to productmoat.com
 
-It's a static site with two small serverless functions — deploy the whole repo
-(`index.html`, `person.html`, `map.html`, `apply.html`, `style.css`, `app.js`, `data.js`,
-the `assets/` folder, and `api/`) to Vercel. No build step or npm dependencies are
-required; Vercel picks up `api/*.js` as Node.js Functions automatically. Set the two
-environment variables described above before the LinkedIn sign-in flow will work — every
-other page stays fully static with no server code or environment variables needed.
+It's a static site with a handful of small serverless functions and one Edge Middleware
+— deploy the whole repo (`index.html`, `person.html`, `map.html`, `apply.html`,
+`backoffice/`, `style.css`, `app.js`, `data.js`, the `assets/` folder, `api/`,
+`middleware.js`, and `package.json`) to Vercel. Vercel runs `npm install` for the one
+middleware dependency and picks up `api/*.js` as Node.js Functions automatically — there's
+still no build step for the site itself. Set the three environment variables described
+above before the LinkedIn sign-in flows will work — every page's actual content stays
+fully static.
 
 Note: the basemap uses Carto's free tile service, which is fine for light/demo use.
 For a high-traffic production site, consider a MapTiler key or self-hosted tiles.

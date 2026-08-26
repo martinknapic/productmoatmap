@@ -1,0 +1,9 @@
+{
+  "name": "productmoatmap",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Static site — this package.json exists only to declare @vercel/functions, required by middleware.js's Routing Middleware API. No build step; the site itself stays plain HTML/CSS/JS.",
+  "dependencies": {
+    "@vercel/functions": "^3.9.5"
+  }
+}

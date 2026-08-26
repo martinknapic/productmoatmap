@@ -1,12 +1,13 @@
 // ProductMoat Backoffice — login gate + applications/recommendations tables
 //
-// This is a client-side-only placeholder: the "auth" here is a hardcoded credential
-// check plus a sessionStorage flag. It keeps a casual visitor out; it does not stop
-// anyone who reads the page source. Do not rely on this once real applicant data
-// lives here — swap in real server-side auth first.
+// Login is real LinkedIn OAuth (same app as the public Apply form's verification
+// gate), checked server-side against an allow-list — see api/backoffice-callback.js.
+// The session itself is an HttpOnly signed cookie; middleware.js enforces access to
+// the dashboard pages at the edge, before they're ever served, so this file's own
+// checks are for display/UX (who's logged in, wiring sign-out) rather than the
+// security boundary.
 
-const BO_CREDENTIALS = { username: "martin", password: "productmoat" };
-const BO_SESSION_KEY = "bo-authed";
+const BACKOFFICE_LINKEDIN_CLIENT_ID = "778t1x9svtemxo"; // same LinkedIn app as apply.html
 const BO_HIDDEN_KEY = "bo-hidden-ids";
 const BO_STATUS_KEY = "bo-status-overrides";
 const BO_APPLICATION_STATUSES = ["pending", "accepted", "rejected"];
@@ -21,10 +22,6 @@ function boEscapeHTML(str) {
   const div = document.createElement("div");
   div.textContent = str == null ? "" : String(str);
   return div.innerHTML;
-}
-
-function boIsAuthed() {
-  return sessionStorage.getItem(BO_SESSION_KEY) === "true";
 }
 
 function boGetHiddenIds() {
@@ -55,47 +52,53 @@ function boSetStatus(id, status) {
   localStorage.setItem(BO_STATUS_KEY, JSON.stringify(overrides));
 }
 
-function boCurrentGuard() {
-  if (!boIsAuthed()) {
-    location.replace("index.html");
-    return false;
-  }
-  const userEl = document.getElementById("bo-user");
-  if (userEl) userEl.textContent = `Logged in as ${sessionStorage.getItem("bo-user") || "—"}`;
+async function boCurrentGuard() {
   const logoutBtn = document.getElementById("bo-logout");
   if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
-      sessionStorage.removeItem(BO_SESSION_KEY);
-      sessionStorage.removeItem("bo-user");
-      location.href = "index.html";
+      location.href = "/api/backoffice-logout";
     });
   }
-  return true;
+
+  try {
+    const resp = await fetch("/api/backoffice-me", { credentials: "same-origin" });
+    if (!resp.ok) throw new Error("not authenticated");
+    const me = await resp.json();
+    const userEl = document.getElementById("bo-user");
+    if (userEl) userEl.textContent = `Logged in as ${me.name || me.email}`;
+    return true;
+  } catch (err) {
+    location.replace("index.html");
+    return false;
+  }
 }
 
 // ---------- Login page ----------
 
 function initBackofficeLogin() {
-  if (boIsAuthed()) {
-    location.replace("applications.html");
-    return;
+  const btn = document.getElementById("bo-li-signin-btn");
+  const error = document.getElementById("bo-login-error");
+  if (!btn) return;
+
+  const params = new URLSearchParams(window.location.search);
+  const bo = params.get("bo");
+  if (bo) {
+    history.replaceState(null, "", window.location.pathname);
+    error.textContent = bo === "unauthorized"
+      ? "This LinkedIn account isn't authorized for backoffice access."
+      : "LinkedIn sign-in didn't go through — try again.";
+    error.hidden = false;
   }
 
-  const form = document.getElementById("bo-login-form");
-  const error = document.getElementById("bo-login-error");
-
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const username = document.getElementById("bo-username").value.trim();
-    const password = document.getElementById("bo-password").value;
-
-    if (username === BO_CREDENTIALS.username && password === BO_CREDENTIALS.password) {
-      sessionStorage.setItem(BO_SESSION_KEY, "true");
-      sessionStorage.setItem("bo-user", username);
-      location.href = "applications.html";
-    } else {
-      error.hidden = false;
-    }
+  btn.addEventListener("click", () => {
+    const redirectUri = `${window.location.origin}/api/backoffice-callback`;
+    const authParams = new URLSearchParams({
+      response_type: "code",
+      client_id: BACKOFFICE_LINKEDIN_CLIENT_ID,
+      redirect_uri: redirectUri,
+      scope: "openid profile email"
+    });
+    window.location.href = `https://www.linkedin.com/oauth/v2/authorization?${authParams.toString()}`;
   });
 }
 
@@ -245,8 +248,8 @@ function boRenderApplications() {
   `, { bodyId: "bo-applications-body", countId: "bo-app-count", emptyId: "bo-applications-empty", paginationId: "bo-applications-pagination" });
 }
 
-function initBackofficeApplications() {
-  if (!boCurrentGuard()) return;
+async function initBackofficeApplications() {
+  if (!(await boCurrentGuard())) return;
   boRenderApplications();
   boWireRowActions(boRenderApplications);
   boWirePaginationControls({ applications: boRenderApplications });
@@ -274,8 +277,8 @@ function boRenderRecommendations() {
   `, { bodyId: "bo-recommendations-body", countId: "bo-rec-count", emptyId: "bo-recommendations-empty", paginationId: "bo-recommendations-pagination" });
 }
 
-function initBackofficeRecommendations() {
-  if (!boCurrentGuard()) return;
+async function initBackofficeRecommendations() {
+  if (!(await boCurrentGuard())) return;
   boRenderRecommendations();
   boWireRowActions(boRenderRecommendations);
   boWirePaginationControls({ recommendations: boRenderRecommendations });
@@ -321,8 +324,8 @@ function boRenderProfiles() {
   }, { bodyId: "bo-profiles-body", countId: "bo-profile-count", emptyId: "bo-profiles-empty", paginationId: "bo-profiles-pagination" });
 }
 
-function initBackofficeProfiles() {
-  if (!boCurrentGuard()) return;
+async function initBackofficeProfiles() {
+  if (!(await boCurrentGuard())) return;
   boRenderProfiles();
   boWirePaginationControls({ profiles: boRenderProfiles });
 }
