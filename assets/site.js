@@ -398,50 +398,9 @@ function formatDate(iso) {
 // (see assets/people-data.js) plus private contact fields, logs it for whoever's
 // wiring up the real submission handler, and swaps in a confirmation state.
 
-function qaRowTemplate(list) {
-  const row = document.createElement("div");
-  row.className = "qa-form-item";
-  row.innerHTML = `
-    <div class="qa-form-item-head">
-      <span class="hint-inline">Question ${list.children.length + 1}</span>
-      <button type="button" class="qa-remove">[ Remove ]</button>
-    </div>
-    <div class="form-field full">
-      <label>Question</label>
-      <input type="text" class="qa-q" placeholder="A question you'd want to be asked">
-    </div>
-    <div class="form-field full">
-      <label>Your answer</label>
-      <textarea class="qa-a" rows="3" placeholder="A few sentences in your own words"></textarea>
-    </div>
-  `;
-  row.querySelector(".qa-remove").addEventListener("click", () => {
-    row.remove();
-    renumberQaRows(list);
-  });
-  return row;
-}
-
-function renumberQaRows(list) {
-  list.querySelectorAll(".qa-form-item").forEach((row, i) => {
-    row.querySelector(".qa-form-item-head .hint-inline").textContent = `Question ${i + 1}`;
-  });
-}
-
 function initApply() {
   const form = document.getElementById("apply-form");
   if (!form) return;
-
-  const qaLists = new Map();
-  form.querySelectorAll("[data-qa-list]").forEach(list => {
-    const sectionId = list.dataset.qaList;
-    qaLists.set(sectionId, list);
-    list.appendChild(qaRowTemplate(list));
-  });
-  form.querySelectorAll("[data-qa-add]").forEach(btn => {
-    const list = qaLists.get(btn.dataset.qaAdd);
-    btn.addEventListener("click", () => list.appendChild(qaRowTemplate(list)));
-  });
 
   const snippet = document.getElementById("f-snippet");
   const counter = document.getElementById("snippet-counter");
@@ -489,18 +448,6 @@ function initApply() {
       },
       snippet: data.get("snippet").trim(),
       pullQuote: data.get("pullQuote").trim(),
-      sections: [...qaLists.entries()]
-        .map(([id, list]) => ({
-          id,
-          title: (SECTION_TITLES && SECTION_TITLES[id]) || id,
-          questions: [...list.querySelectorAll(".qa-form-item")]
-            .map(row => ({
-              q: row.querySelector(".qa-q").value.trim(),
-              a: row.querySelector(".qa-a").value.trim()
-            }))
-            .filter(qa => qa.q || qa.a)
-        }))
-        .filter(section => section.questions.length > 0),
       photoFileName: photoInput.files[0] ? photoInput.files[0].name : null,
       contactEmail: data.get("contactEmail").trim(),
       contactPhone: data.get("contactPhone").trim()
