@@ -458,6 +458,10 @@ function initApply() {
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
+
+    const submitBtn = document.getElementById("f-submit-btn");
+    if (submitBtn && submitBtn.getAttribute("aria-disabled") === "true") return;
+
     form.classList.add("was-validated");
     if (!form.reportValidity()) return;
 
@@ -499,6 +503,103 @@ function initApply() {
     document.getElementById("apply-success").hidden = false;
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
+}
+
+// ---------- LinkedIn verification gate (apply.html) ----------
+// The Client ID is public by design — LinkedIn OAuth apps embed it in frontend
+// code, only the Client Secret is sensitive (it lives in Vercel env vars and is
+// used exclusively by the /api/linkedin-callback function). Replace this with
+// your app's Client ID from https://www.linkedin.com/developers/apps.
+const LINKEDIN_CLIENT_ID = "778t1x9svtemxo";
+
+function initLinkedInGate() {
+  const form = document.getElementById("apply-form");
+  const gate = document.getElementById("li-gate");
+  if (!form || !gate) return;
+
+  const signInBtn = document.getElementById("li-signin-btn");
+  const errorEl = document.getElementById("li-error");
+  const submitWrap = document.getElementById("submit-wrap");
+  const submitBtn = document.getElementById("f-submit-btn");
+  const photoBtn = document.querySelector(".photo-btn");
+  const photoPreview = document.getElementById("photo-preview");
+  const photoFilename = document.getElementById("photo-filename");
+
+  function setLocked(locked) {
+    form.querySelectorAll("input, select, textarea, button").forEach(el => {
+      if (el === submitBtn || el.closest("#li-gate")) return;
+      el.disabled = locked;
+    });
+    if (photoBtn) photoBtn.classList.toggle("is-locked", locked);
+    submitWrap.classList.toggle("locked", locked);
+    if (locked) submitBtn.setAttribute("aria-disabled", "true");
+    else submitBtn.removeAttribute("aria-disabled");
+  }
+
+  setLocked(true);
+
+  function showError() {
+    errorEl.hidden = false;
+  }
+
+  function startSignIn() {
+    errorEl.hidden = true;
+    const state = crypto.randomUUID();
+    sessionStorage.setItem("li_oauth_state", state);
+    const redirectUri = `${window.location.origin}/api/linkedin-callback`;
+    const params = new URLSearchParams({
+      response_type: "code",
+      client_id: LINKEDIN_CLIENT_ID,
+      redirect_uri: redirectUri,
+      scope: "openid profile email",
+      state
+    });
+    window.location.href = `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
+  }
+
+  signInBtn.addEventListener("click", startSignIn);
+
+  function applyProfile(profile) {
+    document.getElementById("f-name").value = profile.name || "";
+    document.getElementById("f-email").value = profile.email || "";
+    if (profile.picture) {
+      photoPreview.innerHTML = `<img src="${profile.picture}" alt="">`;
+      photoFilename.textContent = "Using your LinkedIn photo — choose a file to replace it.";
+    }
+    setLocked(false);
+    gate.innerHTML = `<div class="li-badge"><span class="li-badge-check">&check;</span> Verified as ${escapeHTML(profile.name || "LinkedIn member")} via LinkedIn</div>`;
+  }
+
+  async function completeSignIn() {
+    try {
+      const resp = await fetch("/api/linkedin-profile", { credentials: "same-origin" });
+      if (!resp.ok) throw new Error("not verified");
+      applyProfile(await resp.json());
+    } catch (err) {
+      showError();
+    }
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const li = params.get("li");
+  if (!li) return;
+
+  const returnedState = params.get("state");
+  history.replaceState(null, "", window.location.pathname);
+
+  if (li !== "ok") {
+    showError();
+    return;
+  }
+
+  const expectedState = sessionStorage.getItem("li_oauth_state");
+  sessionStorage.removeItem("li_oauth_state");
+  if (!returnedState || returnedState !== expectedState) {
+    showError();
+    return;
+  }
+
+  completeSignIn();
 }
 
 // ---------- Recommend page ----------
