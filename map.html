@@ -7,9 +7,9 @@
   <title>ProductMoat — Product People Around the World</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css">
-  <link rel="stylesheet" href="assets/swiss.css?v=14">
+  <link rel="stylesheet" href="assets/swiss.css?v=15">
   <link rel="stylesheet" href="assets/site.css?v=25">
-  <link rel="stylesheet" href="style.css?v=14">
+  <link rel="stylesheet" href="style.css?v=15">
 </head>
 <body class="map-page">
   <nav class="nav">
@@ -19,10 +19,12 @@
         <a href="index.html#directory">Interviews</a>
         <a href="map.html">Map</a>
         <a href="calendar.html">Calendar</a>
-        <a href="about.html">About</a>
         <a href="apply.html">Apply</a>
       </div>
-      <button class="theme-btn" id="theme-btn" onclick="toggleMapTheme()">LIGHT</button>
+      <div class="nav-right">
+        <a class="btn btn-primary nav-cta" href="join-map.html">Put yourself on the map</a>
+        <button class="theme-btn" id="theme-btn" onclick="toggleMapTheme()">LIGHT</button>
+      </div>
     </div>
   </nav>
 
@@ -31,7 +33,6 @@
       <div class="map-tagline">Product people around the world</div>
       <div class="map-stats" id="stats"></div>
       <div class="map-hint" id="hint">Drag to spin the globe &middot; Scroll to zoom &middot; Click a cluster to dive in</div>
-      <a class="btn btn-primary map-cta" href="join-map.html">Put yourself on the map</a>
     </div>
   </div>
 
@@ -40,7 +41,7 @@
   </div>
 
   <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
-  <script src="assets/site.js?v=20"></script>
+  <script src="assets/site.js?v=21"></script>
   <script src="assets/people-data.js?v=11"></script>
   <script>initTheme();</script>
   <script>

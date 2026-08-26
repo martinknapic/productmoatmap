@@ -63,10 +63,22 @@ body.map-page {
 }
 .map-hint.hidden { opacity: 0; }
 
-.map-cta {
-  padding: 10px 18px;
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.nav-cta {
+  padding: 9px 16px;
   font-size: 12.5px;
   flex-shrink: 0;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .nav-cta { display: none; }
 }
 
 /* ---------- Avatar markers on the globe ---------- */

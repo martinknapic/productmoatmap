@@ -109,15 +109,17 @@ ul { list-style: none; }
 .nav-links a:hover { color: var(--ink); border-bottom-color: var(--ink); }
 
 .theme-btn {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
   border: 1px solid var(--line);
-  padding: 8px 14px;
   transition: background 0.15s ease, color 0.15s ease;
 }
 .theme-btn:hover { background: var(--ink); color: var(--paper); }
+.theme-btn svg { display: block; }
 
 /* ---------- Buttons ---------- */
 
