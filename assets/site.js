@@ -909,6 +909,16 @@ function calRenderCell(week, today, interview) {
     bodyHTML = `<div class="cal-empty"><span class="cal-empty-label">Open</span></div>`;
   }
 
+  // Only an "open" week (current or future, nothing published for it yet) is
+  // actually available to apply for or recommend someone into — a published
+  // week is already taken, and a past "gap" week can't be filled retroactively.
+  const hoverHTML = status === "open"
+    ? `<div class="cal-hover">
+        <a class="cal-hover-btn" href="apply.html">Apply</a>
+        <a class="cal-hover-btn" href="recommend.html">Recommend</a>
+      </div>`
+    : "";
+
   return `
     <td class="cal-cell" data-status="${status}"${isCurrent ? ' data-current="true"' : ""}>
       <div class="cal-cell-inner">
@@ -918,10 +928,7 @@ function calRenderCell(week, today, interview) {
         </div>
         ${bodyHTML}
       </div>
-      <div class="cal-hover">
-        <a class="cal-hover-btn" href="apply.html">Apply</a>
-        <a class="cal-hover-btn" href="recommend.html">Recommend</a>
-      </div>
+      ${hoverHTML}
     </td>`;
 }
 
