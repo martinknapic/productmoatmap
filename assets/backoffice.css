@@ -264,7 +264,7 @@
 }
 .bo-status-select:focus { outline: none; border-color: var(--ink); }
 
-.bo-status-accepted, .bo-status-contacted { border-color: var(--ink); color: var(--ink); font-weight: 700; }
+.bo-status-accepted, .bo-status-contacted, .bo-status-approved { border-color: var(--ink); color: var(--ink); font-weight: 700; }
 .bo-status-rejected, .bo-status-declined { color: var(--ink-dim); }
 
 @media (max-width: 860px) {

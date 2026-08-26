@@ -21,7 +21,7 @@ const COOKIE_TTL_SECONDS = 300; // just long enough to survive the redirect + pr
 // param as `<nonce>:<page>` (the nonce is still what's checked for CSRF,
 // client-side). Whitelisted here so this can't be turned into an open
 // redirect by a crafted state value.
-const ALLOWED_PAGES = new Set(["apply", "recommend"]);
+const ALLOWED_PAGES = new Set(["apply", "recommend", "join-map"]);
 
 function parseState(rawState) {
   if (typeof rawState !== "string") return { nonce: null, page: "apply" };

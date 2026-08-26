@@ -329,3 +329,85 @@ async function initBackofficeProfiles() {
   boRenderProfiles();
   boWirePaginationControls({ profiles: boRenderProfiles });
 }
+
+// ---------- Map submissions page ----------
+// Unlike Applications/Recommendations (dummy client-side data with localStorage
+// overrides), this is real data — read and written via api/map-submissions.js,
+// backed by Vercel Blob. Approving here is what makes a pin show up on the
+// public globe (api/map-people.js only returns status:"approved" records).
+
+let boMapSubmissions = [];
+
+function boMapAvatarHTML(s) {
+  if (s.picture) return `<div class="avatar"><img src="${boEscapeHTML(s.picture)}" alt="${boEscapeHTML(s.name)}"></div>`;
+  return `<div class="avatar">${boEscapeHTML(boInitials(s.name))}</div>`;
+}
+
+function boMapStatusSelect(id, currentStatus) {
+  const opts = ["pending", "approved", "rejected"].map(s =>
+    `<option value="${s}"${s === currentStatus ? " selected" : ""}>${s.charAt(0).toUpperCase() + s.slice(1)}</option>`
+  ).join("");
+  return `<select class="bo-status-select bo-status-${boEscapeHTML(currentStatus)}" data-map-status-id="${boEscapeHTML(id)}">${opts}</select>`;
+}
+
+function boRenderMapSubmissions() {
+  boPaginate("map-submissions", boMapSubmissions, s => `
+    <tr data-id="${boEscapeHTML(s.id)}">
+      <td>${boMapAvatarHTML(s)}</td>
+      <td class="bo-cell-strong">${boEscapeHTML(s.name)}</td>
+      <td>${boEscapeHTML(s.email)}</td>
+      <td>${boEscapeHTML(s.role) || "—"}<br><span class="bo-cell-dim">${boEscapeHTML(s.company)}</span></td>
+      <td>${boEscapeHTML([s.city, s.country].filter(Boolean).join(", ")) || "—"}</td>
+      <td>${s.lat.toFixed(2)}, ${s.lng.toFixed(2)}</td>
+      <td>${boEscapeHTML(new Date(s.submittedAt).toLocaleString())}</td>
+      <td>${boMapStatusSelect(s.id, s.status)}</td>
+    </tr>
+  `, { bodyId: "bo-map-submissions-body", countId: "bo-map-count", emptyId: "bo-map-submissions-empty", paginationId: "bo-map-submissions-pagination" });
+}
+
+async function boSetMapSubmissionStatus(id, status) {
+  try {
+    const resp = await fetch("/api/map-submissions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ id, status })
+    });
+    if (!resp.ok) throw new Error("update failed");
+    const submission = boMapSubmissions.find(s => s.id === id);
+    if (submission) submission.status = status;
+  } catch (err) {
+    console.error("Failed to update map submission status:", err);
+    boRenderMapSubmissions(); // revert the <select> back to its last known-good state
+  }
+}
+
+let boMapStatusWired = false;
+function boWireMapSubmissionActions() {
+  if (boMapStatusWired) return;
+  boMapStatusWired = true;
+  document.addEventListener("change", (e) => {
+    const select = e.target.closest("[data-map-status-id]");
+    if (!select) return;
+    select.className = `bo-status-select bo-status-${select.value}`;
+    boSetMapSubmissionStatus(select.dataset.mapStatusId, select.value);
+  });
+}
+
+async function initBackofficeMapSubmissions() {
+  if (!(await boCurrentGuard())) return;
+  boWireMapSubmissionActions();
+  boWirePaginationControls({ "map-submissions": boRenderMapSubmissions });
+
+  try {
+    const resp = await fetch("/api/map-submissions", { credentials: "same-origin" });
+    if (!resp.ok) throw new Error("list failed");
+    boMapSubmissions = await resp.json();
+    boRenderMapSubmissions();
+  } catch (err) {
+    console.error("Failed to load map submissions:", err);
+    document.getElementById("bo-map-submissions-empty").hidden = true;
+    const errorEl = document.getElementById("bo-map-submissions-error");
+    if (errorEl) errorEl.hidden = false;
+  }
+}

@@ -2,3 +2,4 @@
 *.log
 .env
 Vercel backup codes/
+node_modules/

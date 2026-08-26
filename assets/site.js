@@ -663,3 +663,179 @@ function initRecommend() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 }
+
+// ---------- Put yourself on the map (join-map.html) ----------
+// Unlike initLinkedInGate() (used by apply/recommend, which locks the *form*
+// until LinkedIn verification), this page runs the gate in the opposite
+// order: the visitor must drop a pin on the mini map first, which is what
+// unlocks the "Sign in with LinkedIn" button. Verifying pulls their name,
+// email and photo from LinkedIn, and only then does the final submit button
+// unlock — see api/join-map.js for where that combined data actually lands.
+
+const JM_MAP_STYLES = {
+  dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
+  light: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+};
+
+function jmInitials(name) {
+  return (name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("");
+}
+
+function initJoinMap() {
+  const mapEl = document.getElementById("jm-picker-map");
+  if (!mapEl || typeof maplibregl === "undefined") return;
+
+  const hint = document.getElementById("jm-picker-hint");
+  const signinWrap = document.getElementById("jm-signin-wrap");
+  const signinBtn = document.getElementById("li-signin-btn");
+  const gate = document.getElementById("li-gate");
+  const errorEl = document.getElementById("li-error");
+  const preview = document.getElementById("jm-preview");
+  const submitWrap = document.getElementById("jm-submit-wrap");
+  const submitBtn = document.getElementById("jm-submit-btn");
+  const submitError = document.getElementById("jm-submit-error");
+
+  let picked = null; // { lat, lng }
+  let profile = null; // { name, email, picture }
+  let marker = null;
+
+  const theme = document.body.classList.contains("light") ? "light" : "dark";
+  const picker = new maplibregl.Map({
+    container: "jm-picker-map",
+    style: JM_MAP_STYLES[theme],
+    center: [8.2, 30],
+    zoom: 1.3,
+    attributionControl: { compact: true }
+  });
+  picker.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), "top-right");
+
+  function setLockAttr(el, wrap, locked) {
+    if (locked) el.setAttribute("aria-disabled", "true");
+    else el.removeAttribute("aria-disabled");
+    wrap.classList.toggle("locked", locked);
+  }
+
+  function refreshLocks() {
+    setLockAttr(signinBtn, signinWrap, !picked);
+    setLockAttr(submitBtn, submitWrap, !(picked && profile));
+  }
+
+  function setPicked(lngLat) {
+    picked = { lat: lngLat.lat, lng: lngLat.lng };
+    hint.textContent = `Pin set at ${picked.lat.toFixed(3)}, ${picked.lng.toFixed(3)} — drag it to adjust.`;
+    if (marker) {
+      marker.setLngLat(lngLat);
+    } else {
+      marker = new maplibregl.Marker({ draggable: true, color: "#e6432b" }).setLngLat(lngLat).addTo(picker);
+      marker.on("dragend", () => setPicked(marker.getLngLat()));
+    }
+    refreshLocks();
+  }
+
+  picker.on("click", (e) => setPicked(e.lngLat));
+  refreshLocks();
+
+  function startSignIn() {
+    if (signinBtn.getAttribute("aria-disabled") === "true" || !picked) return;
+    errorEl.hidden = true;
+    const nonce = crypto.randomUUID();
+    sessionStorage.setItem("li_oauth_state", nonce);
+    sessionStorage.setItem("jm_pin", JSON.stringify(picked));
+    const redirectUri = `${window.location.origin}/api/linkedin-callback`;
+    const params = new URLSearchParams({
+      response_type: "code",
+      client_id: LINKEDIN_CLIENT_ID,
+      redirect_uri: redirectUri,
+      scope: "openid profile email",
+      state: `${nonce}:join-map`
+    });
+    window.location.href = `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
+  }
+  signinBtn.addEventListener("click", startSignIn);
+
+  async function completeSignIn() {
+    try {
+      const resp = await fetch("/api/linkedin-profile", { credentials: "same-origin" });
+      if (!resp.ok) throw new Error("not verified");
+      profile = await resp.json();
+
+      gate.innerHTML = `<div class="li-badge"><span class="li-badge-check">&check;</span> Verified as ${escapeHTML(profile.name || "LinkedIn member")} via LinkedIn</div>`;
+
+      document.getElementById("jm-preview-avatar").innerHTML = profile.picture
+        ? `<img src="${profile.picture}" alt="">`
+        : `<div class="avatar">${escapeHTML(jmInitials(profile.name))}</div>`;
+      document.getElementById("jm-preview-name").textContent = profile.name || "";
+      document.getElementById("jm-preview-email").textContent = profile.email || "";
+      preview.hidden = false;
+
+      refreshLocks();
+    } catch (err) {
+      errorEl.hidden = false;
+    }
+  }
+
+  async function submitPin() {
+    if (submitBtn.getAttribute("aria-disabled") === "true" || !picked || !profile) return;
+    submitError.hidden = true;
+    submitBtn.setAttribute("aria-disabled", "true");
+    submitBtn.textContent = "Adding you…";
+
+    try {
+      const resp = await fetch("/api/join-map", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          name: profile.name,
+          email: profile.email,
+          picture: profile.picture,
+          city: document.getElementById("jm-city").value.trim(),
+          country: document.getElementById("jm-country").value.trim(),
+          role: document.getElementById("jm-role").value.trim(),
+          company: document.getElementById("jm-company").value.trim(),
+          lat: picked.lat,
+          lng: picked.lng
+        })
+      });
+      if (!resp.ok) throw new Error("submit failed");
+
+      document.querySelectorAll(".jm-step, .jm-preview, .form-submit-row").forEach(el => { el.hidden = true; });
+      document.getElementById("jm-success").hidden = false;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      submitError.hidden = false;
+      submitBtn.removeAttribute("aria-disabled");
+      submitBtn.textContent = "Add me to the map";
+    }
+  }
+  submitBtn.addEventListener("click", submitPin);
+
+  // Resume after the LinkedIn OAuth redirect back to this page.
+  const params = new URLSearchParams(window.location.search);
+  const li = params.get("li");
+  if (!li) return;
+
+  const returnedState = params.get("state");
+  history.replaceState(null, "", window.location.pathname);
+
+  const savedPin = sessionStorage.getItem("jm_pin");
+  sessionStorage.removeItem("jm_pin");
+  if (savedPin) {
+    try {
+      const parsed = JSON.parse(savedPin);
+      setPicked({ lat: parsed.lat, lng: parsed.lng });
+      picker.jumpTo({ center: [parsed.lng, parsed.lat], zoom: 3.5 });
+    } catch (err) { /* ignore malformed sessionStorage value */ }
+  }
+
+  const expectedState = sessionStorage.getItem("li_oauth_state");
+  sessionStorage.removeItem("li_oauth_state");
+
+  if (li !== "ok" || !returnedState || returnedState !== expectedState) {
+    errorEl.hidden = false;
+    return;
+  }
+
+  completeSignIn();
+}
+

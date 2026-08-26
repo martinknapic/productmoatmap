@@ -63,6 +63,12 @@ body.map-page {
 }
 .map-hint.hidden { opacity: 0; }
 
+.map-cta {
+  padding: 10px 18px;
+  font-size: 12.5px;
+  flex-shrink: 0;
+}
+
 /* ---------- Avatar markers on the globe ---------- */
 
 .person-marker {

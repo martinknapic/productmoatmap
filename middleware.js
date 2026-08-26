@@ -14,7 +14,8 @@ export const config = {
   matcher: [
     "/backoffice/applications.html",
     "/backoffice/recommendations.html",
-    "/backoffice/profiles.html"
+    "/backoffice/profiles.html",
+    "/backoffice/map-submissions.html"
   ]
 };
 

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
-  <title>Recommendations — ProductMoat Backoffice</title>
+  <title>Map submissions — ProductMoat Backoffice</title>
   <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
   <link rel="stylesheet" href="../assets/swiss.css?v=14">
   <link rel="stylesheet" href="../assets/backoffice.css?v=9">
@@ -15,8 +15,8 @@
       <div class="logo"><span class="logo-mark"></span>ProductMoat <span class="bo-nav-tag">Backoffice</span></div>
       <div class="bo-subnav">
         <a href="applications.html">Applications</a>
-        <a href="recommendations.html" class="bo-subnav-active">Recommendations</a>
-        <a href="map-submissions.html">Map submissions</a>
+        <a href="recommendations.html">Recommendations</a>
+        <a href="map-submissions.html" class="bo-subnav-active">Map submissions</a>
         <a href="profiles.html">Profiles</a>
       </div>
       <div class="bo-nav-right">
@@ -28,31 +28,32 @@
 
   <main class="wrap bo-main">
     <div class="bo-section-head">
-      <h2>Recommendations <span class="bo-count" id="bo-rec-count"></span></h2>
+      <h2>Map submissions <span class="bo-count" id="bo-map-count"></span></h2>
+      <p class="bo-section-note">"Put yourself on the map" pins, verified via LinkedIn. Approve to publish on the public globe.</p>
     </div>
     <div class="bo-table-wrap">
-      <table class="bo-table" id="bo-recommendations-table">
+      <table class="bo-table" id="bo-map-submissions-table">
         <thead>
           <tr>
             <th></th>
-            <th>Candidate</th>
-            <th>LinkedIn</th>
-            <th>Recommended by</th>
-            <th>Reason</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role / Company</th>
+            <th>Location</th>
+            <th>Pin</th>
             <th>Submitted</th>
             <th>Status</th>
-            <th></th>
           </tr>
         </thead>
-        <tbody id="bo-recommendations-body"></tbody>
+        <tbody id="bo-map-submissions-body"></tbody>
       </table>
-      <p class="bo-empty" id="bo-recommendations-empty" hidden>No recommendations.</p>
+      <p class="bo-empty" id="bo-map-submissions-empty" hidden>No submissions yet.</p>
+      <p class="bo-empty" id="bo-map-submissions-error" hidden>Couldn't load submissions — try refreshing.</p>
     </div>
-    <div class="bo-pagination" id="bo-recommendations-pagination"></div>
+    <div class="bo-pagination" id="bo-map-submissions-pagination"></div>
   </main>
 
-  <script src="../assets/backoffice-data.js?v=1"></script>
   <script src="../assets/backoffice.js?v=8"></script>
-  <script>initBackofficeRecommendations();</script>
+  <script>initBackofficeMapSubmissions();</script>
 </body>
 </html>

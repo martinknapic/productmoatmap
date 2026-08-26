@@ -11,6 +11,7 @@ feature — an interactive 3D globe of product people, at `map.html`.
 | `index.html` | Homepage — hero, stats, featured interview, filterable directory grid |
 | `person.html?slug=...` | Individual interview page — career snapshot, links, pull quote, Q&A, prev/next |
 | `map.html` | The interactive globe (see below) |
+| `join-map.html` | "Put yourself on the map" — pin picker + LinkedIn verification, feeds the globe (see below) |
 
 Both `index.html` and `person.html` are rendered client-side from `assets/people-data.js`
 by `assets/site.js`. No build step — plain static files.
@@ -79,6 +80,54 @@ Coordinates are resolved in this order: explicit `lng`/`lat` → `CITY_COORDS` �
 `COMPANY_HQ` → `COUNTRY_COORDS`. Add new cities/countries to those tables in `data.js`
 as the dataset grows. People in the same city are automatically spread apart slightly
 so they separate at high zoom.
+
+`app.js` also fetches `/api/map-people` on load and merges the result into the dataset
+before the globe renders — this is how approved "Put yourself on the map" submissions
+(see below) end up alongside `data.js`'s static entries, with no separate deploy needed.
+
+## Put yourself on the map (`join-map.html`)
+
+A public self-serve flow for visitors to add their own pin to the globe, linked from a
+"Put yourself on the map" button on `map.html`'s sub-header. The gate runs in the
+*opposite* order from Apply/Recommend below: the visitor must drop a pin on a small
+MapLibre picker first — that's what unlocks the "Sign in with LinkedIn" button, not the
+other way round. Verifying pulls their name/email/photo from LinkedIn (same
+`/api/linkedin-profile` handoff as Apply/Recommend); only then does the final "Add me to
+the map" button unlock. Submitting posts everything to `api/join-map.js`, which stores it
+as a **pending** record in Vercel Blob — nothing is public yet. A reviewer approves or
+rejects it from `/backoffice/map-submissions.html`, and only approved records are served
+back to the globe by `api/map-people.js`.
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `join-map.html` | Page markup — pin-picker map, location/role/company fields, `#li-gate`, profile preview, submit |
+| `assets/site.js` | `initJoinMap()` — pin picker, the inverted LinkedIn gate, and the final submit call, all specific to this page (doesn't reuse `initLinkedInGate()`, since the lock direction is reversed) |
+| `assets/site.css` | `.jm-*` — picker map sizing, profile preview card |
+| `api/join-map.js` | Vercel Function — validates and writes a new **pending** submission to Vercel Blob (`map-submissions/<id>.json`) |
+| `api/map-submissions.js` | Vercel Function, backoffice-only — lists all submissions (GET) and updates a submission's status (POST), for the moderation queue |
+| `api/map-people.js` | Vercel Function, public — returns only **approved** submissions, in the shape `app.js` expects; `app.js` fetches this on every globe load |
+| `backoffice/map-submissions.html` | Moderation queue — approve/reject each pin; unlike Applications/Recommendations this reads/writes real data, not dummy client-side records |
+
+`api/linkedin-callback.js`'s `ALLOWED_PAGES` whitelist includes `"join-map"` alongside
+`"apply"` and `"recommend"` so the shared OAuth callback knows to redirect back here.
+
+Submissions are written as **private** Vercel Blobs (`access: "private"`) rather than
+public ones, since each record holds an email address — they're only readable
+server-side, with `BLOB_READ_WRITE_TOKEN`, via the SDK's `get()`/`list()`, never through
+a bare public URL. `api/map-people.js` only ever forwards the public-facing fields
+(name, role, company, city, country, photo, lat/lng) to the globe — never the email.
+
+### Required environment variable
+
+| Variable | Value |
+|----------|-------|
+| `BLOB_READ_WRITE_TOKEN` | Added automatically once you connect a Vercel Blob store to this project (**Project → Storage → Create Database → Blob**) — the `@vercel/blob` SDK picks it up from the environment, no code changes needed |
+
+If this token isn't set, `api/join-map.js` fails closed (submissions return a 500) while
+`api/map-people.js` fails open (returns `[]`) — the globe keeps working with just its
+static dataset either way.
 
 ## LinkedIn verification on the Apply and Recommend pages (`apply.html`, `recommend.html`)
 
@@ -188,8 +237,9 @@ a server-enforced session (not just a client-side check).
 | `api/backoffice-callback.js` | Vercel Function — OAuth callback; checks the verified email against `BACKOFFICE_ALLOWED_EMAIL`, issues a signed session cookie |
 | `api/backoffice-me.js` | Returns the current session's name/email as JSON, for the "Logged in as …" display |
 | `api/backoffice-logout.js` | Clears the session cookie |
-| `middleware.js` | Vercel Routing Middleware — checks the session cookie **before** serving `applications.html`, `recommendations.html`, or `profiles.html`, redirecting to the login page otherwise. This is the actual security boundary; `assets/backoffice.js`'s own check is just for UI (who's logged in, wiring sign-out) |
-| `package.json` | Exists only to install `@vercel/functions`, which `middleware.js` needs for its `next()` pass-through helper — Vercel's framework-agnostic Routing Middleware API requires it. Nothing else about the site gets a build step; every other page is still plain static HTML/CSS/JS |
+| `backoffice/map-submissions.html` + `api/map-submissions.js` | The "Put yourself on the map" moderation queue — see that section above |
+| `middleware.js` | Vercel Routing Middleware — checks the session cookie **before** serving `applications.html`, `recommendations.html`, `map-submissions.html`, or `profiles.html`, redirecting to the login page otherwise. This is the actual security boundary; `assets/backoffice.js`'s own check is just for UI (who's logged in, wiring sign-out) |
+| `package.json` | Installs `@vercel/functions` (which `middleware.js` needs for its `next()` pass-through helper) and `@vercel/blob` (used by `api/join-map.js` and friends). Nothing else about the site gets a build step; every other page is still plain static HTML/CSS/JS |
 
 Reuses the same LinkedIn app/credentials as the Apply page's verification gate (same
 `LINKEDIN_CLIENT_ID` / `LINKEDIN_CLIENT_SECRET`) — no new LinkedIn app needed. Add
@@ -220,12 +270,13 @@ end-to-end.
 
 It's a static site with a handful of small serverless functions and one Edge Middleware
 — deploy the whole repo (`index.html`, `person.html`, `map.html`, `apply.html`,
-`backoffice/`, `style.css`, `app.js`, `data.js`, the `assets/` folder, `api/`,
-`middleware.js`, and `package.json`) to Vercel. Vercel runs `npm install` for the one
-middleware dependency and picks up `api/*.js` as Node.js Functions automatically — there's
-still no build step for the site itself. Set the three environment variables described
-above before the LinkedIn sign-in flows will work — every page's actual content stays
-fully static.
+`join-map.html`, `backoffice/`, `style.css`, `app.js`, `data.js`, the `assets/` folder,
+`api/`, `middleware.js`, and `package.json`) to Vercel. Vercel runs `npm install` for the
+middleware/storage dependencies and picks up `api/*.js` as Node.js Functions
+automatically — there's still no build step for the site itself. Set the environment
+variables described above (LinkedIn OAuth, `BACKOFFICE_ALLOWED_EMAIL`, and
+`BLOB_READ_WRITE_TOKEN`) before those flows will work — every page's actual content
+stays fully static.
 
 Note: the basemap uses Carto's free tile service, which is fine for light/demo use.
 For a high-traffic production site, consider a MapTiler key or self-hosted tiles.

@@ -73,35 +73,59 @@ function interviewToPersonShape(p) {
   };
 }
 
-const ALL_PEOPLE = PEOPLE.concat(
-  (typeof INTERVIEWS !== "undefined" ? INTERVIEWS : []).map(interviewToPersonShape)
-);
+// ---------- Merge in approved "Put yourself on the map" submissions ----------
+// Community pins (join-map.html -> api/join-map.js) only reach the globe after
+// a backoffice reviewer approves them — api/map-people.js only ever returns
+// status:"approved" records. Fails open to [] so the globe still renders the
+// static dataset if this fetch is slow, blocked, or Blob storage isn't set up.
+
+async function fetchCommunityPeople() {
+  try {
+    const resp = await fetch("/api/map-people");
+    if (!resp.ok) return [];
+    return await resp.json();
+  } catch (err) {
+    console.warn("Could not load community map submissions:", err);
+    return [];
+  }
+}
 
 // ---------- Data → GeoJSON ----------
+// Populated by initGlobe() once the community people fetch resolves; declared
+// here (rather than inside initGlobe) so the functions below that close over
+// them — setupMapLayers, syncMarkers, showSidePanel, etc. — can reference the
+// current values whenever they actually run (all of which is after initGlobe
+// has populated them).
 
-const features = [];
-const coordsByIndex = {};
+let ALL_PEOPLE = [];
+let features = [];
+let coordsByIndex = {};
 const countries = new Set();
 
-ALL_PEOPLE.forEach((person, i) => {
-  const base = resolveCoords(person);
-  if (!base) {
-    console.warn(`No coordinates found for ${person.name} — skipped.`);
-    return;
-  }
-  if (person.country) countries.add(person.country.trim().toLowerCase());
-  const coords = jitter(i, base);
-  coordsByIndex[i] = coords;
-  features.push({
-    type: "Feature",
-    id: i,
-    properties: { index: i },
-    geometry: { type: "Point", coordinates: coords }
-  });
-});
+function buildFeatures() {
+  features = [];
+  coordsByIndex = {};
+  countries.clear();
 
-const statsEl = document.getElementById("stats");
-statsEl.textContent = `${features.length} product people on the map`;
+  ALL_PEOPLE.forEach((person, i) => {
+    const base = resolveCoords(person);
+    if (!base) {
+      console.warn(`No coordinates found for ${person.name} — skipped.`);
+      return;
+    }
+    if (person.country) countries.add(person.country.trim().toLowerCase());
+    const coords = jitter(i, base);
+    coordsByIndex[i] = coords;
+    features.push({
+      type: "Feature",
+      id: i,
+      properties: { index: i },
+      geometry: { type: "Point", coordinates: coords }
+    });
+  });
+
+  document.getElementById("stats").textContent = `${features.length} product people on the map`;
+}
 
 // ---------- Map ----------
 
@@ -123,17 +147,7 @@ function getInitialZoom() {
   return 2.35;
 }
 
-const map = new maplibregl.Map({
-  container: "map",
-  style: STYLES[currentTheme],
-  center: [8.2, 30],
-  zoom: getInitialZoom(),
-  minZoom: 0.8,
-  maxZoom: 17,
-  attributionControl: { compact: true }
-});
-
-map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), "top-right");
+let map; // created in initGlobe(), once the community-people fetch resolves
 
 // ---------- Markers ----------
 
@@ -249,8 +263,6 @@ function setupMapLayers() {
   }
 }
 
-map.on("style.load", setupMapLayers);
-
 // ---------- Theme toggle ----------
 // toggleTheme() (from assets/site.js) flips the shared 'light' class + localStorage;
 // this wraps it to also restyle the map itself.
@@ -258,7 +270,7 @@ map.on("style.load", setupMapLayers);
 function toggleMapTheme() {
   toggleTheme();
   currentTheme = document.body.classList.contains("light") ? "light" : "dark";
-  map.setStyle(STYLES[currentTheme]);
+  if (map) map.setStyle(STYLES[currentTheme]);
 }
 
 // ---------- Side panel ----------
@@ -363,30 +375,58 @@ function spinGlobe() {
   map.easeTo({ center, duration: 100, easing: (t) => t });
 }
 
-map.on("moveend", () => spinGlobe());
+// ---------- Bring it all together ----------
+// Waits on fetchCommunityPeople() before the dataset (and therefore the map
+// itself) is finalized, so approved "Put yourself on the map" pins are part
+// of the globe from the very first render rather than appearing after a
+// second pass.
 
-["mousedown", "wheel", "touchstart", "dragstart"].forEach((evt) =>
-  map.on(evt, () => {
-    userInteracted = true;
-    document.getElementById("hint").classList.add("hidden");
-  })
-);
+async function initGlobe() {
+  const communityPeople = await fetchCommunityPeople();
+  ALL_PEOPLE = PEOPLE.concat(
+    (typeof INTERVIEWS !== "undefined" ? INTERVIEWS : []).map(interviewToPersonShape)
+  ).concat(communityPeople);
+  buildFeatures();
 
-// ---------- Deep link from a profile page's mini-map (map.html?slug=...) ----------
+  map = new maplibregl.Map({
+    container: "map",
+    style: STYLES[currentTheme],
+    center: [8.2, 30],
+    zoom: getInitialZoom(),
+    minZoom: 0.8,
+    maxZoom: 17,
+    attributionControl: { compact: true }
+  });
 
-const deepLinkSlug = new URLSearchParams(location.search).get("slug");
+  map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), "top-right");
+  map.on("style.load", setupMapLayers);
+  map.on("moveend", () => spinGlobe());
 
-map.on("load", () => {
-  if (deepLinkSlug) {
-    userInteracted = true;
-    document.getElementById("hint").classList.add("hidden");
-    const idx = ALL_PEOPLE.findIndex(p => p.slug === deepLinkSlug);
-    if (idx !== -1 && coordsByIndex[idx]) {
-      map.once("moveend", () => showSidePanel(ALL_PEOPLE[idx]));
-      map.flyTo({ center: coordsByIndex[idx], zoom: 10.5, duration: 2200 });
+  ["mousedown", "wheel", "touchstart", "dragstart"].forEach((evt) =>
+    map.on(evt, () => {
+      userInteracted = true;
+      document.getElementById("hint").classList.add("hidden");
+    })
+  );
+
+  // ---------- Deep link from a profile page's mini-map (map.html?slug=...) ----------
+
+  const deepLinkSlug = new URLSearchParams(location.search).get("slug");
+
+  map.on("load", () => {
+    if (deepLinkSlug) {
+      userInteracted = true;
+      document.getElementById("hint").classList.add("hidden");
+      const idx = ALL_PEOPLE.findIndex(p => p.slug === deepLinkSlug);
+      if (idx !== -1 && coordsByIndex[idx]) {
+        map.once("moveend", () => showSidePanel(ALL_PEOPLE[idx]));
+        map.flyTo({ center: coordsByIndex[idx], zoom: 10.5, duration: 2200 });
+      }
+    } else {
+      spinGlobe();
+      setTimeout(() => document.getElementById("hint").classList.add("hidden"), 12000);
     }
-  } else {
-    spinGlobe();
-    setTimeout(() => document.getElementById("hint").classList.add("hidden"), 12000);
-  }
-});
+  });
+}
+
+initGlobe();
