@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ProductMoat — Product People, in the Age of AI</title>
-  <meta name="description" content="Conversations with product managers and product people around the world, on building product at the intersection of AI.">
+  <title>Calendar — ProductMoat</title>
+  <meta name="description" content="The ProductMoat publishing calendar — every week of the year, who's been featured, and which weeks are still open.">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="stylesheet" href="assets/swiss.css?v=14">
   <link rel="stylesheet" href="assets/site.css?v=25">
+  <link rel="stylesheet" href="assets/calendar.css?v=1">
 </head>
 <body>
   <nav class="nav">
@@ -24,41 +25,29 @@
     </div>
   </nav>
 
-  <header class="hero">
-    <div class="wrap hero-inner">
-      <div class="hero-main">
-        <div class="eyebrow"><span class="num">01.</span> Interview series &middot; est. 2026</div>
-        <h1>Product people,<br>in the age of AI.</h1>
-        <div class="hero-cta">
-          <a class="btn btn-primary" href="#directory">Browse interviews</a>
-          <a class="btn btn-ghost" href="map.html">Explore the map</a>
-        </div>
-      </div>
-      <div class="hero-side">
-        <div class="label-mono">About this issue</div>
-        <p>
-          Conversations with product managers and product people around the world — how
-          they think, what they've shipped, and how AI is reshaping the craft of building
-          product. A new interview, published regularly.
-        </p>
-      </div>
-    </div>
+  <header class="cal-hero">
     <div class="wrap">
-      <div class="stats-row" id="stats-row"></div>
+      <div class="eyebrow"><span class="num">06.</span> The publishing calendar</div>
+      <h1>One interview a week.<br>Fifty-two weeks a year.</h1>
+      <p class="about-lede">
+        Every published conversation lands on its own week below. Weeks still ahead are
+        open — that's where your slot, or someone you'd recommend, still fits.
+      </p>
+      <div class="cal-legend">
+        <div class="cal-legend-item"><span class="cal-swatch cal-swatch-published"></span>Published</div>
+        <div class="cal-legend-item"><span class="cal-swatch cal-swatch-current"></span>Current week</div>
+        <div class="cal-legend-item"><span class="cal-swatch cal-swatch-open"></span>Open — still available</div>
+        <div class="cal-legend-item"><span class="cal-swatch cal-swatch-gap"></span>No issue published</div>
+      </div>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="apply.html">Apply for a week</a>
+        <a class="btn btn-ghost" href="recommend.html">Recommend someone</a>
+      </div>
     </div>
   </header>
 
-  <main class="wrap">
-    <div id="featured-slot"></div>
-
-    <section id="directory">
-      <div class="section-head">
-        <h2>All conversations</h2>
-        <p>Filter by focus area to find people working closest to your own problem space.</p>
-      </div>
-      <div class="chip-row" id="chip-row"></div>
-      <div class="grid" id="grid"></div>
-    </section>
+  <main>
+    <div class="wrap-cal" id="cal-board"></div>
   </main>
 
   <footer>
@@ -79,7 +68,7 @@
   <script src="assets/site.js?v=20"></script>
   <script>
     initTheme();
-    initHome();
+    initCalendar();
   </script>
 </body>
 </html>

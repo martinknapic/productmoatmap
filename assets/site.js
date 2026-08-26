@@ -839,3 +839,138 @@ function initJoinMap() {
   completeSignIn();
 }
 
+// ---------- Calendar (calendar.html) ----------
+// 52 weeks, grouped into 4 quarters of 13 weeks each, months labeled within
+// each quarter. Weeks are Monday-start, running from the Monday on/before
+// Jan 1 of the target year. Only interviews already published (publishedDate
+// <= today) are ever shown — future weeks only ever render as "open".
+
+const CAL_MONTH_NAMES = ["January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"];
+
+function calDateUTC(dateStr) {
+  return new Date(dateStr + "T00:00:00Z");
+}
+
+function calFormatShort(date) {
+  return `${CAL_MONTH_NAMES[date.getUTCMonth()].slice(0, 3)} ${date.getUTCDate()}`;
+}
+
+function calBuildYearWeeks(year) {
+  const jan1 = new Date(Date.UTC(year, 0, 1));
+  const dow = jan1.getUTCDay() || 7; // Mon=1 .. Sun=7
+  const firstMonday = new Date(jan1);
+  firstMonday.setUTCDate(jan1.getUTCDate() - (dow - 1));
+
+  const weeks = [];
+  for (let i = 0; i < 52; i++) {
+    const start = new Date(firstMonday);
+    start.setUTCDate(firstMonday.getUTCDate() + i * 7);
+    const end = new Date(start);
+    end.setUTCDate(start.getUTCDate() + 6);
+    const rep = new Date(start); // representative day decides month/quarter
+    rep.setUTCDate(start.getUTCDate() + 3);
+    const month = rep.getUTCMonth();
+    weeks.push({ index: i + 1, start, end, month, quarter: Math.floor(month / 3) + 1 });
+  }
+  return weeks;
+}
+
+function calWeekStatus(week, today, interview) {
+  if (interview) return "published";
+  if (week.end < today) return "gap"; // week already passed with nothing published
+  return "open"; // current or future week, still available
+}
+
+function calRenderCell(week, today, interview) {
+  const isCurrent = today >= week.start && today <= week.end;
+  const status = calWeekStatus(week, today, interview);
+  const range = `${calFormatShort(week.start)} – ${calFormatShort(week.end)}`;
+
+  let bodyHTML;
+  if (interview) {
+    bodyHTML = `
+      <a class="cal-card" href="person.html?slug=${encodeURIComponent(interview.slug)}" title="${escapeHTML(interview.name)} — ${escapeHTML(interview.role)}">
+        ${avatarHTML(interview, "avatar cal-card-avatar")}
+        <span class="cal-card-name">${escapeHTML(interview.name)}</span>
+      </a>`;
+  } else if (status === "gap") {
+    bodyHTML = `<div class="cal-empty"><span class="cal-empty-label">&mdash;</span></div>`;
+  } else {
+    bodyHTML = `<div class="cal-empty"><span class="cal-empty-label">Open</span></div>`;
+  }
+
+  return `
+    <td class="cal-cell" data-status="${status}"${isCurrent ? ' data-current="true"' : ""}>
+      <div class="cal-cell-inner">
+        <div class="cal-cell-head">
+          <span class="cal-week-no">W${String(week.index).padStart(2, "0")}</span>
+          <span class="cal-week-range">${range}</span>
+        </div>
+        ${bodyHTML}
+      </div>
+      <div class="cal-hover">
+        <a class="cal-hover-btn" href="apply.html">Apply</a>
+        <a class="cal-hover-btn" href="recommend.html">Recommend</a>
+      </div>
+    </td>`;
+}
+
+function calRenderQuarter(quarterWeeks, quarterNum, today, weekInterviews) {
+  const monthGroups = [];
+  quarterWeeks.forEach(w => {
+    const last = monthGroups[monthGroups.length - 1];
+    if (last && last.month === w.month) last.count++;
+    else monthGroups.push({ month: w.month, count: 1 });
+  });
+
+  const firstMonth = CAL_MONTH_NAMES[monthGroups[0].month].slice(0, 3);
+  const lastMonth = CAL_MONTH_NAMES[monthGroups[monthGroups.length - 1].month].slice(0, 3);
+  const year = quarterWeeks[quarterWeeks.length - 1].start.getUTCFullYear();
+
+  const monthHeaderHTML = monthGroups.map(g =>
+    `<th colspan="${g.count}">${CAL_MONTH_NAMES[g.month]}</th>`
+  ).join("");
+
+  const cellsHTML = quarterWeeks.map(w => calRenderCell(w, today, weekInterviews.get(w.index))).join("");
+
+  return `
+    <section class="cal-quarter">
+      <div class="cal-quarter-label">
+        <span class="cal-quarter-num">Q${quarterNum}</span>
+        <span class="cal-quarter-range">${firstMonth} &ndash; ${lastMonth} ${year}</span>
+      </div>
+      <div class="cal-table-wrap">
+        <table class="cal-table">
+          <thead><tr class="cal-month-row">${monthHeaderHTML}</tr></thead>
+          <tbody><tr>${cellsHTML}</tr></tbody>
+        </table>
+      </div>
+    </section>`;
+}
+
+function initCalendar() {
+  const el = document.getElementById("cal-board");
+  if (!el) return;
+
+  const now = new Date();
+  const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const year = today.getUTCFullYear();
+  const weeks = calBuildYearWeeks(year);
+
+  // Match each already-published interview to the week its publishedDate falls in.
+  const weekInterviews = new Map();
+  INTERVIEWS.forEach(p => {
+    const published = calDateUTC(p.publishedDate);
+    if (published > today) return; // never show data for the future
+    const week = weeks.find(w => published >= w.start && published <= w.end);
+    if (week) weekInterviews.set(week.index, p);
+  });
+
+  const quartersHTML = [1, 2, 3, 4].map(q => {
+    const quarterWeeks = weeks.filter(w => w.quarter === q);
+    return calRenderQuarter(quarterWeeks, q, today, weekInterviews);
+  }).join("");
+
+  el.innerHTML = quartersHTML;
+}
