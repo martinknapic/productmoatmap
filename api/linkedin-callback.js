@@ -32,15 +32,18 @@ module.exports = async (req, res) => {
   const { code, error, state } = req.query;
 
   if (error) {
+    console.error("[linkedin-callback] denied by user:", error, req.query.error_description);
     return redirectToApply(res, "li=denied");
   }
   if (!code || typeof code !== "string") {
+    console.error("[linkedin-callback] missing/invalid code param:", req.query);
     return redirectToApply(res, "li=error");
   }
 
   const clientId = process.env.LINKEDIN_CLIENT_ID;
   const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
   if (!clientId || !clientSecret) {
+    console.error("[linkedin-callback] missing env vars:", { hasClientId: !!clientId, hasClientSecret: !!clientSecret });
     return redirectToApply(res, "li=error");
   }
 
@@ -61,11 +64,14 @@ module.exports = async (req, res) => {
     });
 
     if (!tokenResp.ok) {
+      const errBody = await tokenResp.text().catch(() => "<unreadable>");
+      console.error("[linkedin-callback] token exchange failed:", tokenResp.status, errBody, "redirectUri used:", redirectUri);
       return redirectToApply(res, "li=error");
     }
 
     const tokenData = await tokenResp.json();
     if (!tokenData.id_token) {
+      console.error("[linkedin-callback] no id_token in token response:", Object.keys(tokenData));
       return redirectToApply(res, "li=error");
     }
 
@@ -91,6 +97,7 @@ module.exports = async (req, res) => {
     if (typeof state === "string") query.set("state", state);
     return redirectToApply(res, query.toString());
   } catch (err) {
+    console.error("[linkedin-callback] unexpected exception:", err && err.stack || err);
     return redirectToApply(res, "li=error");
   }
 };
