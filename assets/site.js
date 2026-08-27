@@ -63,6 +63,7 @@ function initTheme() {
   const light = saved ? saved === "light" : prefersLight;
   document.body.classList.toggle("light", light);
   updateThemeBtn();
+  initMemberNav();
 }
 
 function toggleTheme() {
@@ -84,6 +85,122 @@ function updateThemeBtn() {
   const label = isLight ? "Switch to dark mode" : "Switch to light mode";
   btn.setAttribute("aria-label", label);
   btn.setAttribute("title", label);
+}
+
+// ---------- Member nav (avatar + dropdown, once signed in via LinkedIn) ----------
+// No standalone "sign in" control in the nav: registration happens as a side
+// effect of verifying via LinkedIn on apply/recommend/join-map (see
+// initLinkedInGate() below and api/linkedin-callback.js), which sets a
+// persistent `pm_session` cookie alongside the short-lived gate cookie. This
+// just checks whether that session exists and, if so, injects the avatar.
+
+function memberInitials(name) {
+  return (name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("");
+}
+
+function initMemberNav() {
+  const navInner = document.querySelector(".nav-inner");
+  if (!navInner || navInner.querySelector(".member-nav")) return;
+
+  fetch("/api/member-me", { credentials: "same-origin" })
+    .then(resp => (resp.ok ? resp.json() : null))
+    .then(profile => {
+      if (profile) renderMemberNav(navInner, profile);
+    })
+    .catch(() => {});
+}
+
+function renderMemberNav(navInner, profile) {
+  const avatarInner = profile.picture
+    ? `<img src="${profile.picture}" alt="">`
+    : escapeHTML(memberInitials(profile.name));
+
+  const wrap = document.createElement("div");
+  wrap.className = "member-nav";
+  wrap.innerHTML = `
+    <button class="member-avatar-btn" id="member-avatar-btn" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">
+      <span class="member-avatar">${avatarInner}</span>
+    </button>
+    <div class="member-dropdown" role="menu">
+      <a href="account.html" role="menuitem">My profile</a>
+      <a href="#" id="member-logout-link" role="menuitem">Log out</a>
+    </div>
+  `;
+  navInner.appendChild(wrap);
+
+  const btn = wrap.querySelector("#member-avatar-btn");
+  btn.addEventListener("click", () => {
+    const open = wrap.classList.toggle("open");
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+  document.addEventListener("click", (e) => {
+    if (wrap.classList.contains("open") && !wrap.contains(e.target)) {
+      wrap.classList.remove("open");
+      btn.setAttribute("aria-expanded", "false");
+    }
+  });
+
+  wrap.querySelector("#member-logout-link").addEventListener("click", (e) => {
+    e.preventDefault();
+    const next = encodeURIComponent(location.pathname + location.search);
+    window.location.href = `/api/member-logout?next=${next}`;
+  });
+}
+
+// ---------- Account page (account.html) ----------
+// "My profile" destination from the nav dropdown. Not a rich profile editor —
+// there's no database behind member accounts, just whatever LinkedIn handed
+// back at sign-in — so this simply confirms who you're signed in as.
+
+function initAccount() {
+  const root = document.getElementById("account-root");
+  if (!root) return;
+
+  fetch("/api/member-me", { credentials: "same-origin" })
+    .then(resp => (resp.ok ? resp.json() : null))
+    .then(profile => {
+      root.innerHTML = profile ? accountSignedInHTML(profile) : accountSignedOutHTML();
+      if (profile) {
+        document.getElementById("account-logout-btn").addEventListener("click", () => {
+          window.location.href = "/api/member-logout?next=%2Faccount.html";
+        });
+      }
+    })
+    .catch(() => {
+      root.innerHTML = accountSignedOutHTML();
+    });
+}
+
+function accountSignedInHTML(profile) {
+  const avatarInner = profile.picture
+    ? `<img src="${profile.picture}" alt="">`
+    : memberInitials(profile.name);
+  return `
+    <div class="eyebrow">My profile</div>
+    <div class="account-card">
+      <div class="avatar-xl${profile.picture ? " has-photo" : ""}">${avatarInner}</div>
+      <div>
+        <h1 class="account-name">${escapeHTML(profile.name || "ProductMoat member")}</h1>
+        <p class="account-email">${escapeHTML(profile.email || "")}</p>
+        <p class="account-note">This is what LinkedIn shared when you signed in. Signing in again on Apply, Recommend, or Put yourself on the map refreshes it.</p>
+        <button class="btn btn-ghost" id="account-logout-btn">Log out</button>
+      </div>
+    </div>
+  `;
+}
+
+function accountSignedOutHTML() {
+  return `
+    <div class="eyebrow">My profile</div>
+    <h1>You're not signed in.</h1>
+    <p class="about-lede">
+      ProductMoat doesn't have a standalone sign-in — verifying with LinkedIn on the
+      <a class="bracket-link" href="apply.html">Apply</a>,
+      <a class="bracket-link" href="recommend.html">Recommend</a>, or
+      <a class="bracket-link" href="join-map.html">Put yourself on the map</a>
+      form also signs you in site-wide.
+    </p>
+  `;
 }
 
 // ---------- Homepage ----------

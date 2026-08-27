@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ProductMoat — Interview</title>
+  <title>My Profile — ProductMoat</title>
+  <meta name="description" content="Your ProductMoat account, verified via LinkedIn.">
+  <meta name="robots" content="noindex">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css">
   <link rel="stylesheet" href="assets/swiss.css?v=16">
   <link rel="stylesheet" href="assets/site.css?v=27">
 </head>
@@ -23,11 +24,12 @@
     </div>
   </nav>
 
-  <div id="person-root"></div>
-
-  <div class="wrap">
-    <div class="profile-nav" id="profile-nav"></div>
-  </div>
+  <section class="account-hero">
+    <div class="wrap" id="account-root">
+      <div class="eyebrow">My profile</div>
+      <h1>Loading&hellip;</h1>
+    </div>
+  </section>
 
   <footer>
     <div class="wrap footer-inner">
@@ -44,12 +46,10 @@
     </div>
   </footer>
 
-  <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
-  <script src="assets/people-data.js?v=11"></script>
   <script src="assets/site.js?v=23"></script>
   <script>
     initTheme();
-    initPerson();
+    initAccount();
   </script>
 </body>
 </html>

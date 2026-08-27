@@ -10,12 +10,22 @@
 // The ID token comes straight from LinkedIn's token endpoint over a
 // server-to-server HTTPS call (not from anything the client supplied), so its
 // claims are trusted without a separate JWKS signature check — this is an
-// identity-verification gate, not a persistent login/session system.
+// identity-verification gate for the apply/recommend/join-map forms, not a
+// login system on its own.
+//
+// It also doubles as account registration: alongside the short-lived gate
+// cookie, this sets a separate, longer-lived `pm_session` cookie (see
+// member-me.js / member-logout.js) so the visitor stays recognized site-wide
+// afterward — avatar + "My profile"/"Log out" in the nav — without a
+// dedicated sign-in button.
 
 const crypto = require("crypto");
 
 const COOKIE_NAME = "li_verify";
 const COOKIE_TTL_SECONDS = 300; // just long enough to survive the redirect + profile fetch
+
+const SESSION_COOKIE_NAME = "pm_session";
+const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
 // The frontend embeds which page started the OAuth flow into the `state`
 // param as `<nonce>:<page>` (the nonce is still what's checked for CSRF,
@@ -104,10 +114,16 @@ module.exports = async (req, res) => {
     const signature = crypto.createHmac("sha256", clientSecret).update(payload).digest("base64url");
     const cookieValue = `${payload}.${signature}`;
 
-    res.setHeader(
-      "Set-Cookie",
-      `${COOKIE_NAME}=${cookieValue}; Max-Age=${COOKIE_TTL_SECONDS}; Path=/api; HttpOnly; Secure; SameSite=Lax`
-    );
+    const sessionPayload = Buffer.from(
+      JSON.stringify({ ...profile, exp: Date.now() + SESSION_TTL_SECONDS * 1000 })
+    ).toString("base64url");
+    const sessionSignature = crypto.createHmac("sha256", clientSecret).update(sessionPayload).digest("base64url");
+    const sessionCookieValue = `${sessionPayload}.${sessionSignature}`;
+
+    res.setHeader("Set-Cookie", [
+      `${COOKIE_NAME}=${cookieValue}; Max-Age=${COOKIE_TTL_SECONDS}; Path=/api; HttpOnly; Secure; SameSite=Lax`,
+      `${SESSION_COOKIE_NAME}=${sessionCookieValue}; Max-Age=${SESSION_TTL_SECONDS}; Path=/; HttpOnly; Secure; SameSite=Lax`
+    ]);
 
     const query = new URLSearchParams({ li: "ok" });
     if (nonce) query.set("state", nonce);

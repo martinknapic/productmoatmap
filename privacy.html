@@ -6,8 +6,8 @@
   <title>Privacy Policy — ProductMoat</title>
   <meta name="description" content="How ProductMoat collects, uses, and protects information from applicants, recommenders, and site visitors.">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-  <link rel="stylesheet" href="assets/swiss.css?v=15">
-  <link rel="stylesheet" href="assets/site.css?v=26">
+  <link rel="stylesheet" href="assets/swiss.css?v=16">
+  <link rel="stylesheet" href="assets/site.css?v=27">
 </head>
 <body>
   <nav class="nav">
@@ -55,7 +55,7 @@
         <ul class="legal-list">
           <li><strong>Application details</strong> — name, role, company, location, LinkedIn URL, personal website, X/Twitter handle, years of experience, a short bio, a pull quote, an optional photo, and any Q&amp;A answers you write when applying to be featured.</li>
           <li><strong>Recommendation details</strong> — the LinkedIn URL of the person you're recommending, your own name and email if you provide them, and any note you add about why they'd be a good fit.</li>
-          <li><strong>LinkedIn sign-in data</strong> — when you sign in with LinkedIn to verify an application, we receive your name, email, and profile photo from LinkedIn's OpenID Connect response. This is used only to confirm you are who you say you are before unlocking the application form.</li>
+          <li><strong>LinkedIn sign-in data</strong> — when you sign in with LinkedIn to verify an application, we receive your name, email, and profile photo from LinkedIn's OpenID Connect response. This confirms you are who you say you are before unlocking the application form, and also signs you in site-wide (see "LinkedIn sign-in" below).</li>
           <li><strong>Local preferences</strong> — your light/dark theme choice, stored in your browser's local storage so the site remembers it on your next visit.</li>
         </ul>
       </div>
@@ -75,13 +75,16 @@
       <div class="legal-block">
         <h2>4. LinkedIn sign-in</h2>
         <p>
-          Signing in with LinkedIn on the application page is an identity check, not a
-          persistent account. LinkedIn's authorization server sends the confirmation back
-          to a short-lived, server-side function, which reads your name, email, and photo
-          from the token and stores them in a signed, HttpOnly cookie for a few minutes —
-          just long enough to pre-fill the application form. We don't create a login
-          session, and we don't use this to post to LinkedIn on your behalf or access
-          your connections.
+          Signing in with LinkedIn on the Apply, Recommend, or Put yourself on the map
+          forms does two things. First, it's an identity check: LinkedIn's authorization
+          server sends the confirmation back to a short-lived, server-side function, which
+          reads your name, email, and photo from the token and stores them in a signed,
+          HttpOnly cookie for a few minutes — just long enough to pre-fill the form.
+          Second, it signs you in site-wide: the same function also sets a longer-lived
+          (30-day) signed, HttpOnly session cookie, which is what shows your avatar and a
+          "My profile" / "Log out" menu in the nav afterward, on any page. You can end that
+          session at any time via "Log out." Either way, we don't use this to post to
+          LinkedIn on your behalf or access your connections.
         </p>
       </div>
 
@@ -101,11 +104,12 @@
       <div class="legal-block">
         <h2>6. Cookies &amp; local storage</h2>
         <p>
-          ProductMoat doesn't run third-party analytics or advertising trackers. The only
-          cookie we set is the short-lived LinkedIn verification cookie described above,
-          which expires automatically a few minutes after it's created. We also use your
-          browser's local storage to remember your theme preference — this stays on your
-          device and is never sent to us.
+          ProductMoat doesn't run third-party analytics or advertising trackers. We set two
+          cookies, both described above: the short-lived LinkedIn verification cookie,
+          which expires automatically a few minutes after it's created, and the 30-day
+          sign-in session cookie, which you can clear early with "Log out." We also use
+          your browser's local storage to remember your theme preference — this stays on
+          your device and is never sent to us.
         </p>
       </div>
 
@@ -180,7 +184,7 @@
     </div>
   </footer>
 
-  <script src="assets/site.js?v=22"></script>
+  <script src="assets/site.js?v=23"></script>
   <script>initTheme();</script>
 </body>
 </html>

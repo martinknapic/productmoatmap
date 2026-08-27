@@ -1306,3 +1306,38 @@ footer {
 }
 
 .jm-preview-name { font-weight: 700; font-size: 16px; }
+
+/* ================= Account page ================= */
+
+.account-hero {
+  padding: 56px 0 88px;
+}
+
+.account-card {
+  margin-top: 32px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  max-width: 68ch;
+}
+
+.account-name { font-size: clamp(22px, 3vw, 28px); margin-bottom: 4px; }
+
+.account-email {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--ink-dim);
+  margin-bottom: 16px;
+}
+
+.account-note {
+  color: var(--ink-body);
+  font-size: 14.5px;
+  line-height: 1.6;
+  max-width: 46ch;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 640px) {
+  .account-card { flex-direction: column; align-items: flex-start; }
+}
