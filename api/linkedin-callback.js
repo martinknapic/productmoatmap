@@ -16,8 +16,11 @@
 // It also doubles as account registration: alongside the short-lived gate
 // cookie, this sets a separate, longer-lived `pm_session` cookie (see
 // member-me.js / member-logout.js) so the visitor stays recognized site-wide
-// afterward — avatar + "My profile"/"Log out" in the nav — without a
-// dedicated sign-in button.
+// afterward — avatar + "My profile"/"Log out" in the nav. That happens on
+// every allowed page below, but only signup.html (via api/member-signup.js,
+// after showing the consent/newsletter copy) actually persists a profile
+// record to storage — apply/recommend/join-map just leave the session
+// cookie set as a side effect of verifying for their own form.
 
 const crypto = require("crypto");
 
@@ -31,7 +34,7 @@ const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
 // param as `<nonce>:<page>` (the nonce is still what's checked for CSRF,
 // client-side). Whitelisted here so this can't be turned into an open
 // redirect by a crafted state value.
-const ALLOWED_PAGES = new Set(["apply", "recommend", "join-map"]);
+const ALLOWED_PAGES = new Set(["apply", "recommend", "join-map", "signup"]);
 
 function parseState(rawState) {
   if (typeof rawState !== "string") return { nonce: null, page: "apply" };

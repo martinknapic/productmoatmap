@@ -1341,3 +1341,15 @@ footer {
 @media (max-width: 640px) {
   .account-card { flex-direction: column; align-items: flex-start; }
 }
+
+/* ================= Sign up page ================= */
+/* The consent copy + newsletter checkbox + LinkedIn button live directly in
+   the hero (not a separate section below it) so the CTA sits above the fold
+   without scrolling — #su-consent matches .about-lede's reading measure so
+   the checkbox/button/link line up under it instead of stretching full width. */
+
+#su-consent { max-width: 46ch; }
+
+.signup-hero .li-gate { margin-top: 24px; }
+
+.signup-privacy-note { margin-top: 22px; display: block; }

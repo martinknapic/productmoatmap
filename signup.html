@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign up — ProductMoat</title>
+  <meta name="description" content="Create your ProductMoat profile with LinkedIn.">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="stylesheet" href="assets/swiss.css?v=17">
+  <link rel="stylesheet" href="assets/site.css?v=29">
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="logo" href="index.html"><span class="logo-mark"></span>ProductMoat</a>
+      <div class="nav-links">
+        <a href="index.html#directory">Interviews</a>
+        <a href="map.html">Map</a>
+        <a href="calendar.html">Calendar</a>
+        <a href="apply.html">Apply</a>
+      </div>
+      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">LIGHT</button>
+    </div>
+  </nav>
+
+  <section class="apply-hero signup-hero">
+    <div class="wrap">
+      <div class="eyebrow">Create your profile</div>
+      <h1>Sign up with LinkedIn.</h1>
+      <div id="su-consent">
+        <p class="about-lede">
+          Signing up creates a <strong>private profile</strong> on productmoat.com, linked
+          to your LinkedIn account (name, email, photo) — never published, it's just what
+          puts your avatar and "My profile" in the nav once you're signed in. You'll also
+          be <strong>automatically subscribed to our newsletter</strong>; opt out below,
+          and every issue we send includes an unsubscribe link either way.
+        </p>
+
+        <div class="form-checkbox-row">
+          <input type="checkbox" id="su-newsletter" checked>
+          <label for="su-newsletter">Subscribe me to the ProductMoat newsletter.</label>
+        </div>
+
+        <div class="li-gate" id="li-gate">
+          <button type="button" class="btn btn-primary li-btn" id="li-signin-btn">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 1 1 0-4.124 2.062 2.062 0 0 1 0 4.124zM7.119 20.452H3.554V9h3.565v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            Sign up with LinkedIn
+          </button>
+          <p class="hint-inline li-error" id="li-error" hidden>LinkedIn sign-in didn't go through — try again.</p>
+        </div>
+
+        <p class="hint-inline signup-privacy-note">
+          Read more in the <a class="bracket-link" href="privacy.html">[ Privacy Policy ]</a>.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <main class="wrap">
+    <div id="su-success" class="apply-success" hidden>
+      <div class="eyebrow"><span class="num">&check;</span> You're all set</div>
+      <h2>Your profile is live.</h2>
+      <p id="su-success-newsletter"></p>
+      <a class="btn btn-ghost" href="account.html">Go to my profile &rarr;</a>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap footer-inner">
+      <p class="footer-blurb">
+        ProductMoat is an ongoing interview series exploring the essence of product management
+        and product design at the intersection of AI.
+      </p>
+      <div class="footer-links">
+        <a href="map.html">World map</a>
+        <a href="about.html">About</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="https://www.linkedin.com/in/martinknapic" target="_blank" rel="noopener">LinkedIn</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/site.js?v=24"></script>
+  <script>
+    initTheme();
+    initSignup();
+  </script>
+</body>
+</html>

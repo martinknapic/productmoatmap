@@ -87,12 +87,13 @@ function updateThemeBtn() {
   btn.setAttribute("title", label);
 }
 
-// ---------- Member nav (avatar + dropdown, once signed in via LinkedIn) ----------
-// No standalone "sign in" control in the nav: registration happens as a side
-// effect of verifying via LinkedIn on apply/recommend/join-map (see
-// initLinkedInGate() below and api/linkedin-callback.js), which sets a
-// persistent `pm_session` cookie alongside the short-lived gate cookie. This
-// just checks whether that session exists and, if so, injects the avatar.
+// ---------- Member nav (avatar+dropdown when signed in, Sign up CTA when not) ----------
+// Registration happens two ways: verifying via LinkedIn on apply/recommend/
+// join-map sets a persistent `pm_session` cookie as a side effect (see
+// api/linkedin-callback.js), or a visitor clicks the nav's "Sign up" CTA
+// straight to signup.html, which shows the profile/newsletter consent copy
+// before starting the same LinkedIn flow. Either way, this just checks
+// whether a session exists and swaps in the avatar or the CTA accordingly.
 
 function memberInitials(name) {
   return (name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("");
@@ -100,14 +101,26 @@ function memberInitials(name) {
 
 function initMemberNav() {
   const navInner = document.querySelector(".nav-inner");
-  if (!navInner || navInner.querySelector(".member-nav")) return;
+  if (!navInner || navInner.querySelector(".member-nav") || navInner.querySelector(".signup-nav-link")) return;
 
   fetch("/api/member-me", { credentials: "same-origin" })
     .then(resp => (resp.ok ? resp.json() : null))
     .then(profile => {
-      if (profile) renderMemberNav(navInner, profile);
+      if (profile) {
+        renderMemberNav(navInner, profile);
+      } else if (!/(^|\/)signup\.html$/.test(location.pathname)) {
+        renderSignupCTA(navInner);
+      }
     })
     .catch(() => {});
+}
+
+function renderSignupCTA(navInner) {
+  const link = document.createElement("a");
+  link.className = "btn btn-primary nav-cta signup-nav-link";
+  link.href = "signup.html";
+  link.textContent = "Sign up";
+  (navInner.querySelector(".nav-right") || navInner).appendChild(link);
 }
 
 function renderMemberNav(navInner, profile) {
@@ -126,7 +139,7 @@ function renderMemberNav(navInner, profile) {
       <a href="#" id="member-logout-link" role="menuitem">Log out</a>
     </div>
   `;
-  navInner.appendChild(wrap);
+  (navInner.querySelector(".nav-right") || navInner).appendChild(wrap);
 
   const btn = wrap.querySelector("#member-avatar-btn");
   btn.addEventListener("click", () => {
@@ -145,6 +158,88 @@ function renderMemberNav(navInner, profile) {
     const next = encodeURIComponent(location.pathname + location.search);
     window.location.href = `/api/member-logout?next=${next}`;
   });
+}
+
+// ---------- Sign up (signup.html) ----------
+// The explicit account-creation entry point reached from the nav's "Sign up"
+// CTA. Unlike apply/recommend/join-map — where the persistent session is a
+// side effect of verifying for that page's own form — this page's whole
+// purpose is creating the profile: it shows the consent/newsletter copy
+// first, and completing sign-in here is the only path that calls
+// api/member-signup.js to actually persist a profile record.
+
+function initSignup() {
+  const gate = document.getElementById("li-gate");
+  if (!gate) return;
+
+  const signInBtn = document.getElementById("li-signin-btn");
+  const errorEl = document.getElementById("li-error");
+  const newsletterCheckbox = document.getElementById("su-newsletter");
+  const consentBlock = document.getElementById("su-consent");
+  const successBlock = document.getElementById("su-success");
+  const successNewsletterNote = document.getElementById("su-success-newsletter");
+
+  function startSignIn() {
+    errorEl.hidden = true;
+    const nonce = crypto.randomUUID();
+    sessionStorage.setItem("li_oauth_state", nonce);
+    sessionStorage.setItem("su_newsletter", newsletterCheckbox.checked ? "1" : "0");
+    const redirectUri = `${window.location.origin}/api/linkedin-callback`;
+    const params = new URLSearchParams({
+      response_type: "code",
+      client_id: LINKEDIN_CLIENT_ID,
+      redirect_uri: redirectUri,
+      scope: "openid profile email",
+      state: `${nonce}:signup`
+    });
+    window.location.href = `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
+  }
+  signInBtn.addEventListener("click", startSignIn);
+
+  async function completeSignup(newsletter) {
+    try {
+      const resp = await fetch("/api/member-signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ newsletter })
+      });
+      if (!resp.ok) throw new Error("signup failed");
+
+      consentBlock.hidden = true;
+      successNewsletterNote.textContent = newsletter
+        ? "You're subscribed to the newsletter — every issue includes an unsubscribe link."
+        : "You opted out of the newsletter, so we won't add you to it.";
+      successBlock.hidden = false;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      errorEl.hidden = false;
+    }
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const li = params.get("li");
+  if (!li) return;
+
+  const returnedState = params.get("state");
+  history.replaceState(null, "", window.location.pathname);
+
+  const newsletterPref = sessionStorage.getItem("su_newsletter") === "1";
+  sessionStorage.removeItem("su_newsletter");
+
+  if (li !== "ok") {
+    errorEl.hidden = false;
+    return;
+  }
+
+  const expectedState = sessionStorage.getItem("li_oauth_state");
+  sessionStorage.removeItem("li_oauth_state");
+  if (!returnedState || returnedState !== expectedState) {
+    errorEl.hidden = false;
+    return;
+  }
+
+  completeSignup(newsletterPref);
 }
 
 // ---------- Account page (account.html) ----------

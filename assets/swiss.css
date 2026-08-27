@@ -121,6 +121,16 @@ ul { list-style: none; }
 .theme-btn:hover { background: var(--ink); color: var(--paper); }
 .theme-btn svg { display: block; }
 
+/* Compact CTA variant for the nav bar (e.g. the Sign up button, map.html's
+   "Put yourself on the map") — smaller than the default .btn padding so it
+   sits comfortably next to the 34px theme toggle. */
+.nav-cta {
+  padding: 9px 16px;
+  font-size: 12.5px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 /* ---------- Member nav (avatar + dropdown, injected once signed in) ---------- */
 
 .member-nav {

@@ -70,15 +70,11 @@ body.map-page {
   flex-shrink: 0;
 }
 
-.nav-cta {
-  padding: 9px 16px;
-  font-size: 12.5px;
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
+/* .nav-cta's own sizing lives in swiss.css (shared by the nav-wide Sign up
+   CTA); this map-only class just hides the longer "Put yourself on the map"
+   label on narrow screens, without affecting that shared style elsewhere. */
 @media (max-width: 600px) {
-  .nav-cta { display: none; }
+  .jm-nav-cta { display: none; }
 }
 
 /* ---------- Avatar markers on the globe ---------- */
