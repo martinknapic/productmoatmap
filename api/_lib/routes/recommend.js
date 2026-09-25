@@ -28,6 +28,7 @@ module.exports = async (req, res) => {
         reason: C.clip(b.reason, 2000),
         recommenderName: C.clip(b.yourName, 200) || session.name || "",
         recommenderEmail: C.clip(b.yourEmail, 200) || session.email || "",
+        recommenderLinkedin: C.cleanProfile({ linkedin: b.yourLinkedin }).linkedin, // http(s) only, or ""
         stayAnonymous: b.stayAnonymous === true
       }
     });

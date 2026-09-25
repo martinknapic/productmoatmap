@@ -54,6 +54,13 @@ const BO_LINKEDIN_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2
 const BO_COPY_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>';
 const BO_CHECK_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 
+// The recommender's LinkedIn: the profile URL they gave when recommending, or (older records / left
+// blank) a LinkedIn people search for their name, so the icon always leads somewhere useful.
+function boRecommenderLinkedIn(rec) {
+  if (rec.recommenderLinkedin) return { url: rec.recommenderLinkedin, exact: true };
+  return { url: `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(rec.recommenderName || "")}`, exact: false };
+}
+
 // Hover/focus card for the "Recommended by" icon: the recommender's name and email, each with a
 // copy button. One floating element (position: fixed) so the table's horizontal scroll can't clip it.
 function boRecommenderTooltip() {
@@ -70,6 +77,7 @@ function boRecommenderTooltip() {
       <div class="bo-rec-title">Recommended by</div>
       ${row("Name", rec.recommenderName)}
       ${row("Email", rec.recommenderEmail)}
+      <div class="bo-rec-note">${boRecommenderLinkedIn(rec).exact ? "Click the icon to open their LinkedIn profile." : "No profile link was saved — the icon opens a LinkedIn search for their name."}</div>
       ${rec.stayAnonymous ? `<div class="bo-rec-note">Asked to stay anonymous — the invitation doesn't name them.</div>` : ""}`;
   }
 
@@ -139,8 +147,9 @@ async function initBackofficeCandidates() {
         <td class="bo-cell-strong">${boEscapeHTML(boCandName(c))}<br><span class="bo-cell-dim">${boEscapeHTML(c.profile.email || "")}</span></td>
         <td>${boEscapeHTML(c.profile.role) || "—"}<br><span class="bo-cell-dim">${boEscapeHTML(c.profile.company)}</span></td>
         <td>${boEscapeHTML(c.profile.location) || "—"}</td>
+        <td class="bo-cell-rec">${c.profile.linkedin ? `<a class="bo-rec bo-li" href="${boEscapeHTML(c.profile.linkedin)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${boEscapeHTML(boCandName(c))}'s LinkedIn profile" title="Open LinkedIn profile">${BO_LINKEDIN_SVG}</a>` : `<span class="bo-cell-dim">—</span>`}</td>
         <td><span class="bo-badge bo-badge-src">${boEscapeHTML(BO_SOURCE_LABELS[c.source] || c.source)}</span></td>
-        <td class="bo-cell-rec">${c.recommendation ? `<button type="button" class="bo-rec" data-rec-id="${boEscapeHTML(c.id)}" aria-label="Recommended by ${boEscapeHTML(c.recommendation.recommenderName || "someone")} — show details">${BO_LINKEDIN_SVG}</button>` : `<span class="bo-cell-dim">—</span>`}</td>
+        <td class="bo-cell-rec">${c.recommendation ? `<a class="bo-rec" data-rec-id="${boEscapeHTML(c.id)}" href="${boEscapeHTML(boRecommenderLinkedIn(c.recommendation).url)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${boEscapeHTML(c.recommendation.recommenderName || "the recommender")}'s LinkedIn — hover for name and email">${BO_LINKEDIN_SVG}</a>` : `<span class="bo-cell-dim">—</span>`}</td>
         <td>${boPill(c.status)}</td>
         <td>${c.invitation ? `${boEscapeHTML(c.invitation.channel === "linkedin" ? "LinkedIn" : "Email")} · ${boEscapeHTML(new Date(c.invitation.sentAt).toLocaleDateString())}` : "—"}</td>
         <td>${boEscapeHTML(boWhen(c.updatedAt))}</td>
@@ -153,14 +162,13 @@ async function initBackofficeCandidates() {
   document.getElementById("bo-cand-search").addEventListener("input", (e) => { state.q = e.target.value; render(); });
   const tip = boRecommenderTooltip();
   const recOf = (btn) => (state.all.find(c => c.id === btn.dataset.recId) || {}).recommendation;
-  listEl.addEventListener("mouseover", (e) => { const b = e.target.closest(".bo-rec"); if (b && recOf(b)) tip.show(b, recOf(b)); });
-  listEl.addEventListener("mouseout", (e) => { if (e.target.closest(".bo-rec")) tip.hideSoon(); });
-  listEl.addEventListener("focusin", (e) => { const b = e.target.closest(".bo-rec"); if (b && recOf(b)) tip.show(b, recOf(b)); });
-  listEl.addEventListener("focusout", (e) => { if (e.target.closest(".bo-rec")) tip.hideSoon(); });
+  listEl.addEventListener("mouseover", (e) => { const b = e.target.closest("[data-rec-id]"); if (b && recOf(b)) tip.show(b, recOf(b)); });
+  listEl.addEventListener("mouseout", (e) => { if (e.target.closest("[data-rec-id]")) tip.hideSoon(); });
+  listEl.addEventListener("focusin", (e) => { const b = e.target.closest("[data-rec-id]"); if (b && recOf(b)) tip.show(b, recOf(b)); });
+  listEl.addEventListener("focusout", (e) => { if (e.target.closest("[data-rec-id]")) tip.hideSoon(); });
   window.addEventListener("scroll", () => tip.hideSoon(), true);
   listEl.addEventListener("click", (e) => {
-    if (e.target.closest(".bo-rec")) { const b = e.target.closest(".bo-rec"); if (recOf(b)) tip.show(b, recOf(b)); return; } // tap (touch) opens it; never opens the row
-    if (e.target.closest("a")) return;
+    if (e.target.closest("a")) return; // LinkedIn icons open their own tab; never open the row
     const row = e.target.closest("[data-open]");
     if (row) location.href = `candidate.html?id=${encodeURIComponent(row.dataset.open)}`;
   });
@@ -283,7 +291,7 @@ async function initBackofficeCandidate() {
       <section class="bo-card">
         <h3>Recommendation</h3>
         <p><strong>Why:</strong> ${boEscapeHTML(c.recommendation.reason) || "—"}</p>
-        <p class="bo-cell-dim">Recommended by ${boEscapeHTML(c.recommendation.recommenderName || "unknown")}${c.recommendation.recommenderEmail ? ` (${boEscapeHTML(c.recommendation.recommenderEmail)})` : ""}${c.recommendation.stayAnonymous ? " — asked to stay anonymous, so the invitation doesn't name them" : ""}.</p>
+        <p class="bo-cell-dim">Recommended by ${boEscapeHTML(c.recommendation.recommenderName || "unknown")}${c.recommendation.recommenderEmail ? ` (${boEscapeHTML(c.recommendation.recommenderEmail)})` : ""} <a class="bracket-link" href="${boEscapeHTML(boRecommenderLinkedIn(c.recommendation).url)}" target="_blank" rel="noopener noreferrer">[ LinkedIn${boRecommenderLinkedIn(c.recommendation).exact ? "" : " search"} ]</a>${c.recommendation.stayAnonymous ? " — asked to stay anonymous, so the invitation doesn't name them" : ""}.</p>
       </section>` : ""}
 
       <section class="bo-card">

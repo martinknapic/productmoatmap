@@ -1248,6 +1248,7 @@ function initRecommend() {
       reason: data.get("reason").trim(),
       yourName: data.get("yourName").trim(),
       yourEmail: data.get("yourEmail").trim(),
+      yourLinkedin: (data.get("yourLinkedin") || "").trim(),
       stayAnonymous: data.get("stayAnonymous") === "on"
     };
 
