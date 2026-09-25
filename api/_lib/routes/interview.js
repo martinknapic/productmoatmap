@@ -48,6 +48,18 @@ module.exports = async (req, res) => {
     return res.status(404).json({ error: "not_found" });
   }
 
+  if (req.method === "GET" && (req.query || {}).preview) {
+    // Private preview: exactly what would be published, visible only to the person this interview is
+    // for (a signed-in member whose LinkedIn email is linked to it) and to admins.
+    const member = C.memberSession(req);
+    if (!member && !C.isAdminRequest(req)) return res.status(401).json({ error: "not_authenticated" });
+    const email = member && member.email ? String(member.email).trim().toLowerCase() : "";
+    const owner = !!email && [c.verified && c.verified.email, c.profile && c.profile.email].some(e => e && String(e).trim().toLowerCase() === email);
+    if (!owner && !C.isAdminRequest(req)) return res.status(403).json({ error: "not_owner" });
+    const pub = { ...c, publish: { ...c.publish, slug: (c.publish && c.publish.slug) || C.slugify(c.profile.name) } };
+    return res.status(200).json({ preview: C.toPublicInterview(pub), approval: c.approval, status: c.status, locked: !!c.locked, missing: requiredMissing(c), asAdmin: !owner });
+  }
+
   if (req.method === "GET") return res.status(200).json(view(c));
   if (req.method !== "POST") return res.status(405).json({ error: "method_not_allowed" });
   const body = req.body || {};

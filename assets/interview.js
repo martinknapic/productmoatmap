@@ -106,6 +106,7 @@ function initInterview() {
       <section class="iv-body wrap">
         <div id="iv-register"></div>
         <div id="iv-banner"></div>
+        <div id="iv-actions-top"></div>
         ${renderDetails()}
         ${sections().map(renderSection).join("")}
         ${renderCustomSection()}
@@ -355,6 +356,17 @@ function initInterview() {
     renderCustomRows();
 
     root.addEventListener("click", (e) => {
+      if (e.target.closest(".js-approve")) { tryApprove(); return; }
+      if (e.target.closest(".js-reopen")) { setApproval(false); return; }
+      if (e.target.closest(".js-preview")) { openPreview(); return; }
+      const jump = e.target.closest("[data-jump]");
+      if (jump) {
+        const q = state.questionnaire.sections.flatMap(sec => sec.questions).find(x => x.id === jump.dataset.jump);
+        state.validated = true;
+        markMissing();
+        if (q) jumpTo(q);
+        return;
+      }
       const head = e.target.closest(".ivq-head");
       if (head) {
         const qEl = head.closest(".ivq");
@@ -491,55 +503,69 @@ function initInterview() {
     });
   }
 
+  // The two actions live in a bar at the top of the questions and again at the bottom:
+  // Preview (see it as it will be published — private) and "I'm happy with this version".
+  function actionsHTML() {
+    const missing = missingRequired();
+    let approvePart = "";
+    if (state.published || state.locked) {
+      approvePart = "";
+    } else if (state.approval.approved) {
+      approvePart = `<span class="iv-final-badge"><span class="li-badge-check">&check;</span> Marked as your final version</span>
+        <button type="button" class="btn btn-ghost js-reopen">Reopen for editing</button>`;
+    } else {
+      approvePart = `<span class="submit-wrap${missing.length ? " locked" : ""}">
+          <button type="button" class="btn btn-primary js-approve" ${missing.length ? 'aria-disabled="true"' : ""}>I'm happy with this version</button>
+          ${missing.length ? `<span class="submit-hint" role="tooltip">Answer the ${missing.length} required question${missing.length === 1 ? "" : "s"} still marked to unlock this</span>` : ""}
+        </span>`;
+    }
+    return `<button type="button" class="btn btn-ghost js-preview">Preview</button>${approvePart}`;
+  }
+
   function refreshSubmit() {
     const box = document.getElementById("iv-submit");
     if (!box) return;
     const missing = missingRequired();
     const approved = state.approval.approved;
-    const ro = readOnly();
 
     let body;
     if (state.published) {
       body = `<h2>Published.</h2><p>Thank you — your interview is live.</p>`;
     } else if (state.locked) {
-      body = `<h2>Locked for publishing.</h2><p>Nothing more to do — we'll be in touch about the publish date.</p>`;
+      body = `<h2>Locked for publishing.</h2><p>Nothing more to do — we'll be in touch about the publish date. You can still preview it.</p>`;
     } else if (approved) {
       body = `<h2>You're happy with this version.</h2>
-        <p>We'll take it from here. Want to change something? Reopen it — it goes back to draft.</p>
-        <button type="button" class="btn btn-ghost" id="iv-reopen">Reopen for editing</button>`;
+        <p>We'll take it from here. Want to change something? Reopen it — it goes back to draft.</p>`;
     } else {
       body = `<h2>Happy with this version?</h2>
         <p>${missing.length
           ? `Still needed before you can finish — click one to jump to it: ${missing.map(q => `<button type="button" class="iv-jump" data-jump="${escapeAttr(q.id)}">${escapeHTML(q.text)}</button>`).join(" ")}`
-          : "All required questions are answered. Optional ones can stay blank. When you press the button we'll treat this as the version you're happy with."}</p>
-        <span class="submit-wrap${missing.length ? " locked" : ""}">
-          <button type="button" class="btn btn-primary" id="iv-approve" ${missing.length ? 'aria-disabled="true"' : ""}>I'm happy with this version</button>
-          ${missing.length ? `<span class="submit-hint" role="tooltip">Answer the ${missing.length} required question${missing.length === 1 ? "" : "s"} still marked to unlock this</span>` : ""}
-        </span>`;
+          : "All required questions are answered. Optional ones can stay blank. When you press the button we'll treat this as the version you're happy with."}</p>`;
     }
-    box.innerHTML = body;
-    const approveBtn = document.getElementById("iv-approve");
-    if (approveBtn) approveBtn.addEventListener("click", () => {
-      const stillMissing = missingRequired();
-      if (stillMissing.length) {
-        // disabled: show exactly what's missing, in red, and take them to the first one
-        state.validated = true;
-        markMissing();
-        jumpTo(stillMissing[0]);
-        setToast(`${stillMissing.length} required ${stillMissing.length === 1 ? "answer" : "answers"} still missing`, true, true);
-        return;
-      }
-      setApproval(true);
-    });
-    box.querySelectorAll("[data-jump]").forEach(b => b.addEventListener("click", () => {
-      const q = state.questionnaire.sections.flatMap(sec => sec.questions).find(x => x.id === b.dataset.jump);
+    box.innerHTML = `${body}<div class="iv-actions">${actionsHTML()}</div>`;
+    box.classList.toggle("is-readonly", readOnly());
+
+    const top = document.getElementById("iv-actions-top");
+    if (top) top.innerHTML = `<div class="iv-actions">${actionsHTML()}</div>`;
+  }
+
+  function tryApprove() {
+    const stillMissing = missingRequired();
+    if (stillMissing.length) {
+      // disabled: show exactly what's missing, in red, and take them to the first one
       state.validated = true;
       markMissing();
-      if (q) jumpTo(q);
-    }));
-    const reopen = document.getElementById("iv-reopen");
-    if (reopen) reopen.addEventListener("click", () => setApproval(false));
-    if (ro) box.classList.add("is-readonly"); else box.classList.remove("is-readonly");
+      jumpTo(stillMissing[0]);
+      setToast(`${stillMissing.length} required ${stillMissing.length === 1 ? "answer" : "answers"} still missing`, true, true);
+      return;
+    }
+    setApproval(true);
+  }
+
+  // Save anything pending, then show the private preview page.
+  async function openPreview() {
+    if (state.dirty) await saveNow();
+    window.location.href = `interview-preview.html?t=${encodeURIComponent(token)}`;
   }
 
   // ---------- saving ----------

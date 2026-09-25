@@ -42,6 +42,17 @@ function memberSession(req) {
   return verifySigned(parseCookies(req.headers.cookie)[MEMBER_COOKIE], process.env.LINKEDIN_CLIENT_SECRET);
 }
 
+// Admin = a backoffice session, or a signed-in member whose LinkedIn email is on the admin list.
+// (Used to let admins see private previews while browsing the public site.)
+function adminEmails() {
+  return (process.env.BACKOFFICE_ALLOWED_EMAIL || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
+}
+function isAdminRequest(req) {
+  if (adminSession(req)) return true;
+  const m = memberSession(req);
+  return !!(m && m.email && adminEmails().includes(String(m.email).trim().toLowerCase()));
+}
+
 // Returns the admin session, or sends 401 and returns null.
 function requireAdmin(req, res) {
   const session = adminSession(req);
@@ -358,7 +369,7 @@ async function takenSlugs(exceptId) {
 
 module.exports = {
   crypto, defaults,
-  parseCookies, adminSession, memberSession, requireAdmin, clip,
+  parseCookies, adminSession, memberSession, requireAdmin, isAdminRequest, clip,
   readJSON, writeJSON, readCandidate, saveCandidate, listCandidates, deleteCandidate,
   upsertMember, readMember, saveMemberDetails, cleanMemberDetails, FOCUS_TAGS, readBank, defaultBank, cleanSections, QUESTION_BANK_PATH,
   deriveStatus, isLive, blankCandidate, cleanProfile, ID_RE, newId,

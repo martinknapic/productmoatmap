@@ -850,7 +850,7 @@ function renderPersonPage(root, p, opts = {}) {
       <div class="wrap">
         <div class="hero-content">
           <div class="hero-content-top">
-            <a class="back-link" href="index.html">&larr; All conversations</a>
+            ${opts.preview ? "" : `<a class="back-link" href="index.html">&larr; All conversations</a>`}
             <div class="profile-top">
               ${avatarHTML(p, "avatar-xl")}
               <div>
