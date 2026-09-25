@@ -39,6 +39,7 @@ function initInterview() {
   const state = {
     profile: {}, questionnaire: null, answers: {}, custom: [], customLimit: 3,
     locked: false, approval: { approved: false }, status: "invited", estimatedPublishDate: null, published: null,
+    validated: false, // set once they try to finish with required answers missing -> show what's missing in red
     dirty: false, saving: false, saveTimer: null
   };
 
@@ -336,7 +337,32 @@ function initInterview() {
 
   // ---------- status, progress, submit ----------
 
-  function refreshAll() { refreshBanner(); refreshProgress(); refreshSubmit(); applyReadOnly(); }
+  function refreshAll() { refreshBanner(); refreshProgress(); refreshSubmit(); markMissing(); applyReadOnly(); }
+
+  // Same pattern as the Apply form: after a failed "finish" attempt, unanswered required fields
+  // turn red (and clear again as soon as they're filled in).
+  function markMissing() {
+    const missing = state.validated ? missingRequired() : [];
+    const missingIds = new Set(missing.filter(q => !q.fromProfile).map(q => q.id));
+    const missingProfile = new Set(missing.filter(q => q.fromProfile).map(q => PROFILE_Q[q.id]));
+    document.querySelectorAll(".ivq").forEach(el => el.classList.toggle("is-missing", missingIds.has(el.dataset.q)));
+    document.querySelectorAll(".iv-field").forEach(el => {
+      const input = el.querySelector("[data-profile]");
+      el.classList.toggle("is-missing", !!input && missingProfile.has(input.dataset.profile));
+    });
+  }
+
+  // Scroll to (and open/focus) a missing required field.
+  function jumpTo(q) {
+    if (q.fromProfile) {
+      const input = document.querySelector(`[data-profile="${PROFILE_Q[q.id]}"]`);
+      if (!input) return;
+      input.scrollIntoView({ behavior: "smooth", block: "center" });
+      setTimeout(() => input.focus({ preventScroll: true }), 300);
+    } else {
+      openQuestion(q.id);
+    }
+  }
 
   function refreshBanner() {
     const el = document.getElementById("iv-banner");
@@ -392,13 +418,33 @@ function initInterview() {
     } else {
       body = `<h2>Happy with this version?</h2>
         <p>${missing.length
-          ? `Still needed before you can finish: ${missing.map(q => escapeHTML(q.fromProfile ? q.text : q.text)).join("; ")}.`
+          ? `Still needed before you can finish — click one to jump to it: ${missing.map(q => `<button type="button" class="iv-jump" data-jump="${escapeAttr(q.id)}">${escapeHTML(q.text)}</button>`).join(" ")}`
           : "All required questions are answered. Optional ones can stay blank. When you press the button we'll treat this as the version you're happy with."}</p>
-        <button type="button" class="btn btn-primary" id="iv-approve" ${missing.length ? 'aria-disabled="true"' : ""}>I'm happy with this version</button>`;
+        <span class="submit-wrap${missing.length ? " locked" : ""}">
+          <button type="button" class="btn btn-primary" id="iv-approve" ${missing.length ? 'aria-disabled="true"' : ""}>I'm happy with this version</button>
+          ${missing.length ? `<span class="submit-hint" role="tooltip">Answer the ${missing.length} required question${missing.length === 1 ? "" : "s"} still marked to unlock this</span>` : ""}
+        </span>`;
     }
     box.innerHTML = body;
     const approveBtn = document.getElementById("iv-approve");
-    if (approveBtn) approveBtn.addEventListener("click", () => setApproval(true));
+    if (approveBtn) approveBtn.addEventListener("click", () => {
+      const stillMissing = missingRequired();
+      if (stillMissing.length) {
+        // disabled: show exactly what's missing, in red, and take them to the first one
+        state.validated = true;
+        markMissing();
+        jumpTo(stillMissing[0]);
+        setToast(`${stillMissing.length} required ${stillMissing.length === 1 ? "answer" : "answers"} still missing`, true, true);
+        return;
+      }
+      setApproval(true);
+    });
+    box.querySelectorAll("[data-jump]").forEach(b => b.addEventListener("click", () => {
+      const q = state.questionnaire.sections.flatMap(sec => sec.questions).find(x => x.id === b.dataset.jump);
+      state.validated = true;
+      markMissing();
+      if (q) jumpTo(q);
+    }));
     const reopen = document.getElementById("iv-reopen");
     if (reopen) reopen.addEventListener("click", () => setApproval(false));
     if (ro) box.classList.add("is-readonly"); else box.classList.remove("is-readonly");

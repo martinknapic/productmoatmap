@@ -221,3 +221,25 @@ select.ivq-input { appearance: auto; }
   .iv-hero-photo { order: -1; width: 128px; }
   .iv-portrait { font-size: 44px; }
 }
+
+
+/* ----- missing required answers (shown after a failed "I'm happy" attempt; same red as the Apply form) ----- */
+.ivq, .iv-field { scroll-margin-top: 96px; }
+.ivq.is-missing { border-bottom-color: var(--accent); }
+.ivq.is-missing .ivq-num, .ivq.is-missing .ivq-text { color: var(--accent); }
+.ivq.is-missing .ivq-input { border-color: var(--accent); }
+.iv-field.is-missing .ivq-input { border-color: var(--accent); }
+.iv-field.is-missing .iv-label { color: var(--accent); }
+
+.iv-jump {
+  display: block;
+  width: fit-content;
+  margin: 6px 0 0;
+  padding: 0;
+  border-bottom: 1px solid var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.iv-jump:hover { color: var(--ink); border-color: var(--ink); }
