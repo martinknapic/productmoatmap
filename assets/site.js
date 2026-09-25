@@ -66,18 +66,19 @@ function closeLightbox() {
 
 // ---------- Theme ----------
 
+// Light is the default (every page ships <body class="light"> plus a tiny inline script that
+// drops it right away if the visitor previously chose dark), so there's no dark flash on load.
 function initTheme() {
-  const saved = localStorage.getItem("pm-theme");
-  const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
-  const light = saved ? saved === "light" : prefersLight;
-  document.body.classList.toggle("light", light);
+  let saved = null;
+  try { saved = localStorage.getItem("pm-theme"); } catch (err) { /* storage blocked: stay light */ }
+  document.body.classList.toggle("light", saved !== "dark");
   updateThemeBtn();
   initMemberNav();
 }
 
 function toggleTheme() {
   document.body.classList.toggle("light");
-  localStorage.setItem("pm-theme", document.body.classList.contains("light") ? "light" : "dark");
+  try { localStorage.setItem("pm-theme", document.body.classList.contains("light") ? "light" : "dark"); } catch (err) { /* ignore */ }
   updateThemeBtn();
   if (miniMapInstance) miniMapInstance.setStyle(miniMapStyleURL());
 }
