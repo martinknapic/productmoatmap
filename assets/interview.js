@@ -82,18 +82,21 @@ function initInterview() {
     document.title = `${first}'s interview — ProductMoat`;
     root.innerHTML = `
       <section class="why-hero iv-hero">
-        <div class="wrap">
-          <div class="eyebrow">Your interview</div>
-          <h1>Hi ${escapeHTML(first)} — let's hear your story.</h1>
-          <p class="about-lede">
-            This page is yours alone. Open a question to answer it — your answers save automatically,
-            so you can leave and come back to the same link any time. Only the
-            <span class="q-badge q-badge-req">Required</span> questions are needed; skip any
-            <span class="q-badge q-badge-opt">Optional</span> ones. The wording may be adjusted as we
-            go, and when you're happy, tell us with the button at the bottom.
-          </p>
-          ${state.estimatedPublishDate ? `<p class="iv-est">Estimated publish date: <strong>${escapeHTML(formatDay(state.estimatedPublishDate))}</strong></p>` : ""}
-          <div class="iv-progress" id="iv-progress"></div>
+        <div class="wrap iv-hero-grid">
+          <div class="iv-hero-text">
+            <div class="eyebrow">Your interview</div>
+            <h1>Hi ${escapeHTML(first)} — let's hear your story.</h1>
+            <p class="about-lede">
+              This page is yours alone. Open a question to answer it — your answers save automatically,
+              so you can leave and come back to the same link any time. Only the
+              <span class="q-badge q-badge-req">Required</span> questions are needed; skip any
+              <span class="q-badge q-badge-opt">Optional</span> ones. The wording may be adjusted as we
+              go, and when you're happy, tell us with the button at the bottom.
+            </p>
+            ${state.estimatedPublishDate ? `<p class="iv-est">Estimated publish date: <strong>${escapeHTML(formatDay(state.estimatedPublishDate))}</strong></p>` : ""}
+            <div class="iv-progress" id="iv-progress"></div>
+          </div>
+          <div class="iv-hero-photo">${heroPhoto()}</div>
         </div>
       </section>
 
@@ -107,6 +110,14 @@ function initInterview() {
     `;
     wire();
     refreshAll();
+  }
+
+  // Large portrait of the person (photo set by the admin / from LinkedIn); initials if there's none or it fails to load.
+  function heroPhoto() {
+    const photo = (state.profile.photo || "").trim();
+    const src = !photo ? "" : /^https?:\/\//i.test(photo) ? photo : `/${photo.replace(/^\/+/, "")}`;
+    const initials = (state.profile.name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("");
+    return `<div class="iv-portrait"><span>${escapeHTML(initials)}</span>${src ? `<img src="${escapeAttr(src)}" alt="${escapeAttr(state.profile.name || "")}" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}</div>`;
   }
 
   function renderDetails() {

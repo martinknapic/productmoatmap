@@ -22,7 +22,8 @@ function view(c) {
     profile: {
       name: c.profile.name, role: c.profile.role, company: c.profile.company, location: c.profile.location,
       yearsExperience: c.profile.yearsExperience, focusTag: c.profile.focusTag, linkedin: c.profile.linkedin,
-      website: c.profile.website, twitter: c.profile.twitter, snippet: c.profile.snippet, pullQuote: c.profile.pullQuote
+      website: c.profile.website, twitter: c.profile.twitter, snippet: c.profile.snippet, pullQuote: c.profile.pullQuote,
+      photo: c.profile.photo
     },
     questionnaire: c.questionnaire,
     answers: c.answers || {},

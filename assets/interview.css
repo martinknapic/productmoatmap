@@ -196,3 +196,28 @@ select.ivq-input { appearance: auto; }
 .ivq-input:disabled { opacity: 0.75; cursor: not-allowed; }
 .iv-submit.is-readonly .btn { opacity: 0.6; }
 @media (max-width: 640px) { .iv-details { grid-template-columns: 1fr; } }
+
+
+/* ----- hero: text left, large portrait right ----- */
+.iv-hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 48px; align-items: start; }
+.iv-hero .about-lede { max-width: 62ch; }
+.iv-portrait {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  width: 100%;
+  background: var(--ink);
+  color: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 96px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+.iv-portrait > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+@media (max-width: 860px) {
+  .iv-hero-grid { grid-template-columns: 1fr; gap: 28px; }
+  .iv-hero-photo { order: -1; width: 128px; }
+  .iv-portrait { font-size: 44px; }
+}
