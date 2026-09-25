@@ -9,7 +9,7 @@
 // GET            -> every candidate, newest first
 // POST { action, id?, ... } -> see the switch below.
 
-const C = require("./_lib/common");
+const C = require("../common");
 
 const STATUS_ACTIONS_NEED_ID = new Set([
   "update", "invite", "setQuestionnaire", "resetQuestionnaire", "setAnswers", "approve", "lock", "decline",

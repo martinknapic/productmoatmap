@@ -2,7 +2,7 @@
 // candidate list (source: applied). Identity comes from the visitor's verified LinkedIn
 // session cookie (set by api/linkedin-callback.js), not from anything the form claims.
 
-const C = require("./_lib/common");
+const C = require("../common");
 
 module.exports = async (req, res) => {
   if (req.method !== "POST") return res.status(405).json({ error: "method_not_allowed" });

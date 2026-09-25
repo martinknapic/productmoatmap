@@ -9,7 +9,7 @@
 // "Published" means published now, or scheduled with a publish time that has passed — so
 // scheduled interviews go live without any cron job. Only public fields ever leave here.
 
-const C = require("./_lib/common");
+const C = require("../common");
 
 module.exports = async (req, res) => {
   let list = [];

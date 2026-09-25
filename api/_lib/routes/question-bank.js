@@ -6,7 +6,7 @@
 //         moment they're created; people already invited keep their own (editable) copy, so
 //         changing the bank never rewrites someone's in-progress interview.
 
-const C = require("./_lib/common");
+const C = require("../common");
 
 module.exports = async (req, res) => {
   if (req.method === "GET") {

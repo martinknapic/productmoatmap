@@ -1,8 +1,57 @@
 {
   "rewrites": [
-    { "source": "/interview/:category(productmanagement|productux)/:slug", "destination": "/person.html" }
+    {
+      "source": "/interview/:category(productmanagement|productux)/:slug",
+      "destination": "/person.html"
+    },
+    {
+      "source": "/api/apply",
+      "destination": "/api/site?op=apply"
+    },
+    {
+      "source": "/api/recommend",
+      "destination": "/api/site?op=recommend"
+    },
+    {
+      "source": "/api/candidates",
+      "destination": "/api/site?op=candidates"
+    },
+    {
+      "source": "/api/interview",
+      "destination": "/api/site?op=interview"
+    },
+    {
+      "source": "/api/my-interview",
+      "destination": "/api/site?op=my-interview"
+    },
+    {
+      "source": "/api/published",
+      "destination": "/api/site?op=published"
+    },
+    {
+      "source": "/api/question-bank",
+      "destination": "/api/site?op=question-bank"
+    },
+    {
+      "source": "/api/member-me",
+      "destination": "/api/site?op=member-me"
+    },
+    {
+      "source": "/api/member-logout",
+      "destination": "/api/site?op=member-logout"
+    },
+    {
+      "source": "/api/backoffice-me",
+      "destination": "/api/site?op=backoffice-me"
+    },
+    {
+      "source": "/api/backoffice-logout",
+      "destination": "/api/site?op=backoffice-logout"
+    }
   ],
   "functions": {
-    "api/*.js": { "includeFiles": "assets/{people-data,questions-default}.js" }
+    "api/site.js": {
+      "includeFiles": "assets/{people-data,questions-default}.js"
+    }
   }
 }

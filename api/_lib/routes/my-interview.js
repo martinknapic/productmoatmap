@@ -13,7 +13,7 @@
 // Matching is by email only, so an admin who adds someone by hand should use the email
 // tied to their LinkedIn account for the link to find them.
 
-const C = require("./_lib/common");
+const C = require("../common");
 
 const RANK = { published: 4, invited: 3, applied: 2, none: 0 };
 

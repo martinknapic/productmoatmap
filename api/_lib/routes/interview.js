@@ -11,7 +11,7 @@
 //
 // Editing after approving clears the approval (a changed version needs a fresh yes).
 
-const C = require("./_lib/common");
+const C = require("../common");
 
 const MAX_ANSWER = 2000;
 const MAX_CUSTOM = 3;

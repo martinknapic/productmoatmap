@@ -243,6 +243,11 @@ interviews go live lazily — `api/published.js` treats "scheduled and past its 
 needed; the site loads it as a script (`/api/published?format=js`) that appends to `INTERVIEWS`. Sending invitations is
 manual for now.
 
+Function limit: Vercel's Hobby plan allows 12 functions per deployment, so the small endpoints (apply, recommend, candidates,
+interview, my-interview, published, question-bank, member/backoffice me + logout) live in `api/_lib/routes/` and run through
+one function, `api/site.js`; `vercel.json` rewrites keep the URLs (`/api/apply` → `/api/site?op=apply`). Add new small
+endpoints there rather than as new files in `api/`.
+
 Run it all offline with `node scripts/dev-server.js` (in-memory Blob stand-in, `/dev-login` for the admin session,
 `/dev-member-login` to try Apply/Recommend).
 

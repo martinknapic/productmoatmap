@@ -2,7 +2,7 @@
 // the backoffice candidate list (source: recommended). The recommender is identified by their
 // verified LinkedIn session; the private details never appear on any public page.
 
-const C = require("./_lib/common");
+const C = require("../common");
 
 // linkedin.com/in/jane-doe-1a2b3c -> "Jane Doe" (a starting guess the admin can correct)
 function guessName(url) {

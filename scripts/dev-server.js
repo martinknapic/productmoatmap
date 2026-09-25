@@ -34,6 +34,7 @@ const blobMock = {
 const origLoad = Module._load;
 Module._load = function (request, ...rest) { return request === "@vercel/blob" ? blobMock : origLoad.call(this, request, ...rest); };
 
+const rewrites = JSON.parse(fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8")).rewrites || [];
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".jpg": "image/jpeg", ".png": "image/png", ".json": "application/json" };
 
 function signedCookie(name, data) {
@@ -61,7 +62,17 @@ http.createServer(async (req, res) => {
   }
 
   if (url.pathname.startsWith("/api/")) {
-    const file = path.join(ROOT, `${url.pathname}.js`);
+    // same /api rewrites as vercel.json (e.g. /api/apply -> /api/site?op=apply)
+    let apiPath = url.pathname;
+    for (const rw of rewrites) {
+      if (rw.source === url.pathname && rw.destination.startsWith("/api/")) {
+        const dest = new URL(rw.destination, "http://x");
+        apiPath = dest.pathname;
+        dest.searchParams.forEach((val, key) => { if (!url.searchParams.has(key)) url.searchParams.set(key, val); });
+        break;
+      }
+    }
+    const file = path.join(ROOT, `${apiPath}.js`);
     if (!file.startsWith(path.join(ROOT, "api")) || path.basename(file).startsWith("_") || !fs.existsSync(file)) { res.writeHead(404); return res.end("{}"); }
     let raw = ""; for await (const chunk of req) raw += chunk;
     let body; try { body = raw ? JSON.parse(raw) : undefined; } catch (err) { body = undefined; }
