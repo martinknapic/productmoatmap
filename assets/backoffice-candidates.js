@@ -188,6 +188,7 @@ async function initBackofficeCandidate() {
         </div>
         <div class="bo-cand-actions">
           ${c.status === "published" ? `<a class="btn btn-ghost" href="${boEscapeHTML(c.preview.url)}" target="_blank" rel="noopener">View live</a>` : ""}
+          ${c.status === "published" || c.status === "scheduled" ? `<button class="btn btn-ghost" id="bo-unpublish">${c.status === "scheduled" ? "Cancel schedule → back to preview" : "Unpublish → back to preview"}</button>` : ""}
           ${c.locked || c.status === "scheduled" || c.status === "published" ? `<a class="btn btn-primary" href="preview.html?id=${encodeURIComponent(c.id)}">Open preview &amp; publish</a>` : ""}
         </div>
       </div>
@@ -364,6 +365,12 @@ async function initBackofficeCandidate() {
       const data = await act({ action: "lock", locked: true });
       if (data) location.href = `preview.html?id=${encodeURIComponent(id)}`;
     });
+    on("#bo-unpublish", async () => {
+      const live = c.status === "published";
+      if (!window.confirm(live ? `Take ${boCandName(c)}'s interview offline and return it to preview? It stays locked, so you can review or reschedule it.` : "Cancel the schedule and return this to preview?")) return;
+      const data = await act({ action: "unpublish" });
+      if (data) location.href = `preview.html?id=${encodeURIComponent(id)}`;
+    });
     on("#bo-decline", () => act({ action: "decline", declined: !c.declined }, c.declined ? "Restored" : "Archived"));
     on("#bo-delete", () => {
       if (window.confirm(`Delete ${boCandName(c)} permanently? Their answers${c.status === "published" ? " and the published interview" : ""} will be removed. This can't be undone.`)) act({ action: "delete" });
@@ -460,7 +467,7 @@ async function initBackofficePreview() {
 
         <div class="pv-actions">
           <button class="btn btn-ghost" id="pv-save">Save changes</button>
-          ${live ? `<button class="btn btn-ghost" id="pv-unpublish">Unpublish</button>` : `
+          ${live ? `<button class="btn btn-ghost" id="pv-unpublish">Unpublish → back to preview</button>` : `
             <button class="btn btn-ghost" id="pv-schedule-btn">${scheduled ? "Update schedule" : "Schedule publish"}</button>
             <button class="btn btn-primary" id="pv-now">Publish now</button>
             ${scheduled ? `<button class="btn btn-ghost" id="pv-unschedule">Cancel schedule</button>` : ""}`}
@@ -503,8 +510,8 @@ async function initBackofficePreview() {
       if (!(await saveFields())) return;
       await act({ action: "publish", mode: "now" }, "Published");
     });
-    on("#pv-unschedule", () => act({ action: "setPublishing", scheduledPublishAt: null }, "Schedule cancelled"));
-    on("#pv-unpublish", () => { if (window.confirm("Take this interview offline? It goes back to locked.")) act({ action: "unpublish" }, "Unpublished"); });
+    on("#pv-unschedule", () => act({ action: "unpublish" }, "Schedule cancelled — back in preview mode"));
+    on("#pv-unpublish", () => { if (window.confirm("Take this interview offline and return it to preview? It stays locked, so you can review, edit the details, or reschedule it.")) act({ action: "unpublish" }, "Unpublished — back in preview mode"); });
     on("#pv-delete", () => { if (window.confirm(`Delete ${c.profile.name}'s interview and candidate record permanently? This can't be undone.`)) act({ action: "delete" }); });
   }
 
