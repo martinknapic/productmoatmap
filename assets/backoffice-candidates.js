@@ -37,6 +37,27 @@ function boCandAvatar(profile, extraClass = "") {
   return `<div class="avatar bo-cand-avatar ${extraClass}"><span>${boEscapeHTML(boInitials(profile.name))}</span>${src ? `<img src="${boEscapeHTML(src)}" alt="" referrerpolicy="no-referrer" loading="lazy" onerror="this.remove()">` : ""}</div>`;
 }
 
+// The link that matters for where a candidate is in the pipeline, shown short in the list and
+// always opening in a new tab: their questionnaire while it's with them, the admin preview once
+// it's locked or scheduled, and the public article once it's live.
+function boCandLink(c) {
+  const origin = location.origin;
+  const short = (s, n = 8) => `${s.slice(0, n)}…`;
+  if (["invited", "drafting", "ready"].includes(c.status)) {
+    if (c.linkRevoked) return { kind: "Revoked", text: "link revoked", url: null };
+    return { kind: "Questionnaire", text: `interview?t=${short(c.id)}`, url: `${origin}/interview.html?t=${c.id}` };
+  }
+  if (c.status === "locked" || c.status === "scheduled") {
+    return { kind: c.status === "scheduled" ? "Scheduled" : "Preview", text: `preview?id=${short(c.id)}`, url: `${origin}/backoffice/preview.html?id=${c.id}` };
+  }
+  if (c.status === "published" && c.publish && c.publish.slug) {
+    const category = c.publish.category || (c.profile.focusTag === "design" ? "productux" : "productmanagement");
+    const path = `/interview/${category}/${c.publish.slug}`;
+    return { kind: "Live", text: `${category}/${c.publish.slug}`, url: `${origin}${path}` };
+  }
+  return null;
+}
+
 const boPill = status => `<span class="bo-pill bo-pill-${boEscapeHTML(status)}">${boEscapeHTML(BO_STATUS_LABELS[status] || status)}</span>`;
 const boQuestionnaireLink = c => `${location.origin}/interview.html?t=${c.id}`;
 const boWhen = iso => (iso ? new Date(iso).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "—");
@@ -151,6 +172,12 @@ async function initBackofficeCandidates() {
         <td><span class="bo-badge bo-badge-src">${boEscapeHTML(BO_SOURCE_LABELS[c.source] || c.source)}</span></td>
         <td class="bo-cell-rec">${c.recommendation ? `<a class="bo-rec" data-rec-id="${boEscapeHTML(c.id)}" href="${boEscapeHTML(boRecommenderLinkedIn(c.recommendation).url)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${boEscapeHTML(c.recommendation.recommenderName || "the recommender")}'s LinkedIn — hover for name and email">${BO_LINKEDIN_SVG}</a>` : `<span class="bo-cell-dim">—</span>`}</td>
         <td>${boPill(c.status)}</td>
+        <td class="bo-cell-url">${(() => {
+          const l = boCandLink(c);
+          if (!l) return `<span class="bo-cell-dim">—</span>`;
+          if (!l.url) return `<span class="bo-cell-dim">${boEscapeHTML(l.text)}</span>`;
+          return `<a class="bo-url" href="${boEscapeHTML(l.url)}" target="_blank" rel="noopener noreferrer" title="${boEscapeHTML(l.url)}"><span class="bo-url-kind bo-url-${boEscapeHTML(l.kind.toLowerCase())}">${boEscapeHTML(l.kind)}</span><span class="bo-url-text">${boEscapeHTML(l.text)}</span><span aria-hidden="true">↗</span></a>`;
+        })()}</td>
         <td>${c.invitation ? `${boEscapeHTML(c.invitation.channel === "linkedin" ? "LinkedIn" : "Email")} · ${boEscapeHTML(new Date(c.invitation.sentAt).toLocaleDateString())}` : "—"}</td>
         <td>${boEscapeHTML(boWhen(c.updatedAt))}</td>
         <td><a class="bracket-link" href="candidate.html?id=${encodeURIComponent(c.id)}">[ Open ]</a></td>

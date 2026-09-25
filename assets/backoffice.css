@@ -458,3 +458,13 @@ textarea.bo-input { resize: vertical; line-height: 1.5; }
 .bo-rec-copy svg { width: 14px; height: 14px; }
 .bo-rec-copy.is-copied { color: #2f7d4f; border-color: #2f7d4f; }
 .bo-rec-note { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line-soft); font-size: 12.5px; color: var(--ink-dim); line-height: 1.4; }
+
+/* ---------- Short link column (candidates list) ---------- */
+.bo-cell-url { white-space: nowrap; }
+.bo-url { display: inline-flex; align-items: center; gap: 8px; max-width: 340px; color: var(--ink-body); font-family: var(--font-mono); font-size: 12px; }
+.bo-url:hover .bo-url-text { color: var(--ink); text-decoration: underline; }
+.bo-url-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.bo-url-kind { flex-shrink: 0; padding: 2px 7px; border: 1px solid var(--line); font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; }
+.bo-url-live { background: #2f7d4f; border-color: #2f7d4f; color: #fff; font-weight: 700; }
+.bo-url-preview, .bo-url-scheduled { border-color: var(--accent); color: var(--accent); }
+.bo-url-questionnaire { border-color: var(--ink); color: var(--ink); }
