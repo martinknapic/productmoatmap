@@ -61,6 +61,7 @@ function initInterview() {
     state.estimatedPublishDate = data.estimatedPublishDate;
     state.published = data.published;
     state.registered = !!data.registered;
+    state.source = data.source;
   }
 
   const readOnly = () => state.locked || !!state.published;
@@ -449,38 +450,14 @@ function initInterview() {
     const el = document.getElementById("iv-steps");
     if (!el) return;
     const req = state.questionnaire.sections.flatMap(sec => sec.questions).filter(q => q.required);
-    const missing = missingRequired().length;
-    const approved = !!state.approval.approved;
-    const published = !!state.published || state.status === "published";
-    const scheduled = state.status === "scheduled";
-    const locked = state.locked;
-    const est = state.estimatedPublishDate ? formatDay(state.estimatedPublishDate) : "";
-
-    // index of the step we're on (0-based); everything before it is done, after it pending
-    let current;
-    if (published) current = 5;
-    else if (scheduled) current = 4;
-    else if (locked || approved) current = 3;
-    else current = 1;
-
-    const steps = [
-      { title: "Invited", sub: "You're in" },
-      { title: "Your answers", sub: current > 1 ? "Done" : `${req.length - missing} of ${req.length} required` },
-      { title: "Your sign-off", sub: current > 2 ? (approved ? "You're happy" : "Approved") : missing ? "After your answers" : "Ready — press the button" },
-      { title: "Our review", sub: current > 3 ? "Preview ready" : current === 3 ? (locked ? "Preparing your preview" : "We'll take it from here") : "Preview & final check" },
-      { title: "Published", sub: published ? "Live" : scheduled ? "Scheduled" : est ? `Est. ${est}` : "Coming up" }
-    ];
-    el.innerHTML = steps.map((st, i) => {
-      const status = i < current ? "done" : i === current ? "current" : "pending";
-      const ready = i === 2 && status === "pending" && missing === 0 && !approved; // sign-off is the next thing to do
-      return `<li class="iv-step is-${status}${ready ? " is-next" : ""}"${status === "current" ? ' aria-current="step"' : ""}>
-        <span class="iv-step-dot">${status === "done" ? "&check;" : i + 1}</span>
-        <span class="iv-step-text"><span class="iv-step-title">${escapeHTML(st.title)}</span><span class="iv-step-sub">${escapeHTML(st.sub)}</span></span>
-      </li>`;
-    }).join("");
-    // on narrow screens the strip scrolls sideways: keep the current step in view
-    const cur = el.querySelector(".is-current");
-    if (cur && el.scrollWidth > el.clientWidth) el.scrollLeft = Math.max(0, cur.offsetLeft - 16);
+    el.innerHTML = processStepsHTML(buildProcessSteps({
+      hasRecord: true, source: state.source, invited: true,
+      requiredDone: req.length - missingRequired().length, requiredTotal: req.length,
+      approved: !!state.approval.approved, locked: state.locked,
+      scheduled: state.status === "scheduled", published: !!state.published || state.status === "published",
+      estimate: state.estimatedPublishDate ? formatDay(state.estimatedPublishDate) : ""
+    }));
+    revealCurrentStep(el);
   }
 
   // Same pattern as the Apply form: after a failed "finish" attempt, unanswered required fields

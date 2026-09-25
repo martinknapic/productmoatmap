@@ -35,6 +35,7 @@ function view(c) {
     estimatedPublishDate: inv.estimatedPublishDate || null,
     published: c.status === "published" ? { url: `/interview/${c.publish.category || C.defaultCategory(c.profile)}/${c.publish.slug}` } : null,
     updatedAt: c.answersUpdatedAt,
+    source: c.source,
     registered: !!c.verified // a signed-in member has linked their LinkedIn identity to this page
   };
 }

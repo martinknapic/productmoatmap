@@ -299,21 +299,70 @@ function initSignup() {
   completeSignup(newsletterPref);
 }
 
+// ---------- The whole journey as a strip of steps ----------
+// Shared by My interview and the personal questionnaire page so both show the same seven stages:
+// Applied -> In review -> Invited -> Your answers -> Your sign-off -> Our review -> Published.
+// ctx: { hasRecord, source, invited, requiredDone, requiredTotal, approved, locked, scheduled,
+//        published, estimate }
+
+function buildProcessSteps(ctx) {
+  let stage;
+  if (!ctx.hasRecord) stage = 0;
+  else if (ctx.published) stage = 7;
+  else if (ctx.scheduled) stage = 6;
+  else if (ctx.locked || ctx.approved) stage = 5;
+  else if (ctx.invited) stage = 3;
+  else stage = 1;
+
+  const total = ctx.requiredTotal || 0, done = ctx.requiredDone || 0;
+  const signOffReady = stage === 3 && total > 0 && done >= total;
+  const steps = [
+    { title: ctx.source === "recommended" ? "Recommended" : "Applied",
+      sub: !ctx.hasRecord ? "Start here" : ctx.source === "recommended" ? "You were recommended" : "Application sent" },
+    { title: "In review", sub: stage > 1 ? "Reviewed" : stage === 1 ? "Pending — we read every one" : "We read every one" },
+    { title: "Invited", sub: stage > 2 ? "You're in" : "By email or LinkedIn" },
+    { title: "Your answers", sub: stage > 3 ? "Done" : stage === 3 ? `${done} of ${total} required` : "Answer at your pace" },
+    { title: "Your sign-off", sub: stage > 4 ? (ctx.approved ? "You're happy" : "Approved") : signOffReady ? "Ready — press the button" : "After your answers" },
+    { title: "Our review", sub: stage > 5 ? "Preview ready" : stage === 5 ? (ctx.locked ? "Preparing your preview" : "We'll take it from here") : "Preview & final check" },
+    { title: "Published", sub: ctx.published ? "Live" : ctx.scheduled ? "Scheduled" : ctx.estimate ? `Est. ${ctx.estimate}` : "Coming up" }
+  ];
+  return steps.map((st, i) => ({ ...st, status: i < stage ? "done" : i === stage ? "current" : "pending", next: i === 4 && signOffReady }));
+}
+
+function processStepsHTML(steps) {
+  return steps.map((st, i) => `
+    <li class="iv-step is-${st.status}${st.next ? " is-next" : ""}"${st.status === "current" ? ' aria-current="step"' : ""}>
+      <span class="iv-step-dot">${st.status === "done" ? "&check;" : i + 1}</span>
+      <span class="iv-step-text"><span class="iv-step-title">${escapeHTML(st.title)}</span><span class="iv-step-sub">${escapeHTML(st.sub)}</span></span>
+    </li>`).join("");
+}
+
+// keeps the current step visible when the strip has to scroll sideways (phones)
+function revealCurrentStep(listEl) {
+  const cur = listEl.querySelector(".is-current");
+  if (cur && listEl.scrollWidth > listEl.clientWidth) listEl.scrollLeft = Math.max(0, cur.offsetLeft - 16);
+}
+
 // ---------- My interview (my-interview.html) ----------
-// Reached from the member dropdown. Asks /api/my-interview where the signed-in member stands:
-// invited -> straight to their private questionnaire; published -> link to the article;
-// applied -> "we have your application"; nothing yet (or not signed in) -> what the interview
-// is, with a call to action to apply.
+// Reached from the member dropdown. The page always shows the whole journey as a strip of steps and
+// where this person is on it; what's underneath depends on the stage. Before an invitation there's
+// only status ("You applied", "Your application is pending review"); the interview itself (continue,
+// preview, progress) appears once they've been invited.
 
 function initMyInterview() {
   const root = document.getElementById("mi-root");
   if (!root) return;
 
+  const fmtDate = iso => (iso ? new Date(iso).toLocaleDateString([], { dateStyle: "long" }) : "");
+  const fmtDay = iso => (iso ? new Date(`${iso}T00:00:00`).toLocaleDateString([], { dateStyle: "long" }) : "");
+
   const cta = `<a class="btn btn-primary" href="apply.html">Apply to be interviewed</a>`;
-  const hero = (eyebrow, title, lede, extra = "") => `
+  const stepsStrip = (ctx) => `<div class="iv-steps-wrap"><div class="wrap"><ol class="iv-steps" id="mi-steps" aria-label="The interview process">${processStepsHTML(buildProcessSteps(ctx))}</ol></div></div>`;
+  const hero = (title, lede, extra = "", ctx = null) => `
+    ${ctx ? stepsStrip(ctx) : ""}
     <section class="why-hero${extra ? " mi-hero-actions" : ""}">
       <div class="wrap">
-        <div class="eyebrow">${eyebrow}</div>
+        <div class="eyebrow">My interview</div>
         <h1>${title}</h1>
         <p class="about-lede">${lede}</p>
         ${extra ? `<div class="mi-actions">${extra}</div>` : ""}
@@ -353,32 +402,80 @@ function initMyInterview() {
       </div>
     </section>`;
 
-  function show(html) { root.innerHTML = html; }
+  function show(html) {
+    root.innerHTML = html;
+    const list = document.getElementById("mi-steps");
+    if (list) revealCurrentStep(list);
+  }
+
+  // the interview itself: only exists from the invitation on
+  function interviewPanel(d) {
+    const pct = d.requiredTotal ? Math.round((d.requiredDone / d.requiredTotal) * 100) : 0;
+    const link = `interview.html?t=${encodeURIComponent(d.token)}`;
+    const preview = `interview-preview.html?t=${encodeURIComponent(d.token)}`;
+    const est = d.estimatedPublishDate ? `<p class="mi-est">Estimated publish date: <strong>${escapeHTML(fmtDay(d.estimatedPublishDate))}</strong></p>` : "";
+    let title, lede, primary;
+    if (d.status === "scheduled") {
+      title = "Your interview is scheduled.";
+      lede = `It goes live on <strong>${escapeHTML(fmtDate(d.scheduledPublishAt))}</strong>. You can still preview exactly how it will look.`;
+      primary = `<a class="btn btn-primary" href="${preview}">Preview my interview</a>`;
+    } else if (d.locked) {
+      title = "We're preparing your preview.";
+      lede = "Your answers are locked in while we get your interview ready. Take a look at how it will appear when it's published.";
+      primary = `<a class="btn btn-primary" href="${preview}">Preview my interview</a>`;
+    } else if (d.approved) {
+      title = "You're happy with this version.";
+      lede = "Thank you — we'll take it from here. Want to change something? Open your interview and reopen it for editing.";
+      primary = `<a class="btn btn-primary" href="${preview}">Preview my interview</a><a class="btn btn-ghost" href="${link}">Open my answers</a>`;
+    } else {
+      title = "Your interview is open.";
+      lede = "You've been invited. Answer at your pace — everything saves automatically, and only the required questions are needed.";
+      primary = `<a class="btn btn-primary" href="${link}">${d.requiredDone ? "Continue your interview" : "Start your interview"} &rarr;</a><a class="btn btn-ghost" href="${preview}">Preview</a>`;
+    }
+    return hero(title, lede, primary, ctxFrom(d)) + `
+      <section class="wrap mi-progress-wrap">
+        <div class="mi-progress">
+          <div class="iv-progress-line"><div class="iv-progress-fill" style="width:${pct}%"></div></div>
+          <div class="iv-progress-text"><span><strong>${d.requiredDone} of ${d.requiredTotal}</strong> required answered</span>${d.updatedAt ? `<span>Last edited ${escapeHTML(fmtDate(d.updatedAt))}</span>` : ""}</div>
+          ${est}
+        </div>
+      </section>`;
+  }
+
+  const ctxFrom = (d) => ({
+    hasRecord: true, source: d.source, invited: d.state === "invited",
+    requiredDone: d.requiredDone, requiredTotal: d.requiredTotal, approved: d.approved,
+    locked: d.locked, scheduled: d.status === "scheduled", published: d.state === "published",
+    estimate: d.estimatedPublishDate ? fmtDay(d.estimatedPublishDate) : ""
+  });
 
   fetch("/api/my-interview", { credentials: "same-origin" })
     .then(resp => (resp.status === 401 ? { state: "signed-out" } : resp.ok ? resp.json() : Promise.reject(resp.status)))
     .then(data => {
       if (data.state === "invited") {
-        show(hero("My interview", "Opening your interview&hellip;", "Taking you to your private questionnaire."));
-        location.replace(`interview.html?t=${encodeURIComponent(data.token)}`);
+        show(interviewPanel(data));
       } else if (data.state === "published") {
-        show(hero("My interview", "Your interview is live.", "Thank you for taking part.",
-          `<a class="btn btn-primary" href="${escapeHTML(data.url)}">Read your interview &rarr;</a>`));
+        show(hero("Your interview is live.", "Thank you for taking part.",
+          `<a class="btn btn-primary" href="${escapeAttr(data.url)}">Read your interview &rarr;</a>`, ctxFrom(data)));
       } else if (data.state === "applied") {
-        show(hero("My interview", "We have your application.",
-          "Thank you for applying. We read every application ourselves and will be in touch by email or LinkedIn if it looks like a fit &mdash; your personal interview page will appear here as soon as you're invited.",
-          `<a class="bracket-link" href="questions.html">[ See what the interview covers ]</a> <a class="bracket-link" href="process.html">[ The process ]</a>`));
+        const recommended = data.source === "recommended";
+        show(hero(recommended ? "Someone recommended you." : "You applied — your application is pending review.",
+          recommended
+            ? "A member of the community suggested you for the series. We'll be in touch by email or LinkedIn if it looks like a fit &mdash; your personal interview will appear here as soon as you're invited."
+            : `Thank you for applying${data.appliedAt ? ` on ${escapeHTML(fmtDate(data.appliedAt))}` : ""}. We read every application ourselves and will be in touch by email or LinkedIn if it looks like a fit &mdash; your personal interview will appear here as soon as you're invited.`,
+          `<a class="bracket-link" href="questions.html">[ See what the interview covers ]</a> <a class="bracket-link" href="process.html">[ The process ]</a>`,
+          { hasRecord: true, source: data.source }));
       } else if (data.state === "signed-out") {
-        show(hero("My interview", "Sign in to see your interview.",
+        show(hero("Sign in to see your interview.",
           "Your personal interview page is tied to your LinkedIn account. Sign up or sign in, and it will show up here once you've been invited.",
           `<a class="btn btn-primary" href="signup.html">Sign up with LinkedIn</a>`) + pitch);
       } else {
-        show(hero("My interview", "You haven't been interviewed yet.",
+        show(hero("You haven't been interviewed yet.",
           "ProductMoat is an interview series with product people around the world. If you'd like to be featured, apply &mdash; if it's a fit, your personal interview page will appear right here.",
-          cta) + pitch);
+          cta, { hasRecord: false }) + pitch);
       }
     })
-    .catch(() => show(hero("My interview", "Something went wrong.", "We couldn't check your interview just now. Please refresh in a moment.")));
+    .catch(() => show(hero("Something went wrong.", "We couldn't check your interview just now. Please refresh in a moment.")));
 }
 
 // ---------- Account page (account.html) ----------

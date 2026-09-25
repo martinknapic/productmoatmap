@@ -323,6 +323,16 @@ async function upsertMember(session, newsletter, source) {
   return record;
 }
 
+// How many required questions are answered (profile-backed Q1–Q5 count via the profile fields).
+const PROFILE_FIELD_BY_QID = { q1: "name", q2: "role", q3: "company", q4: "location", q5: "yearsExperience" };
+function requiredProgress(c) {
+  const req = ((c.questionnaire && c.questionnaire.sections) || []).flatMap(s => s.questions).filter(q => q.required);
+  const filled = q => q.fromProfile
+    ? String(c.profile[PROFILE_FIELD_BY_QID[q.id]] == null ? "" : c.profile[PROFILE_FIELD_BY_QID[q.id]]).trim() !== ""
+    : typeof (c.answers || {})[q.id] === "string" && c.answers[q.id].trim() !== "";
+  return { required: req.length, done: req.filter(filled).length };
+}
+
 // ---------- Publishing helpers ----------
 
 function slugify(name) {
@@ -395,6 +405,6 @@ module.exports = {
   parseCookies, adminSession, memberSession, requireAdmin, isAdminRequest, clip,
   readJSON, writeJSON, readCandidate, saveCandidate, listCandidates, deleteCandidate,
   upsertMember, readMember, saveMemberDetails, setNetworkOptIn, isNetworkMember, cleanMemberDetails, FOCUS_TAGS, readBank, defaultBank, cleanSections, QUESTION_BANK_PATH,
-  deriveStatus, isLive, blankCandidate, cleanProfile, ID_RE, newId,
+  requiredProgress, deriveStatus, isLive, blankCandidate, cleanProfile, ID_RE, newId,
   slugify, CATEGORIES, defaultCategory, toPublicInterview, takenSlugs, FOCUS_LABELS
 };

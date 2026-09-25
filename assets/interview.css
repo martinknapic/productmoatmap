@@ -311,3 +311,10 @@ select.ivq-input { appearance: auto; }
   .iv-step { min-width: 104px; }
   .iv-step-title { font-size: 12.5px; }
 }
+
+
+/* ----- My interview: progress panel under the hero ----- */
+.mi-progress-wrap { padding-bottom: 64px; }
+.mi-progress { max-width: 620px; }
+.mi-progress .iv-progress-text { justify-content: flex-start; gap: 6px 28px; }
+.mi-est { margin-top: 14px; color: var(--ink-body); font-size: 15px; }

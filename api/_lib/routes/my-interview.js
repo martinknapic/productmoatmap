@@ -17,11 +17,23 @@ const C = require("../common");
 
 const RANK = { published: 4, invited: 3, applied: 2, none: 0 };
 
+// Where this person is in the process, with just enough detail for the My interview page to draw
+// the whole journey (applied -> in review -> invited -> answers -> sign-off -> our review -> published).
 function classify(c) {
   if (c.declined) return { state: "none" };
-  if (C.isLive(c)) return { state: "published", url: `/interview/${(c.publish && c.publish.category) || C.defaultCategory(c.profile)}/${c.publish.slug}` };
-  if (c.invitation && c.questionnaire && !c.linkRevoked) return { state: "invited", token: c.id, status: c.status, locked: !!c.locked };
-  return { state: "applied" };
+  const base = { source: c.source, appliedAt: c.createdAt };
+  if (C.isLive(c)) return { ...base, state: "published", status: "published", url: `/interview/${(c.publish && c.publish.category) || C.defaultCategory(c.profile)}/${c.publish.slug}` };
+  if (c.invitation && c.questionnaire && !c.linkRevoked) {
+    const p = C.requiredProgress(c);
+    return {
+      ...base, state: "invited", token: c.id, status: c.status, locked: !!c.locked,
+      approved: !!(c.approval && c.approval.approved),
+      estimatedPublishDate: c.invitation.estimatedPublishDate || null,
+      scheduledPublishAt: c.status === "scheduled" ? c.publish.scheduledPublishAt : null,
+      requiredTotal: p.required, requiredDone: p.done, updatedAt: c.answersUpdatedAt || null
+    };
+  }
+  return { ...base, state: "applied", status: c.status };
 }
 
 module.exports = async (req, res) => {
