@@ -10,7 +10,7 @@
 // sign-in on signup.html) so this can't be called to enroll someone else.
 
 const crypto = require("crypto");
-const { put } = require("@vercel/blob");
+const { put, get } = require("@vercel/blob");
 
 const SESSION_COOKIE = "pm_session";
 
@@ -63,22 +63,35 @@ module.exports = async (req, res) => {
   const source = req.body && ALLOWED_SOURCES.has(req.body.source) ? req.body.source : "signup";
   const emailKey = crypto.createHash("sha256").update(session.email.toLowerCase()).digest("hex");
 
-  const record = {
-    name: session.name || "",
-    email: session.email,
-    picture: session.picture || null,
-    newsletter,
-    source,
-    updatedAt: new Date().toISOString()
-  };
+  const pathname = `members/${emailKey}.json`;
 
   try {
-    await put(`members/${emailKey}.json`, JSON.stringify(record), {
+    // Signing in again (or ticking the box on another page) must not fail or drop an existing
+    // subscription: the record is overwritten in place, and a subscription only ever turns on
+    // here — unsubscribing happens through the link in each newsletter issue.
+    let existing = null;
+    try {
+      const found = await get(pathname, { access: "private" });
+      if (found && found.stream) existing = JSON.parse(await new Response(found.stream).text());
+    } catch (err) { /* no previous record */ }
+
+    const record = {
+      name: session.name || "",
+      email: session.email,
+      picture: session.picture || null,
+      newsletter: newsletter || !!(existing && existing.newsletter),
+      source: (existing && existing.newsletter && !newsletter) ? existing.source || source : source,
+      createdAt: (existing && existing.createdAt) || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    await put(pathname, JSON.stringify(record), {
       access: "private",
       addRandomSuffix: false,
+      allowOverwrite: true,
       contentType: "application/json"
     });
-    return res.status(200).json({ ok: true, newsletter });
+    return res.status(200).json({ ok: true, newsletter: record.newsletter });
   } catch (err) {
     console.error("[member-signup] blob write failed:", (err && err.stack) || err);
     return res.status(500).json({ error: "storage_failed" });

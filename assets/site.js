@@ -237,6 +237,9 @@ function initSignup() {
         body: JSON.stringify({ newsletter })
       });
       if (!resp.ok) throw new Error("signup failed");
+      // what's actually stored (an existing subscription is kept even if the box was left unticked)
+      const saved = await resp.json().catch(() => ({}));
+      if (typeof saved.newsletter === "boolean") newsletter = saved.newsletter;
 
       consentBlock.hidden = true;
       successNewsletterNote.textContent = newsletter
