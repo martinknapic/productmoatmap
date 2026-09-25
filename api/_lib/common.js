@@ -219,6 +219,28 @@ function cleanProfile(p) {
   };
 }
 
+// ---------- Members (private profile + newsletter choice, written when someone signs up) ----------
+
+// Overwrites in place, keeps createdAt, and never drops an existing newsletter subscription
+// (unsubscribing happens through the link in each newsletter issue).
+async function upsertMember(session, newsletter, source) {
+  const emailKey = crypto.createHash("sha256").update(session.email.toLowerCase()).digest("hex");
+  const pathname = `members/${emailKey}.json`;
+  let existing = null;
+  try { existing = await readJSON(pathname); } catch (err) { /* no previous record */ }
+  const record = {
+    name: session.name || "",
+    email: session.email,
+    picture: session.picture || null,
+    newsletter: !!newsletter || !!(existing && existing.newsletter),
+    source: (existing && existing.newsletter && !newsletter) ? (existing.source || source) : source,
+    createdAt: (existing && existing.createdAt) || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  await writeJSON(pathname, record);
+  return record;
+}
+
 // ---------- Publishing helpers ----------
 
 function slugify(name) {
@@ -290,7 +312,7 @@ module.exports = {
   crypto, defaults,
   parseCookies, adminSession, memberSession, requireAdmin, clip,
   readJSON, writeJSON, readCandidate, saveCandidate, listCandidates, deleteCandidate,
-  readBank, defaultBank, cleanSections, QUESTION_BANK_PATH,
+  upsertMember, readBank, defaultBank, cleanSections, QUESTION_BANK_PATH,
   deriveStatus, isLive, blankCandidate, cleanProfile, ID_RE, newId,
   slugify, CATEGORIES, defaultCategory, toPublicInterview, takenSlugs, FOCUS_LABELS
 };

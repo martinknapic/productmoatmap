@@ -39,6 +39,7 @@ function initInterview() {
   const state = {
     profile: {}, questionnaire: null, answers: {}, custom: [], customLimit: 3,
     locked: false, approval: { approved: false }, status: "invited", estimatedPublishDate: null, published: null,
+    registered: false, member: null, registerError: false,
     validated: false, // set once they try to finish with required answers missing -> show what's missing in red
     dirty: false, saving: false, saveTimer: null
   };
@@ -59,6 +60,7 @@ function initInterview() {
     state.status = data.status;
     state.estimatedPublishDate = data.estimatedPublishDate;
     state.published = data.published;
+    state.registered = !!data.registered;
   }
 
   const readOnly = () => state.locked || !!state.published;
@@ -102,6 +104,7 @@ function initInterview() {
       </section>
 
       <section class="iv-body wrap">
+        <div id="iv-register"></div>
         <div id="iv-banner"></div>
         ${renderDetails()}
         ${sections().map(renderSection).join("")}
@@ -111,6 +114,95 @@ function initInterview() {
     `;
     wire();
     refreshAll();
+    initRegistration();
+  }
+
+  // ---------- registration (for people who came in via a recommendation) ----------
+  // Sign up with LinkedIn right from this page (the same OAuth + member profile as signup.html);
+  // the callback sends them straight back here, where the page is linked to their new profile.
+
+  async function claim(extra) {
+    try {
+      const resp = await fetch("/api/interview", {
+        method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+        body: JSON.stringify({ t: token, claim: true, ...extra })
+      });
+      if (!resp.ok) throw new Error(String(resp.status));
+      const data = await resp.json();
+      state.registered = !!data.registered;
+      if (data.photo && !state.profile.photo) {
+        state.profile.photo = data.photo;
+        const slot = document.querySelector(".iv-hero-photo");
+        if (slot) slot.innerHTML = heroPhoto();
+      }
+      return data;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function startRegister() {
+    const nonce = crypto.randomUUID();
+    sessionStorage.setItem("li_oauth_state", nonce);
+    const box = document.getElementById("iv-reg-newsletter");
+    sessionStorage.setItem("iv_newsletter", box && box.checked ? "1" : "0");
+    const params = new URLSearchParams({
+      response_type: "code",
+      client_id: LINKEDIN_CLIENT_ID,
+      redirect_uri: `${window.location.origin}/api/linkedin-callback`,
+      scope: "openid profile email",
+      state: `${nonce}:interview:${token}`
+    });
+    window.location.href = `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
+  }
+
+  function renderRegisterBox() {
+    const el = document.getElementById("iv-register");
+    if (!el) return;
+    if (state.member) {
+      el.innerHTML = `<div class="iv-register is-done"><span class="li-badge-check">&check;</span> ${state.registered ? `You're registered and signed in as <strong>${escapeHTML(state.member.name || "a LinkedIn member")}</strong> — this page is linked to your ProductMoat profile.` : `You're signed in as <strong>${escapeHTML(state.member.name || "a LinkedIn member")}</strong>.`}</div>`;
+      return;
+    }
+    el.innerHTML = `
+      <div class="iv-register">
+        <div class="iv-register-text">
+          <strong>Create your ProductMoat profile</strong>
+          <p>Sign up with LinkedIn in one click — you'll come straight back to this page. It creates a <strong>private profile</strong> (name, email, photo) that's never published, and puts your avatar in the site menu. Optional, and you can answer the questions without it.</p>
+          ${state.registerError ? `<p class="hint-inline li-error">LinkedIn sign-in didn't go through — try again.</p>` : ""}
+        </div>
+        <div class="iv-register-actions">
+          <div class="form-checkbox-row"><input type="checkbox" id="iv-reg-newsletter"><label for="iv-reg-newsletter">Subscribe me to the ProductMoat newsletter <span class="li-optional">(optional)</span>.</label></div>
+          <button type="button" class="btn btn-primary li-btn" id="iv-register-btn">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 1 1 0-4.124 2.062 2.062 0 0 1 0 4.124zM7.119 20.452H3.554V9h3.565v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            Sign up with LinkedIn
+          </button>
+        </div>
+      </div>`;
+    document.getElementById("iv-register-btn").addEventListener("click", startRegister);
+  }
+
+  async function initRegistration() {
+    const params = new URLSearchParams(location.search);
+    const li = params.get("li");
+    let registeredNow = false;
+    if (li) {
+      // back from the LinkedIn round trip
+      const returnedState = params.get("state");
+      history.replaceState(null, "", `${location.pathname}?t=${encodeURIComponent(token)}`);
+      const expected = sessionStorage.getItem("li_oauth_state");
+      const wantsNewsletter = sessionStorage.getItem("iv_newsletter") === "1";
+      sessionStorage.removeItem("li_oauth_state");
+      sessionStorage.removeItem("iv_newsletter");
+      if (li === "ok" && returnedState && returnedState === expected) {
+        registeredNow = !!(await claim({ register: true, newsletter: wantsNewsletter }));
+      } else {
+        state.registerError = li !== "ok" || !!returnedState;
+      }
+    }
+    state.member = await fetchMemberProfile();
+    if (state.member && !state.registered) await claim({}); // signed in already: just link this page to them
+    renderRegisterBox();
+    if (registeredNow) setToast("You're registered — welcome to ProductMoat!", true);
   }
 
   // Large portrait of the person (photo set by the admin / from LinkedIn); initials if there's none or it fails to load.

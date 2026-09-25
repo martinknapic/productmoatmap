@@ -249,6 +249,7 @@ function boInviteMessage(c, channel, link, estimated) {
   const est = estimated ? new Date(`${estimated}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "";
   const rec = c.recommendation || {};
   const how = `It's a set of questions about your path into product, how you think, and how AI is changing the craft. Only a handful are required and the rest are optional; you can also add up to three questions of your own. Your answers save automatically, so come back any time. When you're happy with them, press the button at the bottom of the page — we'll then prepare a preview together, and nothing goes public until you've had the final say.`;
+  const signupLine = c.source === "recommended" ? `\n\nIf you'd like a ProductMoat profile too, the page has a one-click "Sign up with LinkedIn" — you'll land right back on it.` : "";
   const estLine = est ? `\n\nWe're aiming to publish around ${est}.` : "";
 
   let opening;
@@ -264,12 +265,12 @@ function boInviteMessage(c, channel, link, estimated) {
   if (channel === "linkedin") {
     return {
       subject: "",
-      body: `Hi ${first},\n\n${opening}\n\nHere's your personal, private interview page: ${link}\n\n${how}${estLine}\n\nIf it's not for you, no problem at all — just let me know.\n\nMartin`
+      body: `Hi ${first},\n\n${opening}\n\nHere's your personal, private interview page: ${link}\n\n${how}${signupLine}${estLine}\n\nIf it's not for you, no problem at all — just let me know.\n\nMartin`
     };
   }
   return {
     subject: "Your ProductMoat interview",
-    body: `Hi ${first},\n\n${opening}\n\nHere's your personal, private interview page — only you (and I) can open it:\n${link}\n\n${how}${estLine}\n\nIf it's not for you, no problem at all — just reply and let me know.\n\nWarm regards,\nMartin`
+    body: `Hi ${first},\n\n${opening}\n\nHere's your personal, private interview page — only you (and I) can open it:\n${link}\n\n${how}${signupLine}${estLine}\n\nIf it's not for you, no problem at all — just reply and let me know.\n\nWarm regards,\nMartin`
   };
 }
 

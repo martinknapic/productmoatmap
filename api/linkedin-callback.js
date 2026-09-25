@@ -34,19 +34,25 @@ const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
 // param as `<nonce>:<page>` (the nonce is still what's checked for CSRF,
 // client-side). Whitelisted here so this can't be turned into an open
 // redirect by a crafted state value.
-const ALLOWED_PAGES = new Set(["apply", "recommend", "join-map", "signup"]);
+const ALLOWED_PAGES = new Set(["apply", "recommend", "join-map", "signup", "interview"]);
+
+// "interview" carries the personal-page token as a third part — `<nonce>:interview:<token>` —
+// so a recommended person can register from their questionnaire page and land straight back on
+// it. The token is only ever echoed into the redirect after matching a strict pattern.
+const TOKEN_RE = /^[A-Za-z0-9_-]{20,64}$/;
 
 function parseState(rawState) {
-  if (typeof rawState !== "string") return { nonce: null, page: "apply" };
-  const idx = rawState.indexOf(":");
-  if (idx === -1) return { nonce: rawState, page: "apply" };
-  const nonce = rawState.slice(0, idx);
-  const page = rawState.slice(idx + 1);
-  return { nonce, page: ALLOWED_PAGES.has(page) ? page : "apply" };
+  if (typeof rawState !== "string") return { nonce: null, page: "apply", token: null };
+  const [nonce, page, token] = rawState.split(":");
+  if (page === undefined) return { nonce, page: "apply", token: null };
+  if (page === "interview") {
+    return TOKEN_RE.test(token || "") ? { nonce, page, token } : { nonce, page: "apply", token: null };
+  }
+  return { nonce, page: ALLOWED_PAGES.has(page) ? page : "apply", token: null };
 }
 
-function redirectToApply(res, page, query) {
-  res.setHeader("Location", `/${page}.html?${query}`);
+function redirectToApply(res, page, query, token) {
+  res.setHeader("Location", `/${page}.html?${token ? `t=${token}&` : ""}${query}`);
   res.status(302).end();
 }
 
@@ -58,22 +64,22 @@ function decodeIdToken(idToken) {
 
 module.exports = async (req, res) => {
   const { code, error, state } = req.query;
-  const { nonce, page } = parseState(state);
+  const { nonce, page, token } = parseState(state);
 
   if (error) {
     console.error("[linkedin-callback] denied by user:", error, req.query.error_description);
-    return redirectToApply(res, page, "li=denied");
+    return redirectToApply(res, page, "li=denied", token);
   }
   if (!code || typeof code !== "string") {
     console.error("[linkedin-callback] missing/invalid code param:", req.query);
-    return redirectToApply(res, page, "li=error");
+    return redirectToApply(res, page, "li=error", token);
   }
 
   const clientId = process.env.LINKEDIN_CLIENT_ID;
   const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
   if (!clientId || !clientSecret) {
     console.error("[linkedin-callback] missing env vars:", { hasClientId: !!clientId, hasClientSecret: !!clientSecret });
-    return redirectToApply(res, page, "li=error");
+    return redirectToApply(res, page, "li=error", token);
   }
 
   try {
@@ -95,13 +101,13 @@ module.exports = async (req, res) => {
     if (!tokenResp.ok) {
       const errBody = await tokenResp.text().catch(() => "<unreadable>");
       console.error("[linkedin-callback] token exchange failed:", tokenResp.status, errBody, "redirectUri used:", redirectUri);
-      return redirectToApply(res, page, "li=error");
+      return redirectToApply(res, page, "li=error", token);
     }
 
     const tokenData = await tokenResp.json();
     if (!tokenData.id_token) {
       console.error("[linkedin-callback] no id_token in token response:", Object.keys(tokenData));
-      return redirectToApply(res, page, "li=error");
+      return redirectToApply(res, page, "li=error", token);
     }
 
     const claims = decodeIdToken(tokenData.id_token);
@@ -130,9 +136,9 @@ module.exports = async (req, res) => {
 
     const query = new URLSearchParams({ li: "ok" });
     if (nonce) query.set("state", nonce);
-    return redirectToApply(res, page, query.toString());
+    return redirectToApply(res, page, query.toString(), token);
   } catch (err) {
     console.error("[linkedin-callback] unexpected exception:", err && err.stack || err);
-    return redirectToApply(res, page, "li=error");
+    return redirectToApply(res, page, "li=error", token);
   }
 };

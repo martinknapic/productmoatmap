@@ -243,3 +243,22 @@ select.ivq-input { appearance: auto; }
   cursor: pointer;
 }
 .iv-jump:hover { color: var(--ink); border-color: var(--ink); }
+
+
+/* ----- register (recommended people) ----- */
+.iv-register {
+  max-width: 860px;
+  margin-bottom: 20px;
+  padding: 20px 22px;
+  border: 1px solid var(--ink);
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.iv-register-text { flex: 1 1 360px; }
+.iv-register-text p { margin-top: 6px; color: var(--ink-body); font-size: 14.5px; line-height: 1.55; }
+.iv-register-actions { flex: 0 1 300px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.iv-register-actions .form-checkbox-row { margin-top: 0; }
+.iv-register.is-done { border-color: #2f7d4f; display: block; font-size: 14.5px; }

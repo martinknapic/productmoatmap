@@ -34,7 +34,8 @@ function view(c) {
     approval: c.approval,
     estimatedPublishDate: inv.estimatedPublishDate || null,
     published: c.status === "published" ? { url: `/interview/${c.publish.category || C.defaultCategory(c.profile)}/${c.publish.slug}` } : null,
-    updatedAt: c.answersUpdatedAt
+    updatedAt: c.answersUpdatedAt,
+    registered: !!c.verified // a signed-in member has linked their LinkedIn identity to this page
   };
 }
 
@@ -49,9 +50,35 @@ module.exports = async (req, res) => {
 
   if (req.method === "GET") return res.status(200).json(view(c));
   if (req.method !== "POST") return res.status(405).json({ error: "method_not_allowed" });
-  if (c.locked || c.status === "published") return res.status(423).json({ error: "locked", ...view(c) });
-
   const body = req.body || {};
+
+  // A recommended person can register from this page (LinkedIn sign-in, then back here). The
+  // member session proves who they are; holding the personal link proves which page is theirs.
+  //   claim: true            link this page to the signed-in member (so "My interview" finds it,
+  //                          and their email/photo fill in). Never overwrites an earlier link.
+  //   claim + register: true also creates their private member profile (with the newsletter choice
+  //                          they made next to the sign-up button) — same record as signup.html.
+  if (body.claim === true) {
+    const session = C.memberSession(req);
+    if (!session || !session.email) return res.status(401).json({ error: "not_authenticated" });
+    try {
+      if (body.register === true) await C.upsertMember(session, body.newsletter === true, "interview");
+      const mine = !c.verified || String(c.verified.email || "").toLowerCase() === session.email.toLowerCase();
+      if (mine) {
+        c.verified = { name: session.name || "", email: session.email };
+        if (!c.profile.email) c.profile.email = C.cleanProfile({ email: session.email }).email;
+        if (!c.profile.name) c.profile.name = C.cleanProfile({ name: session.name }).name;
+        if (!c.profile.photo && session.picture) c.profile.photo = C.cleanProfile({ photo: session.picture }).photo;
+        await C.saveCandidate(c);
+      }
+      return res.status(200).json({ ok: true, linked: mine, ...view(c), photo: c.profile.photo || null });
+    } catch (err) {
+      console.error("[interview] claim failed:", (err && err.stack) || err);
+      return res.status(500).json({ error: "storage_failed" });
+    }
+  }
+
+  if (c.locked || c.status === "published") return res.status(423).json({ error: "locked", ...view(c) });
 
   try {
     if (typeof body.approve === "boolean") {
