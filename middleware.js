@@ -12,8 +12,10 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 export const config = {
   runtime: "nodejs",
   matcher: [
-    "/backoffice/applications.html",
-    "/backoffice/recommendations.html",
+    "/backoffice/candidates.html",
+    "/backoffice/candidate.html",
+    "/backoffice/preview.html",
+    "/backoffice/questions.html",
     "/backoffice/profiles.html",
     "/backoffice/map-submissions.html"
   ]

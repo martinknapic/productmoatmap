@@ -3,32 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ProductMoat — Interview</title>
-  <base href="/">
+  <title>Your interview — ProductMoat</title>
+  <meta name="description" content="Your personal ProductMoat interview.">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css">
   <link rel="stylesheet" href="assets/swiss.css?v=18">
   <link rel="stylesheet" href="assets/site.css?v=41">
+  <link rel="stylesheet" href="assets/interview.css?v=2">
 </head>
-<body>
+<body data-no-member-nav>
   <nav class="nav">
     <div class="nav-inner">
       <a class="logo" href="index.html"><span class="logo-mark"></span>ProductMoat</a>
-      <div class="nav-links">
-        <a href="index.html#directory">Interviews</a>
-        <a href="map.html">Map</a>
-        <a href="calendar.html">Calendar</a>
-        <a href="apply.html">Apply</a>
-      </div>
       <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">LIGHT</button>
     </div>
   </nav>
 
-  <div id="person-root"></div>
-
-  <div class="wrap">
-    <div class="profile-nav" id="profile-nav"></div>
+  <div id="iv-root">
+    <section class="why-hero">
+      <div class="wrap">
+        <div class="eyebrow">Your interview</div>
+        <h1>Loading&hellip;</h1>
+      </div>
+    </section>
   </div>
+
+  <div class="iv-toast" id="iv-toast" role="status" aria-live="polite" hidden></div>
 
   <footer>
     <div class="wrap footer-inner">
@@ -37,22 +38,19 @@
         and product design at the intersection of AI.
       </p>
       <div class="footer-links">
-        <a href="map.html">World map</a>
-        <a href="about.html">About</a>
+        <a href="questions.html">All questions</a>
         <a href="privacy.html">Privacy</a>
-        <a href="https://www.linkedin.com/in/martinknapic" target="_blank" rel="noopener">LinkedIn</a>
       </div>
     </div>
   </footer>
 
-  <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
   <script src="assets/questions-default.js?v=1"></script>
   <script src="assets/people-data.js?v=14"></script>
-  <script src="/api/published?format=js"></script>
   <script src="assets/site.js?v=30"></script>
+  <script src="assets/interview.js?v=2"></script>
   <script>
     initTheme();
-    initPerson();
+    initInterview();
   </script>
 </body>
 </html>

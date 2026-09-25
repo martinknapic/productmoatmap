@@ -4,3 +4,4 @@
 Vercel backup codes/
 node_modules/
 .vercel
+.dev-data/

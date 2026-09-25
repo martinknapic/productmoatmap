@@ -221,6 +221,31 @@ deployment to test the OAuth round-trip end-to-end.
       `recommend.html` (not `apply.html`) with the form unlocked, "Your name"/"Your email"
       pre-filled but not editable, and only "Their LinkedIn URL" required for submit.
 
+## Candidates → invitation → interview → publish
+
+Everyone who **applies** (`api/apply.js`), is **recommended** (`api/recommend.js`) or is **added by hand** in the
+backoffice becomes a *candidate* (`candidates/<id>.json` in Vercel Blob). The admin (LinkedIn-signed-in) works them
+through a pipeline: `new → invited → drafting → ready → locked → scheduled → published` (or `declined`).
+
+| Step | Where |
+|---|---|
+| Candidate list, add by hand | `backoffice/candidates.html` |
+| One candidate: profile, **invitation** (manual email / LinkedIn message, generated per situation — applied, recommended, added), their questions, their answers, sign-off, lock | `backoffice/candidate.html?id=` |
+| Standard question bank (what new invitations copy; also shown on `questions.html`) | `backoffice/questions.html` → `api/question-bank.js` (falls back to `assets/questions-default.js`) |
+| The person's private page — questions as an accordion, autosave, "I'm happy with this version" (editing afterwards resets it; locked = read-only) | `interview.html?t=<token>` → `api/interview.js` |
+| Article preview + admin bar: estimated date, **publish schedule** and **displayed date** (two separate fields), URL section/name, foreword, Schedule / Publish now / Unpublish / Delete | `backoffice/preview.html?id=` |
+| **My interview** (member menu → *My interview*): sends an invited person to their questionnaire, shows a published one's link, confirms an application, or — with nothing yet / signed out — explains the interview with an *Apply* button. Matched by the LinkedIn-verified email | `my-interview.html` → `api/my-interview.js` |
+| Published article | `/interview/productmanagement/<name>` or `/interview/productux/<name>` (rewrite in `vercel.json` → `person.html`) |
+
+Notes: the personal link's token *is* the candidate id (192-bit random) and only works once invited; each invitee gets
+their own **copy** of the questions, so changing the standard bank never rewrites an in-progress interview. Scheduled
+interviews go live lazily — `api/published.js` treats "scheduled and past its time" as published, so no cron job is
+needed; the site loads it as a script (`/api/published?format=js`) that appends to `INTERVIEWS`. Sending invitations is
+manual for now.
+
+Run it all offline with `node scripts/dev-server.js` (in-memory Blob stand-in, `/dev-login` for the admin session,
+`/dev-member-login` to try Apply/Recommend).
+
 ## Backoffice login (`/backoffice`)
 
 The backoffice used to gate itself with a hardcoded username/password checked in
@@ -238,7 +263,7 @@ a server-enforced session (not just a client-side check).
 | `api/backoffice-me.js` | Returns the current session's name/email as JSON, for the "Logged in as …" display |
 | `api/backoffice-logout.js` | Clears the session cookie |
 | `backoffice/map-submissions.html` + `api/map-submissions.js` | The "Put yourself on the map" moderation queue — see that section above |
-| `middleware.js` | Vercel Routing Middleware — checks the session cookie **before** serving `applications.html`, `recommendations.html`, `map-submissions.html`, or `profiles.html`, redirecting to the login page otherwise. This is the actual security boundary; `assets/backoffice.js`'s own check is just for UI (who's logged in, wiring sign-out) |
+| `middleware.js` | Vercel Routing Middleware — checks the session cookie **before** serving `candidates.html`, `candidate.html`, `preview.html`, `questions.html`, `map-submissions.html`, or `profiles.html`, redirecting to the login page otherwise. This is the actual security boundary; `assets/backoffice.js`'s own check is just for UI (who's logged in, wiring sign-out) |
 | `package.json` | Installs `@vercel/functions` (which `middleware.js` needs for its `next()` pass-through helper) and `@vercel/blob` (used by `api/join-map.js` and friends). Nothing else about the site gets a build step; every other page is still plain static HTML/CSS/JS |
 
 Reuses the same LinkedIn app/credentials as the Apply page's verification gate (same

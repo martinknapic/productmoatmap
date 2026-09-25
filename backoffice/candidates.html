@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Candidates — ProductMoat Backoffice</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <link rel="stylesheet" href="../assets/swiss.css?v=18">
+  <link rel="stylesheet" href="../assets/backoffice.css?v=14">
+</head>
+<body class="light">
+  <nav class="nav bo-nav">
+    <div class="nav-inner">
+      <div class="logo"><span class="logo-mark"></span>ProductMoat <span class="bo-nav-tag">Backoffice</span></div>
+      <div class="bo-subnav">
+        <a href="candidates.html" class="bo-subnav-active">Candidates</a>
+        <a href="questions.html">Questions</a>
+        <a href="map-submissions.html">Map submissions</a>
+        <a href="profiles.html">Profiles</a>
+      </div>
+      <div class="bo-nav-right">
+        <span class="bo-user" id="bo-user"></span>
+        <button class="btn btn-ghost bo-logout" id="bo-logout">Log out</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="wrap bo-main">
+    <div class="bo-section-head bo-head-row">
+      <div>
+        <h2>Candidates <span class="bo-count" id="bo-cand-count"></span></h2>
+        <p class="bo-section-note">Everyone who applied, was recommended, or that you add by hand. Open someone to invite them, edit their questions, and take them through to publishing.</p>
+      </div>
+      <button type="button" class="btn btn-primary" id="bo-add-toggle">+ Add a person</button>
+    </div>
+
+    <form class="bo-card bo-form-grid" id="bo-add-form" hidden>
+      <label class="bo-lbl">Full name *<input class="bo-input" name="name" required></label>
+      <label class="bo-lbl">Email<input class="bo-input" name="email" type="email"></label>
+      <label class="bo-lbl">Role / title<input class="bo-input" name="role"></label>
+      <label class="bo-lbl">Company<input class="bo-input" name="company"></label>
+      <label class="bo-lbl">Location<input class="bo-input" name="location" placeholder="City, Country"></label>
+      <label class="bo-lbl">LinkedIn URL<input class="bo-input" name="linkedin" placeholder="https://www.linkedin.com/in/…"></label>
+      <label class="bo-lbl">Focus area<select class="bo-input" name="focusTag"><option value="ai">AI &amp; ML</option><option value="b2b">B2B SaaS</option><option value="design">Product design / UX</option><option value="growth">Consumer &amp; Growth</option><option value="fintech">Fintech</option><option value="platform">Platform &amp; Infra</option><option value="marketplace">Marketplace</option><option value="health">Healthtech</option><option value="leadership">Product Leadership</option><option value="other" selected>Other</option></select></label>
+      <label class="bo-lbl bo-wide">Notes (private)<input class="bo-input" name="notes"></label>
+      <div class="bo-wide"><button class="btn btn-primary bo-small" type="submit">Add to the list</button></div>
+    </form>
+
+    <div class="bo-filters">
+      <div class="bo-chips" id="bo-cand-chips"></div>
+      <select class="bo-input bo-filter-src" id="bo-cand-source"><option value="all">All sources</option><option value="applied">Applied</option><option value="recommended">Recommended</option><option value="manual">Added by you</option></select>
+      <input class="bo-input bo-filter-search" id="bo-cand-search" type="search" placeholder="Search name, company, email…">
+    </div>
+
+    <div class="bo-table-wrap">
+      <table class="bo-table">
+        <thead><tr><th>Person</th><th>Role / Company</th><th>Location</th><th>Source</th><th>Status</th><th>Invited</th><th>Updated</th><th></th></tr></thead>
+        <tbody id="bo-cand-body"></tbody>
+      </table>
+      <p class="bo-empty" id="bo-cand-empty" hidden>No one here yet. Applications and recommendations from the site will appear automatically.</p>
+      <p class="bo-empty" id="bo-cand-error" hidden>Couldn't load candidates — try refreshing.</p>
+    </div>
+  </main>
+
+  <script src="../assets/backoffice.js?v=12"></script>
+  <script src="../assets/backoffice-candidates.js?v=1"></script>
+  <script>initBackofficeCandidates();</script>
+</body>
+</html>

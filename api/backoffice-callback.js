@@ -99,7 +99,7 @@ module.exports = async (req, res) => {
       "Set-Cookie",
       `${SESSION_COOKIE}=${cookieValue}; Max-Age=${SESSION_TTL_SECONDS}; Path=/; HttpOnly; Secure; SameSite=Lax`
     );
-    res.setHeader("Location", "/backoffice/applications.html");
+    res.setHeader("Location", "/backoffice/candidates.html");
     return res.status(302).end();
   } catch (err) {
     console.error("[backoffice-callback] unexpected exception:", err && err.stack || err);

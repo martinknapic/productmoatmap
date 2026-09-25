@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ProductMoat — Interview</title>
-  <base href="/">
+  <title>My interview — ProductMoat</title>
+  <meta name="description" content="Your ProductMoat interview — where it stands, and how to apply to be featured.">
+  <meta name="robots" content="noindex">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css">
   <link rel="stylesheet" href="assets/swiss.css?v=18">
   <link rel="stylesheet" href="assets/site.css?v=41">
 </head>
@@ -24,10 +24,13 @@
     </div>
   </nav>
 
-  <div id="person-root"></div>
-
-  <div class="wrap">
-    <div class="profile-nav" id="profile-nav"></div>
+  <div id="mi-root">
+    <section class="why-hero">
+      <div class="wrap">
+        <div class="eyebrow">My interview</div>
+        <h1>Checking your interview&hellip;</h1>
+      </div>
+    </section>
   </div>
 
   <footer>
@@ -45,14 +48,10 @@
     </div>
   </footer>
 
-  <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
-  <script src="assets/questions-default.js?v=1"></script>
-  <script src="assets/people-data.js?v=14"></script>
-  <script src="/api/published?format=js"></script>
   <script src="assets/site.js?v=30"></script>
   <script>
     initTheme();
-    initPerson();
+    initMyInterview();
   </script>
 </body>
 </html>

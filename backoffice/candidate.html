@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Candidate — ProductMoat Backoffice</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <link rel="stylesheet" href="../assets/swiss.css?v=18">
+  <link rel="stylesheet" href="../assets/backoffice.css?v=14">
+</head>
+<body class="light">
+  <nav class="nav bo-nav">
+    <div class="nav-inner">
+      <div class="logo"><span class="logo-mark"></span>ProductMoat <span class="bo-nav-tag">Backoffice</span></div>
+      <div class="bo-subnav">
+        <a href="candidates.html" class="bo-subnav-active">Candidates</a>
+        <a href="questions.html">Questions</a>
+        <a href="map-submissions.html">Map submissions</a>
+        <a href="profiles.html">Profiles</a>
+      </div>
+      <div class="bo-nav-right">
+        <span class="bo-user" id="bo-user"></span>
+        <button class="btn btn-ghost bo-logout" id="bo-logout">Log out</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="wrap bo-main bo-narrow">
+    <div id="bo-cand-root"><p class="bo-empty">Loading…</p></div>
+  </main>
+
+  <script src="../assets/questions-default.js?v=1"></script>
+  <script src="../assets/backoffice.js?v=12"></script>
+  <script src="../assets/backoffice-questions.js?v=1"></script>
+  <script src="../assets/backoffice-candidates.js?v=1"></script>
+  <script>initBackofficeCandidate();</script>
+</body>
+</html>

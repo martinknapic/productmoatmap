@@ -1,4 +1,5 @@
-// ProductMoat Backoffice — login gate + applications/recommendations tables
+// ProductMoat Backoffice — login gate + shared table helpers, profiles and map submissions
+// (the candidate pipeline lives in backoffice-candidates.js)
 //
 // Login is real LinkedIn OAuth (same app as the public Apply form's verification
 // gate), checked server-side against an allow-list — see api/backoffice-callback.js.
@@ -223,67 +224,6 @@ function boWireRowActions(rerender) {
   });
 }
 
-// ---------- Applications page ----------
-
-function boRenderApplications() {
-  const hidden = boGetHiddenIds();
-  const overrides = boGetStatusOverrides();
-  const rows = (typeof DUMMY_APPLICATIONS !== "undefined" ? DUMMY_APPLICATIONS : [])
-    .filter(a => !hidden.has(a.id));
-
-  boPaginate("applications", rows, a => `
-    <tr data-id="${boEscapeHTML(a.id)}">
-      <td>${boDemoBadge(a.isDemo)}</td>
-      <td class="bo-cell-strong">${boEscapeHTML(a.name)}</td>
-      <td>${boEscapeHTML(a.role)}<br><span class="bo-cell-dim">${boEscapeHTML(a.company)}</span></td>
-      <td>${boEscapeHTML(a.location)}</td>
-      <td>${boEscapeHTML(boFocusLabel(a.focusTag))}</td>
-      <td>${a.yearsExperience != null ? `${boEscapeHTML(a.yearsExperience)} yrs` : "—"}</td>
-      <td>${a.linkedin ? `<a class="bracket-link" href="${boEscapeHTML(a.linkedin)}" target="_blank" rel="noopener">[ Profile ]</a>` : "—"}</td>
-      <td>${boEscapeHTML(a.contactEmail) || "—"}</td>
-      <td>${boEscapeHTML(a.submittedAt)}</td>
-      <td>${boStatusSelect(a.id, overrides[a.id] || a.status, BO_APPLICATION_STATUSES)}</td>
-      <td>${a.isDemo ? `<button type="button" class="bo-row-remove" data-remove-id="${boEscapeHTML(a.id)}">[ Remove ]</button>` : ""}</td>
-    </tr>
-  `, { bodyId: "bo-applications-body", countId: "bo-app-count", emptyId: "bo-applications-empty", paginationId: "bo-applications-pagination" });
-}
-
-async function initBackofficeApplications() {
-  if (!(await boCurrentGuard())) return;
-  boRenderApplications();
-  boWireRowActions(boRenderApplications);
-  boWirePaginationControls({ applications: boRenderApplications });
-}
-
-// ---------- Recommendations page ----------
-
-function boRenderRecommendations() {
-  const hidden = boGetHiddenIds();
-  const overrides = boGetStatusOverrides();
-  const rows = (typeof DUMMY_RECOMMENDATIONS !== "undefined" ? DUMMY_RECOMMENDATIONS : [])
-    .filter(r => !hidden.has(r.id));
-
-  boPaginate("recommendations", rows, r => `
-    <tr data-id="${boEscapeHTML(r.id)}">
-      <td>${boDemoBadge(r.isDemo)}</td>
-      <td class="bo-cell-strong">${boEscapeHTML(r.candidateName) || "—"}</td>
-      <td>${r.candidateLinkedin ? `<a class="bracket-link" href="${boEscapeHTML(r.candidateLinkedin)}" target="_blank" rel="noopener">[ Profile ]</a>` : "—"}</td>
-      <td>${r.stayAnonymous ? `<span class="bo-cell-dim">Anonymous</span>` : (boEscapeHTML(r.yourName) || "—")}</td>
-      <td class="bo-cell-reason">${boEscapeHTML(r.reason) || "—"}</td>
-      <td>${boEscapeHTML(r.submittedAt)}</td>
-      <td>${boStatusSelect(r.id, overrides[r.id] || r.status, BO_RECOMMENDATION_STATUSES)}</td>
-      <td>${r.isDemo ? `<button type="button" class="bo-row-remove" data-remove-id="${boEscapeHTML(r.id)}">[ Remove ]</button>` : ""}</td>
-    </tr>
-  `, { bodyId: "bo-recommendations-body", countId: "bo-rec-count", emptyId: "bo-recommendations-empty", paginationId: "bo-recommendations-pagination" });
-}
-
-async function initBackofficeRecommendations() {
-  if (!(await boCurrentGuard())) return;
-  boRenderRecommendations();
-  boWireRowActions(boRenderRecommendations);
-  boWirePaginationControls({ recommendations: boRenderRecommendations });
-}
-
 // ---------- Profiles page ----------
 // Reads the real, published dataset (assets/people-data.js) — not demo data, so no
 // DEMO badge, status, or remove/clear actions here. Add/edit/remove a profile by
@@ -306,7 +246,8 @@ function boRenderProfiles() {
   const rows = typeof INTERVIEWS !== "undefined" ? INTERVIEWS : [];
 
   boPaginate("profiles", rows, p => {
-    const questionCount = (p.sections || []).reduce((n, s) => n + s.questions.length, 0);
+    const iv = p.interview || { answers: {}, custom: [] };
+    const questionCount = Object.values(iv.answers || {}).filter(a => a && String(a).trim()).length + (iv.custom || []).length;
     return `
     <tr data-slug="${boEscapeHTML(p.slug)}">
       <td>${boAvatarHTML(p)}</td>
@@ -318,7 +259,7 @@ function boRenderProfiles() {
       <td>${questionCount}</td>
       <td>${boEscapeHTML(p.publishedDate)}</td>
       <td>${p.links && p.links.linkedin ? `<a class="bracket-link" href="${boEscapeHTML(p.links.linkedin)}" target="_blank" rel="noopener">[ Profile ]</a>` : "—"}</td>
-      <td><a class="bracket-link" href="../person.html?slug=${boEscapeHTML(p.slug)}" target="_blank" rel="noopener">[ View ]</a></td>
+      <td><a class="bracket-link" href="${boEscapeHTML(`/interview/${p.focusTag === "design" ? "productux" : "productmanagement"}/${encodeURIComponent(p.slug)}`)}" target="_blank" rel="noopener">[ View ]</a></td>
     </tr>
   `;
   }, { bodyId: "bo-profiles-body", countId: "bo-profile-count", emptyId: "bo-profiles-empty", paginationId: "bo-profiles-pagination" });

@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    { "source": "/interview/:category(productmanagement|productux)/:slug", "destination": "/person.html" }
+  ],
+  "functions": {
+    "api/*.js": { "includeFiles": "assets/{people-data,questions-default}.js" }
+  }
+}

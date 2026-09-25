@@ -4,8 +4,20 @@
     {
       "name": "productmoat-globe",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8765"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8765"
+      ],
       "port": 8765
+    },
+    {
+      "name": "productmoat-dev",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/dev-server.js"
+      ],
+      "port": 8766
     }
   ]
 }

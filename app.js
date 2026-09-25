@@ -69,7 +69,8 @@ function interviewToPersonShape(p) {
   const [city, country] = p.location.split(",").map(s => s.trim());
   return {
     name: p.name, role: p.role, city, country, company: p.company,
-    snippet: p.snippet, photo: p.photo, lng: p.lng, lat: p.lat, slug: p.slug
+    snippet: p.snippet, photo: p.photo, lng: p.lng, lat: p.lat, slug: p.slug,
+    focusTag: p.focusTag, category: p.category
   };
 }
 
@@ -302,7 +303,7 @@ function showSidePanel(person) {
         ${person.company ? `<div class="meta-item"><div class="meta-label">Company</div><div class="meta-value">${person.company}</div></div>` : ""}
       </div>` : ""}
       ${person.snippet ? `<div class="sp-snippet">${person.snippet}</div>` : ""}
-      ${person.slug ? `<a class="btn btn-primary sp-interview-link" href="person.html?slug=${person.slug}">Read the full interview &rarr;</a>` : ""}
+      ${person.slug ? `<a class="btn btn-primary sp-interview-link" href="${interviewURL(person)}">Read the full interview &rarr;</a>` : ""}
     </div>`;
 
   panel.classList.add("open");

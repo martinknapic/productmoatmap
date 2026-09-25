@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Questions — ProductMoat Backoffice</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <link rel="stylesheet" href="../assets/swiss.css?v=18">
+  <link rel="stylesheet" href="../assets/backoffice.css?v=14">
+</head>
+<body class="light">
+  <nav class="nav bo-nav">
+    <div class="nav-inner">
+      <div class="logo"><span class="logo-mark"></span>ProductMoat <span class="bo-nav-tag">Backoffice</span></div>
+      <div class="bo-subnav">
+        <a href="candidates.html">Candidates</a>
+        <a href="questions.html" class="bo-subnav-active">Questions</a>
+        <a href="map-submissions.html">Map submissions</a>
+        <a href="profiles.html">Profiles</a>
+      </div>
+      <div class="bo-nav-right">
+        <span class="bo-user" id="bo-user"></span>
+        <button class="btn btn-ghost bo-logout" id="bo-logout">Log out</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="wrap bo-main">
+    <div class="bo-section-head">
+      <h2>Standard questions</h2>
+      <p class="bo-section-note">
+        The question bank every new invitation starts from, and what the public
+        <a class="bracket-link" href="../questions.html" target="_blank" rel="noopener">[ questions page ]</a> shows.
+        Changing it doesn't touch people who are already invited — each of them has their own copy, which you can edit from their candidate page.
+      </p>
+    </div>
+
+    <div id="bo-q-mount"></div>
+
+    <div class="bo-savebar">
+      <button type="button" class="btn btn-primary" id="bo-q-save">Save standard questions</button>
+      <button type="button" class="btn btn-ghost" id="bo-q-reset">Reset to built-in defaults</button>
+      <span class="bo-save-status" id="bo-q-status"></span>
+    </div>
+  </main>
+
+  <script src="../assets/questions-default.js?v=1"></script>
+  <script src="../assets/backoffice.js?v=12"></script>
+  <script src="../assets/backoffice-questions.js?v=1"></script>
+  <script>
+    (async () => {
+      if (!(await boCurrentGuard())) return;
+      const status = document.getElementById("bo-q-status");
+      let editor;
+      try {
+        const bank = await (await fetch("/api/question-bank")).json();
+        editor = boQuestionEditor(document.getElementById("bo-q-mount"), bank.sections, () => { status.textContent = "Unsaved changes"; });
+      } catch (err) {
+        editor = boQuestionEditor(document.getElementById("bo-q-mount"), INTERVIEW_SECTIONS, () => { status.textContent = "Unsaved changes"; });
+      }
+      document.getElementById("bo-q-save").addEventListener("click", async () => {
+        status.textContent = "Saving…";
+        const resp = await fetch("/api/question-bank", {
+          method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+          body: JSON.stringify({ sections: editor.getSections() })
+        });
+        if (resp.ok) { editor.setSections((await resp.json()).sections); status.textContent = "Saved ✓"; }
+        else status.textContent = "Couldn't save — check that every section has a title.";
+      });
+      document.getElementById("bo-q-reset").addEventListener("click", () => {
+        if (!window.confirm("Replace the editor contents with the built-in default questions? (Nothing is saved until you press Save.)")) return;
+        editor.setSections(INTERVIEW_SECTIONS);
+        status.textContent = "Unsaved changes";
+      });
+    })();
+  </script>
+</body>
+</html>

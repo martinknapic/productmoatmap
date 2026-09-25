@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ProductMoat — Interview</title>
-  <base href="/">
+  <title>The questions — ProductMoat</title>
+  <meta name="description" content="Every question in a ProductMoat interview — which ones are required, which are optional, and how to add your own.">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css">
   <link rel="stylesheet" href="assets/swiss.css?v=18">
   <link rel="stylesheet" href="assets/site.css?v=41">
 </head>
@@ -24,11 +23,32 @@
     </div>
   </nav>
 
-  <div id="person-root"></div>
+  <section class="why-hero">
+    <div class="wrap">
+      <a class="back-link" href="apply.html">&larr; Back to the application</a>
+      <div class="eyebrow"><span class="num">08.</span> The questions</div>
+      <h1>What you'll be asked, in full.</h1>
+      <p class="about-lede">
+        Every ProductMoat interview follows the same <span id="q-lede-count">set of questions</span>, so
+        readers can compare how different people think. A handful are required; the rest are
+        yours to answer or skip — and you can add up to three questions of your own.
+      </p>
+    </div>
+  </section>
 
-  <div class="wrap">
-    <div class="profile-nav" id="profile-nav"></div>
-  </div>
+  <section class="qoverview wrap" id="q-overview"></section>
+
+  <section class="qguide wrap" id="q-guide"></section>
+
+  <section class="qextra wrap" id="q-extra"></section>
+
+  <section class="why-cta-section">
+    <div class="wrap">
+      <h2>Ready to be part of the series?</h2>
+      <p>Apply first — if it's a fit, we'll invite you to fill in the full interview.</p>
+      <a class="btn btn-primary" href="apply.html">Apply now</a>
+    </div>
+  </section>
 
   <footer>
     <div class="wrap footer-inner">
@@ -45,14 +65,12 @@
     </div>
   </footer>
 
-  <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
   <script src="assets/questions-default.js?v=1"></script>
   <script src="assets/people-data.js?v=14"></script>
-  <script src="/api/published?format=js"></script>
   <script src="assets/site.js?v=30"></script>
   <script>
     initTheme();
-    initPerson();
+    initQuestions();
   </script>
 </body>
 </html>

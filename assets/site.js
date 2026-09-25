@@ -13,6 +13,15 @@ function avatarHTML(person, cls) {
   return `<div class="${cls}">${initials(person.name)}</div>`;
 }
 
+// Pretty interview URLs: /interview/productmanagement/<slug> or /interview/productux/<slug>
+// (rewritten to person.html by vercel.json / scripts/dev-server.js).
+function interviewCategory(p) {
+  return p.category || (p.focusTag === "design" ? "productux" : "productmanagement");
+}
+function interviewURL(p) {
+  return `/interview/${interviewCategory(p)}/${encodeURIComponent(p.slug)}`;
+}
+
 function escapeHTML(str) {
   const div = document.createElement("div");
   div.textContent = str;
@@ -102,6 +111,7 @@ function memberInitials(name) {
 function initMemberNav() {
   const navInner = document.querySelector(".nav-inner");
   if (!navInner || navInner.querySelector(".member-nav") || navInner.querySelector(".signup-nav-link")) return;
+  if (document.body.hasAttribute("data-no-member-nav")) return; // e.g. personal interview links: keep the page focused
   ensureNavRight(navInner);
 
   fetch("/api/member-me", { credentials: "same-origin" })
@@ -156,6 +166,7 @@ function renderMemberNav(navInner, profile) {
     </button>
     <div class="member-dropdown" role="menu">
       <a href="account.html" role="menuitem">My profile</a>
+      <a href="my-interview.html" role="menuitem">My interview</a>
       <a href="#" id="member-logout-link" role="menuitem">Log out</a>
     </div>
   `;
@@ -262,6 +273,88 @@ function initSignup() {
   completeSignup(newsletterPref);
 }
 
+// ---------- My interview (my-interview.html) ----------
+// Reached from the member dropdown. Asks /api/my-interview where the signed-in member stands:
+// invited -> straight to their private questionnaire; published -> link to the article;
+// applied -> "we have your application"; nothing yet (or not signed in) -> what the interview
+// is, with a call to action to apply.
+
+function initMyInterview() {
+  const root = document.getElementById("mi-root");
+  if (!root) return;
+
+  const cta = `<a class="btn btn-primary" href="apply.html">Apply to be interviewed</a>`;
+  const hero = (eyebrow, title, lede, extra = "") => `
+    <section class="why-hero">
+      <div class="wrap">
+        <div class="eyebrow">${eyebrow}</div>
+        <h1>${title}</h1>
+        <p class="about-lede">${lede}</p>
+        ${extra}
+      </div>
+    </section>`;
+
+  const pitch = `
+    <section class="benefits-section wrap">
+      <div class="benefits-grid">
+        <div class="benefit-item">
+          <div class="benefit-index">01</div>
+          <h3>Your story, told properly</h3>
+          <p>A structured conversation about your path, how you think, and how AI is changing the craft &mdash; in your own words, on your own private page.</p>
+        </div>
+        <div class="benefit-item">
+          <div class="benefit-index">02</div>
+          <h3>You stay in control</h3>
+          <p>Only a handful of questions are required. Answers save as you type, you can add your own questions, and nothing goes public until you say you're happy with it.</p>
+        </div>
+        <div class="benefit-item">
+          <div class="benefit-index">03</div>
+          <h3>A standing place in the series</h3>
+          <p>Once published, your interview lives in the directory, on the map, and across our newsletter and social channels.</p>
+        </div>
+        <div class="benefit-item">
+          <div class="benefit-index">04</div>
+          <h3>How it works</h3>
+          <p>Apply &rarr; we review it ourselves &rarr; if it's a fit, you get an invitation with a personal link &rarr; you answer at your pace &rarr; we prepare a preview together. <a class="bracket-link" href="questions.html">[ See the questions ]</a> <a class="bracket-link" href="process.html">[ The process ]</a></p>
+        </div>
+      </div>
+    </section>
+    <section class="why-cta-section">
+      <div class="wrap">
+        <h2>Ready to be part of the series?</h2>
+        <p>The application takes a few minutes. We read every one ourselves.</p>
+        ${cta}
+      </div>
+    </section>`;
+
+  function show(html) { root.innerHTML = html; }
+
+  fetch("/api/my-interview", { credentials: "same-origin" })
+    .then(resp => (resp.status === 401 ? { state: "signed-out" } : resp.ok ? resp.json() : Promise.reject(resp.status)))
+    .then(data => {
+      if (data.state === "invited") {
+        show(hero("My interview", "Opening your interview&hellip;", "Taking you to your private questionnaire."));
+        location.replace(`interview.html?t=${encodeURIComponent(data.token)}`);
+      } else if (data.state === "published") {
+        show(hero("My interview", "Your interview is live.", "Thank you for taking part.",
+          `<a class="btn btn-primary" href="${escapeHTML(data.url)}">Read your interview &rarr;</a>`));
+      } else if (data.state === "applied") {
+        show(hero("My interview", "We have your application.",
+          "Thank you for applying. We read every application ourselves and will be in touch by email or LinkedIn if it looks like a fit &mdash; your personal interview page will appear here as soon as you're invited.",
+          `<a class="bracket-link" href="questions.html">[ See what the interview covers ]</a> <a class="bracket-link" href="process.html">[ The process ]</a>`));
+      } else if (data.state === "signed-out") {
+        show(hero("My interview", "Sign in to see your interview.",
+          "Your personal interview page is tied to your LinkedIn account. Sign up or sign in, and it will show up here once you've been invited.",
+          `<a class="btn btn-primary" href="signup.html">Sign up with LinkedIn</a>`) + pitch);
+      } else {
+        show(hero("My interview", "You haven't been interviewed yet.",
+          "ProductMoat is an interview series with product people around the world. If you'd like to be featured, apply &mdash; if it's a fit, your personal interview page will appear right here.",
+          cta) + pitch);
+      }
+    })
+    .catch(() => show(hero("My interview", "Something went wrong.", "We couldn't check your interview just now. Please refresh in a moment.")));
+}
+
 // ---------- Account page (account.html) ----------
 // "My profile" destination from the nav dropdown. Not a rich profile editor —
 // there's no database behind member accounts, just whatever LinkedIn handed
@@ -362,7 +455,7 @@ function renderFeatured() {
        </div>`;
 
   el.innerHTML = `
-    <a class="featured-card" href="person.html?slug=${p.slug}">
+    <a class="featured-card" href="${interviewURL(p)}">
       ${visualHTML}
       <div class="featured-body">
         <span class="tag">Latest conversation</span>
@@ -399,7 +492,7 @@ function renderGrid() {
     .filter(p => activeFilter === "all" || p.focusTag === activeFilter);
 
   el.innerHTML = list.map(p => `
-    <a class="card" href="person.html?slug=${p.slug}">
+    <a class="card" href="${interviewURL(p)}">
       ${avatarHTML(p, "avatar")}
       <div>
         <div class="card-name">${escapeHTML(p.name)}</div>
@@ -421,16 +514,213 @@ function initHome() {
 
 // ---------- Person page ----------
 
+// ---------- Interview (person.html) ----------
+// The fixed 24-question PM interview (INTERVIEW_SECTIONS in people-data.js) filled in from
+// p.interview.answers. Questions 1–5 (name/role/company/location/years) come from the
+// profile fields; a skipped (missing/empty) answer is hidden, and a section with nothing
+// answered isn't shown. p.interview.custom holds person-specific extras, shown last.
+
+function interviewFacts(p) {
+  return [
+    ["Name", p.name],
+    ["Current role", p.role],
+    ["Company", p.company],
+    ["Location", p.location],
+    ["Years in product", p.yearsExperience != null ? `${p.yearsExperience} years` : ""]
+  ].filter(([, v]) => v);
+}
+
+function renderQA(num, question, answer) {
+  return `
+    <div class="qa-item">
+      <div class="qa-num">${num}</div>
+      <h3>${escapeHTML(question)}</h3>
+      <p>${escapeHTML(answer)}</p>
+    </div>
+  `;
+}
+
+// Published interviews carry their own resolved sections (the questions as they were asked,
+// admin edits included); the hand-written examples use the default questions + p.interview.answers.
+function resolveInterviewSections(p) {
+  const iv = p.interview || {};
+  if (Array.isArray(iv.sections)) {
+    return { fixedNumbers: false, sections: iv.sections.map(s => ({ title: s.title, items: s.questions.map(q => ({ id: q.id, text: q.text, answer: q.answer })) })) };
+  }
+  const answers = iv.answers || {};
+  const has = id => typeof answers[id] === "string" && answers[id].trim() !== "";
+  return {
+    fixedNumbers: true,
+    sections: INTERVIEW_SECTIONS.map(s => ({
+      title: s.title,
+      items: s.questions.filter(q => has(q.id)).map(q => ({ id: q.id, text: q.text, answer: answers[q.id] }))
+    }))
+  };
+}
+
+function renderInterview(p) {
+  const { fixedNumbers, sections } = resolveInterviewSections(p);
+  const total = sections.reduce((n, s) => n + s.items.length, 0);
+  let count = 0;
+  const html = [];
+  const facts = interviewFacts(p);
+
+  const visible = sections.filter(s => s.items.length);
+  if (!visible.length && facts.length) visible.push({ title: "Identity & Background", items: [] });
+
+  visible.forEach((section, i) => {
+    html.push(`
+      <div class="qna-section">
+        <h2 class="qna-section-title">${escapeHTML(section.title)}</h2>
+        ${i === 0 && facts.length ? `
+          <dl class="qa-facts">
+            ${facts.map(([k, v]) => `<div><dt>${escapeHTML(k)}</dt><dd>${escapeHTML(v)}</dd></div>`).join("")}
+          </dl>` : ""}
+        ${section.items.map(q => {
+          count += 1;
+          const label = fixedNumbers
+            ? `Q${q.id.slice(1).padStart(2, "0")} / ${INTERVIEW_TOTAL_QUESTIONS}`
+            : `${String(count).padStart(2, "0")} / ${String(total).padStart(2, "0")}`;
+          return renderQA(label, q.text, q.answer);
+        }).join("")}
+      </div>
+    `);
+  });
+
+  const custom = ((p.interview && p.interview.custom) || []).filter(c => c && c.q && c.a && c.a.trim() !== "");
+  if (custom.length) {
+    html.push(`
+      <div class="qna-section">
+        <h2 class="qna-section-title">${escapeHTML(CUSTOM_SECTION_TITLE)}</h2>
+        ${custom.map((c, i) => renderQA(`Extra ${String(i + 1).padStart(2, "0")}`, c.q, c.a)).join("")}
+      </div>
+    `);
+  }
+
+  return html.join("");
+}
+
+// ---------- Questions overview (questions.html) ----------
+// Lists every interview question from the live question bank (/api/question-bank, editable in
+// the backoffice; falls back to INTERVIEW_SECTIONS in questions-default.js), marking which are
+// required vs optional, plus how many custom questions can be added.
+
+async function initQuestions() {
+  const overview = document.getElementById("q-overview");
+  const guide = document.getElementById("q-guide");
+  const extra = document.getElementById("q-extra");
+  if (!overview || !guide || !extra || typeof INTERVIEW_SECTIONS === "undefined") return;
+
+  let bankSections = INTERVIEW_SECTIONS;
+  try {
+    const resp = await fetch("/api/question-bank");
+    if (resp.ok) bankSections = (await resp.json()).sections || bankSections;
+  } catch (err) { /* offline / no API: default questions */ }
+
+  const all = bankSections.flatMap(s => s.questions);
+  const required = all.filter(q => q.required);
+  const fromProfile = required.filter(q => q.fromProfile);
+  const toWrite = required.filter(q => !q.fromProfile);
+  const optional = all.filter(q => !q.required);
+
+  const lede = document.getElementById("q-lede-count");
+  if (lede) lede.textContent = `${all.length} questions across ${bankSections.length} sections`;
+
+  overview.innerHTML = `
+    <div class="qstats">
+      <div class="qstat">
+        <div class="stat-num">${all.length}</div>
+        <div class="stat-label">Questions in total</div>
+      </div>
+      <div class="qstat">
+        <div class="stat-num">${required.length}</div>
+        <div class="stat-label">Required &middot; ${fromProfile.length} come from your application, ${toWrite.length} you write</div>
+      </div>
+      <div class="qstat">
+        <div class="stat-num">${optional.length}</div>
+        <div class="stat-label">Optional &middot; answer what you like</div>
+      </div>
+      <div class="qstat">
+        <div class="stat-num">+${CUSTOM_QUESTION_LIMIT}</div>
+        <div class="stat-label">Custom questions you can add</div>
+      </div>
+    </div>
+    <ul class="qhow">
+      <li><span class="q-badge q-badge-req">Required</span> Needed to be featured. The basics (${fromProfile.length} questions) come from your application, so in practice you write ${toWrite.length} answers.</li>
+      <li><span class="q-badge q-badge-opt">Optional</span> Skip any of these. Skipped questions simply don't appear on your profile, and a section with no answers is hidden.</li>
+      <li><span class="q-badge q-badge-custom">Your own</span> Add up to ${CUSTOM_QUESTION_LIMIT} extra question-and-answer pairs. They're shown at the end of your interview.</li>
+    </ul>
+  `;
+
+  let n = 0;
+  guide.innerHTML = bankSections.map((section, i) => {
+    const req = section.questions.filter(q => q.required).length;
+    const count = section.questions.length;
+    return `
+      <div class="qsection">
+        <div class="qsection-head">
+          <div class="qsection-index">${String(i + 1).padStart(2, "0")}</div>
+          <div>
+            <h2>${escapeHTML(section.title)}</h2>
+            <p>${escapeHTML(section.blurb || "")}</p>
+            <div class="qsection-meta">${count} question${count === 1 ? "" : "s"} &middot; ${req ? `${req} required` : "all optional"}</div>
+          </div>
+        </div>
+        <ol class="qlist">
+          ${section.questions.map(q => `
+            <li class="qrow">
+              <div class="qrow-num">Q${String(++n).padStart(2, "0")}</div>
+              <div class="qrow-body">
+                <div class="qrow-text">${escapeHTML(q.text)}</div>
+                <div class="qrow-hint">${escapeHTML(q.hint || "")}${q.fromProfile ? " Filled in from your application." : ""}</div>
+              </div>
+              <span class="q-badge ${q.required ? "q-badge-req" : "q-badge-opt"}">${q.required ? "Required" : "Optional"}</span>
+            </li>
+          `).join("")}
+        </ol>
+      </div>
+    `;
+  }).join("");
+
+  extra.innerHTML = `
+    <div class="qsection">
+      <div class="qsection-head">
+        <div class="qsection-index">+</div>
+        <div>
+          <h2>Add your own questions</h2>
+          <p>
+            Something you'd rather be asked than answer the standard way? Add up to
+            ${CUSTOM_QUESTION_LIMIT} custom questions of your own — write the question and
+            your answer. Need a nudge? Here are some that have worked well:
+          </p>
+          <div class="qsection-meta">Up to ${CUSTOM_QUESTION_LIMIT} &middot; optional</div>
+        </div>
+      </div>
+      <ul class="qideas">
+        ${CUSTOM_QUESTION_IDEAS.map(idea => `<li><span class="q-badge q-badge-custom">Your own</span> ${escapeHTML(idea)}</li>`).join("")}
+      </ul>
+    </div>
+  `;
+}
+
+// person.html is served for /interview/<category>/<slug> (rewrite) and, for older links,
+// person.html?slug=<slug>.
 function initPerson() {
-  const slug = new URLSearchParams(location.search).get("slug");
+  const m = /^\/interview\/([^/]+)\/([^/]+)\/?$/.exec(location.pathname);
+  const slug = m ? decodeURIComponent(m[2]) : new URLSearchParams(location.search).get("slug");
   const p = findInterview(slug);
   const root = document.getElementById("person-root");
   if (!p) {
     root.innerHTML = `<div class="not-found"><p>No interview found for &ldquo;${escapeHTML(slug || "")}&rdquo;.</p><br><a class="btn btn-ghost" href="index.html">&larr; Back to all conversations</a></div>`;
     return;
   }
+  renderPersonPage(root, p);
+}
 
-  document.title = `${p.name} — ProductMoat`;
+// Renders the full interview page for `p` into `root`. Also used by the backoffice preview
+// (backoffice/preview.html) so the preview is byte-for-byte what gets published.
+function renderPersonPage(root, p, opts = {}) {
+  if (!opts.preview) document.title = `${p.name} — ProductMoat`;
 
   const hasCoords = typeof p.lat === "number" && typeof p.lng === "number";
 
@@ -456,12 +746,12 @@ function initPerson() {
             </div>
 
             <div class="social-row">
-              ${p.links.linkedin ? `<a class="bracket-link" href="${p.links.linkedin}" target="_blank" rel="noopener">[ LinkedIn ]</a>` : ""}
-              ${p.links.website ? `<a class="bracket-link" href="${p.links.website}" target="_blank" rel="noopener">[ Website ]</a>` : ""}
-              ${p.links.twitter ? `<a class="bracket-link" href="${p.links.twitter}" target="_blank" rel="noopener">[ X ]</a>` : ""}
+              ${p.links.linkedin ? `<a class="bracket-link" href="${escapeHTML(p.links.linkedin)}" target="_blank" rel="noopener">[ LinkedIn ]</a>` : ""}
+              ${p.links.website ? `<a class="bracket-link" href="${escapeHTML(p.links.website)}" target="_blank" rel="noopener">[ Website ]</a>` : ""}
+              ${p.links.twitter ? `<a class="bracket-link" href="${escapeHTML(p.links.twitter)}" target="_blank" rel="noopener">[ X ]</a>` : ""}
             </div>
 
-            <blockquote class="pull-quote">&ldquo;${escapeHTML(p.pullQuote)}&rdquo;</blockquote>
+            ${p.pullQuote ? `<blockquote class="pull-quote">&ldquo;${escapeHTML(p.pullQuote)}&rdquo;</blockquote>` : ""}
           </div>
 
           ${hasCoords ? `
@@ -477,6 +767,7 @@ function initPerson() {
       </div>
     </section>
 
+    ${p.foreword ? `
     <section class="foreword">
       <div class="wrap">
         <div class="foreword-inner">
@@ -485,30 +776,12 @@ function initPerson() {
           <div class="foreword-byline">&mdash; Martin Knapic, ProductMoat</div>
         </div>
       </div>
-    </section>
+    </section>` : ""}
 
     <section class="qna">
       <div class="wrap">
         <div class="qna-inner">
-          ${(() => {
-            const total = p.sections.reduce((n, s) => n + s.questions.length, 0);
-            let count = 0;
-            return p.sections.map(section => `
-              <div class="qna-section">
-                <h2 class="qna-section-title">${escapeHTML(section.title)}</h2>
-                ${section.questions.map(qa => {
-                  count += 1;
-                  return `
-                    <div class="qa-item">
-                      <div class="qa-num">${String(count).padStart(2, "0")} / ${String(total).padStart(2, "0")}</div>
-                      <h3>${escapeHTML(qa.q)}</h3>
-                      <p>${escapeHTML(qa.a)}</p>
-                    </div>
-                  `;
-                }).join("")}
-              </div>
-            `).join("");
-          })()}
+          ${renderInterview(p)}
         </div>
       </div>
     </section>
@@ -521,7 +794,7 @@ function initPerson() {
   }
 
   if (hasCoords) initMiniGlobe(p);
-  renderProfileNav(p);
+  if (!opts.preview) renderProfileNav(p);
 }
 
 // ---------- Mini-map widgets ----------
@@ -615,8 +888,8 @@ function renderProfileNav(current) {
   const prev = ordered[(idx - 1 + ordered.length) % ordered.length];
   const next = ordered[(idx + 1) % ordered.length];
   nav.innerHTML = `
-    <a href="person.html?slug=${prev.slug}">&larr; ${escapeHTML(prev.name)}</a>
-    <a class="next" href="person.html?slug=${next.slug}">${escapeHTML(next.name)} &rarr;</a>
+    <a href="${interviewURL(prev)}">&larr; ${escapeHTML(prev.name)}</a>
+    <a class="next" href="${interviewURL(next)}">${escapeHTML(next.name)} &rarr;</a>
   `;
 }
 
@@ -626,9 +899,38 @@ function formatDate(iso) {
 }
 
 // ---------- Apply page ----------
-// No backend yet: on submit this builds the same shape as an INTERVIEWS entry
-// (see assets/people-data.js) plus private contact fields, logs it for whoever's
-// wiring up the real submission handler, and swaps in a confirmation state.
+// On submit the application is sent to /api/apply, which files it in the backoffice candidate
+// list (source: applied). Identity comes from the LinkedIn session, not from this form.
+
+// POSTs JSON, disabling the button meanwhile; shows an inline error under it on failure.
+async function submitJSON(url, payload, btn, idleLabel) {
+  let err = document.getElementById("submit-error");
+  if (!err) {
+    err = document.createElement("p");
+    err.id = "submit-error";
+    err.className = "hint-inline li-error";
+    btn.closest(".form-submit-row").appendChild(err);
+  }
+  err.hidden = true;
+  btn.setAttribute("aria-disabled", "true");
+  btn.textContent = "Sending…";
+  try {
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify(payload)
+    });
+    if (!resp.ok) throw new Error(String(resp.status));
+    return true;
+  } catch (e) {
+    err.textContent = "Something went wrong sending that — please try again in a moment.";
+    err.hidden = false;
+    btn.removeAttribute("aria-disabled");
+    btn.textContent = idleLabel;
+    return false;
+  }
+}
 
 function initApply() {
   const form = document.getElementById("apply-form");
@@ -685,11 +987,12 @@ function initApply() {
       contactPhone: data.get("contactPhone").trim()
     };
 
-    console.log("ProductMoat application (no backend wired yet):", application);
-
-    form.hidden = true;
-    document.getElementById("apply-success").hidden = false;
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    submitJSON("/api/apply", application, submitBtn, "Submit application").then(ok => {
+      if (!ok) return;
+      form.hidden = true;
+      document.getElementById("apply-success").hidden = false;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
   });
 }
 
@@ -843,9 +1146,9 @@ function initRecommendLinkedInGate() {
 }
 
 // ---------- Recommend page ----------
-// Same no-backend stub pattern as initApply(): validate, log, swap to a
-// confirmation state. Gated behind initRecommendLinkedInGate() — yourName/
-// yourEmail arrive pre-filled (and read-only) from the verified profile.
+// Sent to /api/recommend, which adds the recommended person to the backoffice candidate list
+// (source: recommended). Gated behind initRecommendLinkedInGate() — yourName/yourEmail
+// arrive pre-filled (and read-only) from the verified profile.
 
 function initRecommend() {
   const form = document.getElementById("recommend-form");
@@ -869,11 +1172,12 @@ function initRecommend() {
       stayAnonymous: data.get("stayAnonymous") === "on"
     };
 
-    console.log("ProductMoat recommendation (no backend wired yet):", recommendation);
-
-    form.hidden = true;
-    document.getElementById("recommend-success").hidden = false;
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    submitJSON("/api/recommend", recommendation, submitBtn, "Send recommendation").then(ok => {
+      if (!ok) return;
+      form.hidden = true;
+      document.getElementById("recommend-success").hidden = false;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
   });
 }
 
@@ -1105,7 +1409,7 @@ function calRenderCell(week, today, interview) {
   let bodyHTML;
   if (interview) {
     bodyHTML = `
-      <a class="cal-card" href="person.html?slug=${encodeURIComponent(interview.slug)}" title="${escapeHTML(interview.name)} — ${escapeHTML(interview.role)}">
+      <a class="cal-card" href="${interviewURL(interview)}" title="${escapeHTML(interview.name)} — ${escapeHTML(interview.role)}">
         ${avatarHTML(interview, "avatar cal-card-avatar")}
         <span class="cal-card-name">${escapeHTML(interview.name)}</span>
       </a>`;
