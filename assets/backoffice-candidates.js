@@ -50,6 +50,68 @@ const boToast = (text) => {
 
 // ============================ list ============================
 
+const BO_LINKEDIN_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 1 1 0-4.124 2.062 2.062 0 0 1 0 4.124zM7.119 20.452H3.554V9h3.565v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>';
+const BO_COPY_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>';
+const BO_CHECK_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+
+// Hover/focus card for the "Recommended by" icon: the recommender's name and email, each with a
+// copy button. One floating element (position: fixed) so the table's horizontal scroll can't clip it.
+function boRecommenderTooltip() {
+  let pop = null, hideTimer = null, current = null;
+
+  function build(rec) {
+    const row = (label, value) => `
+      <div class="bo-rec-line">
+        <span class="bo-rec-label">${label}</span>
+        <span class="bo-rec-value">${value ? boEscapeHTML(value) : "—"}</span>
+        ${value ? `<button type="button" class="bo-rec-copy" data-copy-text="${boEscapeHTML(value)}" aria-label="Copy ${label.toLowerCase()}" title="Copy ${label.toLowerCase()}">${BO_COPY_SVG}</button>` : ""}
+      </div>`;
+    return `
+      <div class="bo-rec-title">Recommended by</div>
+      ${row("Name", rec.recommenderName)}
+      ${row("Email", rec.recommenderEmail)}
+      ${rec.stayAnonymous ? `<div class="bo-rec-note">Asked to stay anonymous — the invitation doesn't name them.</div>` : ""}`;
+  }
+
+  function ensure() {
+    if (pop) return pop;
+    pop = document.createElement("div");
+    pop.className = "bo-rec-pop";
+    pop.setAttribute("role", "tooltip");
+    pop.hidden = true;
+    pop.addEventListener("mouseenter", () => clearTimeout(hideTimer));
+    pop.addEventListener("mouseleave", hideSoon);
+    pop.addEventListener("click", async (e) => {
+      const btn = e.target.closest("[data-copy-text]");
+      if (!btn) return;
+      e.stopPropagation();
+      try { await navigator.clipboard.writeText(btn.dataset.copyText); } catch (err) { window.prompt("Copy:", btn.dataset.copyText); return; }
+      btn.innerHTML = BO_CHECK_SVG;
+      btn.classList.add("is-copied");
+      setTimeout(() => { btn.innerHTML = BO_COPY_SVG; btn.classList.remove("is-copied"); }, 1400);
+    });
+    document.body.appendChild(pop);
+    return pop;
+  }
+
+  function show(anchor, rec) {
+    clearTimeout(hideTimer);
+    const el = ensure();
+    el.innerHTML = build(rec);
+    el.hidden = false;
+    current = anchor;
+    const a = anchor.getBoundingClientRect();
+    const w = el.offsetWidth, h = el.offsetHeight;
+    const left = Math.max(8, Math.min(a.left, window.innerWidth - w - 8));
+    const top = a.bottom + 6 + h > window.innerHeight ? Math.max(8, a.top - h - 6) : a.bottom + 6;
+    el.style.left = `${left}px`;
+    el.style.top = `${top}px`;
+  }
+  function hideSoon() { clearTimeout(hideTimer); hideTimer = setTimeout(() => { if (pop) pop.hidden = true; current = null; }, 160); }
+
+  return { show, hideSoon, isFor: (a) => current === a };
+}
+
 async function initBackofficeCandidates() {
   if (!(await boCurrentGuard())) return;
 
@@ -78,6 +140,7 @@ async function initBackofficeCandidates() {
         <td>${boEscapeHTML(c.profile.role) || "—"}<br><span class="bo-cell-dim">${boEscapeHTML(c.profile.company)}</span></td>
         <td>${boEscapeHTML(c.profile.location) || "—"}</td>
         <td><span class="bo-badge bo-badge-src">${boEscapeHTML(BO_SOURCE_LABELS[c.source] || c.source)}</span></td>
+        <td class="bo-cell-rec">${c.recommendation ? `<button type="button" class="bo-rec" data-rec-id="${boEscapeHTML(c.id)}" aria-label="Recommended by ${boEscapeHTML(c.recommendation.recommenderName || "someone")} — show details">${BO_LINKEDIN_SVG}</button>` : `<span class="bo-cell-dim">—</span>`}</td>
         <td>${boPill(c.status)}</td>
         <td>${c.invitation ? `${boEscapeHTML(c.invitation.channel === "linkedin" ? "LinkedIn" : "Email")} · ${boEscapeHTML(new Date(c.invitation.sentAt).toLocaleDateString())}` : "—"}</td>
         <td>${boEscapeHTML(boWhen(c.updatedAt))}</td>
@@ -88,7 +151,15 @@ async function initBackofficeCandidates() {
   chipsEl.addEventListener("click", (e) => { const b = e.target.closest("[data-status]"); if (b) { state.status = b.dataset.status; render(); } });
   document.getElementById("bo-cand-source").addEventListener("change", (e) => { state.source = e.target.value; render(); });
   document.getElementById("bo-cand-search").addEventListener("input", (e) => { state.q = e.target.value; render(); });
+  const tip = boRecommenderTooltip();
+  const recOf = (btn) => (state.all.find(c => c.id === btn.dataset.recId) || {}).recommendation;
+  listEl.addEventListener("mouseover", (e) => { const b = e.target.closest(".bo-rec"); if (b && recOf(b)) tip.show(b, recOf(b)); });
+  listEl.addEventListener("mouseout", (e) => { if (e.target.closest(".bo-rec")) tip.hideSoon(); });
+  listEl.addEventListener("focusin", (e) => { const b = e.target.closest(".bo-rec"); if (b && recOf(b)) tip.show(b, recOf(b)); });
+  listEl.addEventListener("focusout", (e) => { if (e.target.closest(".bo-rec")) tip.hideSoon(); });
+  window.addEventListener("scroll", () => tip.hideSoon(), true);
   listEl.addEventListener("click", (e) => {
+    if (e.target.closest(".bo-rec")) { const b = e.target.closest(".bo-rec"); if (recOf(b)) tip.show(b, recOf(b)); return; } // tap (touch) opens it; never opens the row
     if (e.target.closest("a")) return;
     const row = e.target.closest("[data-open]");
     if (row) location.href = `candidate.html?id=${encodeURIComponent(row.dataset.open)}`;
