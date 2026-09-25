@@ -7,7 +7,7 @@
   <meta name="description" content="Apply to be interviewed for ProductMoat — an interview series for product people building at the intersection of AI.">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="stylesheet" href="assets/swiss.css?v=18">
-  <link rel="stylesheet" href="assets/site.css?v=44">
+  <link rel="stylesheet" href="assets/site.css?v=45">
 </head>
 <body class="light">
   <script>try{if(localStorage.getItem("pm-theme")==="dark")document.body.classList.remove("light")}catch(e){}</script>
@@ -176,6 +176,23 @@
         </div>
       </fieldset>
 
+      <fieldset class="form-fieldset">
+        <div class="fieldset-head">
+          <h2>Alumni network</h2>
+          <p>Optional — a members-only network of the product people we've interviewed.</p>
+        </div>
+        <div class="form-checkbox-row network-consent">
+          <input type="checkbox" id="f-network" name="networkOptIn">
+          <label for="f-network">
+            <strong>Yes, add me to the ProductMoat alumni network.</strong>
+            I agree that, once I've been interviewed, other network members can see my name, photo,
+            role, company, location, focus areas, short bio, links <em>and email</em> — and in return
+            I get access to the network directory right away. It's my choice to make and I can leave
+            at any time from My profile.
+          </label>
+        </div>
+      </fieldset>
+
       <div class="form-submit-row">
         <span class="submit-wrap locked" id="submit-wrap">
           <button type="submit" class="btn btn-primary" id="f-submit-btn" aria-disabled="true">Submit application</button>
@@ -209,7 +226,7 @@
   </footer>
 
   <script src="assets/people-data.js?v=14"></script>
-  <script src="assets/site.js?v=37"></script>
+  <script src="assets/site.js?v=38"></script>
   <script>
     initTheme();
     initApply();

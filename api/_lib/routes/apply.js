@@ -31,10 +31,13 @@ module.exports = async (req, res) => {
   if (!profile.name || !profile.role || !profile.company) return res.status(400).json({ error: "missing_fields" });
 
   try {
+    const networkOptIn = b.networkOptIn === true; // explicit tick on the form; never assumed
     const c = C.blankCandidate("applied", profile, {
-      verified: { name: session.name || "", email: session.email || "" }
+      verified: { name: session.name || "", email: session.email || "" },
+      networkOptIn: networkOptIn ? { optedIn: true, at: new Date().toISOString() } : null
     });
     await C.saveCandidate(c);
+    if (networkOptIn) await C.setNetworkOptIn(session, true, "apply");
     return res.status(200).json({ ok: true });
   } catch (err) {
     console.error("[apply] failed:", (err && err.stack) || err);

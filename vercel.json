@@ -58,6 +58,10 @@
     {
       "source": "/api/member-profile",
       "destination": "/api/site?op=member-profile"
+    },
+    {
+      "source": "/api/member-network",
+      "destination": "/api/site?op=member-network"
     }
   ],
   "functions": {

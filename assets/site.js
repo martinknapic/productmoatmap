@@ -173,6 +173,7 @@ function renderMemberNav(navInner, profile) {
     <div class="member-dropdown" role="menu">
       <a href="account.html" role="menuitem">My profile</a>
       <a href="my-interview.html" role="menuitem">My interview</a>
+      <a href="network.html" role="menuitem">Alumni network</a>
       ${profile.isAdmin ? `<a href="/backoffice/candidates.html" role="menuitem">Backoffice</a>` : ""}
       <a href="#" id="member-logout-link" role="menuitem">Log out</a>
     </div>
@@ -405,7 +406,7 @@ function initAccount() {
       document.getElementById("account-logout-btn").addEventListener("click", () => {
         window.location.href = "/api/member-logout?next=%2Faccount.html";
       });
-      if (detailsRoot) initAccountDetails(detailsRoot, data.details);
+      if (detailsRoot) initAccountDetails(detailsRoot, data.details, data.network);
     })
     .catch(() => {
       root.innerHTML = accountSignedOutHTML();
@@ -414,7 +415,7 @@ function initAccount() {
 
 // "Your details": everything collected on Apply, editable any time. Private to the member; it prefills
 // Apply and Put yourself on the map, and doesn't need an interview page to exist.
-function initAccountDetails(el, d) {
+function initAccountDetails(el, d, networkJoined) {
   const val = (v) => escapeAttr(v == null ? "" : v);
   const field = (id, label, value, extra = "") => `<div class="form-field"><label for="${id}">${label}</label><input type="text" id="${id}" name="${id.replace("mp-", "")}" value="${val(value)}" ${extra}></div>`;
   el.hidden = false;
@@ -457,6 +458,12 @@ function initAccountDetails(el, d) {
       </div>
     </form>`;
 
+  // Alumni network membership (explicit opt-in; leaving removes visibility and access at once)
+  const netBox = document.createElement("div");
+  netBox.className = "account-network";
+  el.appendChild(netBox);
+  renderAccountNetwork(netBox, !!networkJoined);
+
   const form = el.querySelector("#account-form");
   const status = el.querySelector("#account-save-status");
   const count = (inputId, outId, max) => {
@@ -497,6 +504,25 @@ function initAccountDetails(el, d) {
     } finally {
       btn.removeAttribute("aria-disabled");
     }
+  });
+}
+
+function renderAccountNetwork(box, joined) {
+  box.innerHTML = joined
+    ? `<h2>Alumni network</h2>
+       <p>You're in the network: you can browse the members-only directory, and once you've been interviewed other members can see your profile and email.</p>
+       <div class="account-network-actions"><a class="btn btn-primary" href="network.html">Open the directory</a><button type="button" class="btn btn-ghost" id="net-leave">Leave the network</button></div>`
+    : `<h2>Alumni network</h2>
+       <p>A members-only network of the product people we've interviewed. Joining is your explicit choice: you agree to be visible to other members (name, photo, role, company, location, focus areas, bio, links and email) once you've been interviewed, and in return you can browse the directory.</p>
+       <div class="account-network-actions"><a class="btn btn-ghost" href="network.html">Learn more &amp; join</a></div>`;
+  const leave = box.querySelector("#net-leave");
+  if (leave) leave.addEventListener("click", async () => {
+    if (!window.confirm("Leave the alumni network? You'll disappear from the directory and lose access to it. You can rejoin any time.")) return;
+    try {
+      const resp = await fetch("/api/member-network", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ join: false }) });
+      if (!resp.ok) throw new Error("failed");
+      renderAccountNetwork(box, false);
+    } catch (err) { leave.textContent = "Couldn't leave — try again"; }
   });
 }
 
@@ -1105,7 +1131,8 @@ function initApply() {
       pullQuote: data.get("pullQuote").trim(),
       photoFileName: photoInput.files[0] ? photoInput.files[0].name : null,
       contactEmail: data.get("contactEmail").trim(),
-      contactPhone: data.get("contactPhone").trim()
+      contactPhone: data.get("contactPhone").trim(),
+      networkOptIn: data.get("networkOptIn") === "on" // explicit tick only; unticked by default
     };
 
     submitJSON("/api/apply", application, submitBtn, "Submit application").then(ok => {

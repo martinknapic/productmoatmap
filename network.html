@@ -3,34 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your interview — ProductMoat</title>
-  <meta name="description" content="Your personal ProductMoat interview.">
-  <meta name="robots" content="noindex, nofollow">
-  <meta name="referrer" content="no-referrer">
+  <title>Alumni network — ProductMoat</title>
+  <meta name="description" content="A members-only network of the product people ProductMoat has interviewed.">
+  <meta name="robots" content="noindex">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="stylesheet" href="assets/swiss.css?v=18">
   <link rel="stylesheet" href="assets/site.css?v=45">
-  <link rel="stylesheet" href="assets/interview.css?v=10">
 </head>
-<body data-no-member-nav class="light">
+<body class="light">
   <script>try{if(localStorage.getItem("pm-theme")==="dark")document.body.classList.remove("light")}catch(e){}</script>
   <nav class="nav">
     <div class="nav-inner">
       <a class="logo" href="index.html"><span class="logo-mark"></span>ProductMoat</a>
+      <div class="nav-links">
+        <a href="index.html#directory">Interviews</a>
+        <a href="map.html">Map</a>
+        <a href="apply.html">Apply</a>
+      </div>
       <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">LIGHT</button>
     </div>
   </nav>
 
-  <div id="iv-root">
+  <div id="net-root">
     <section class="why-hero">
       <div class="wrap">
-        <div class="eyebrow">Your interview</div>
+        <div class="eyebrow">Alumni network</div>
         <h1>Loading&hellip;</h1>
       </div>
     </section>
   </div>
-
-  <div class="iv-toast" id="iv-toast" role="status" aria-live="polite" hidden></div>
 
   <footer>
     <div class="wrap footer-inner">
@@ -39,19 +40,19 @@
         and product design at the intersection of AI.
       </p>
       <div class="footer-links">
-        <a href="questions.html">All questions</a>
+        <a href="map.html">World map</a>
+        <a href="about.html">About</a>
         <a href="privacy.html">Privacy</a>
+        <a href="https://www.linkedin.com/in/martinknapic" target="_blank" rel="noopener">LinkedIn</a>
       </div>
     </div>
   </footer>
 
-  <script src="assets/questions-default.js?v=1"></script>
-  <script src="assets/people-data.js?v=14"></script>
   <script src="assets/site.js?v=38"></script>
-  <script src="assets/interview.js?v=7"></script>
+  <script src="assets/network.js?v=1"></script>
   <script>
     initTheme();
-    initInterview();
+    initNetwork();
   </script>
 </body>
 </html>

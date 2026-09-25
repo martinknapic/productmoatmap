@@ -18,7 +18,7 @@ module.exports = async (req, res) => {
     if (req.method === "GET") {
       const member = await C.readMember(session.email);
       const details = (member && member.details) || C.cleanMemberDetails({ name: session.name });
-      return res.status(200).json({ account: { name: session.name, email: session.email, picture: session.picture || null }, details, saved: !!(member && member.details) });
+      return res.status(200).json({ account: { name: session.name, email: session.email, picture: session.picture || null }, details, saved: !!(member && member.details), network: C.isNetworkMember(member) });
     }
     if (req.method === "POST") {
       const details = C.cleanMemberDetails((req.body || {}).details);

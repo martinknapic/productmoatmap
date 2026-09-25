@@ -16,6 +16,7 @@ const routes = {
   "question-bank": require("./_lib/routes/question-bank"),
   "member-me": require("./_lib/routes/member-me"),
   "member-profile": require("./_lib/routes/member-profile"),
+  "member-network": require("./_lib/routes/member-network"),
   "member-logout": require("./_lib/routes/member-logout"),
   "backoffice-me": require("./_lib/routes/backoffice-me"),
   "backoffice-logout": require("./_lib/routes/backoffice-logout")

@@ -277,6 +277,28 @@ async function saveMemberDetails(session, details) {
     updatedAt: new Date().toISOString(),
     details
   };
+  if (existing && existing.network) record.network = existing.network;
+  await writeJSON(memberPath(session.email), record);
+  return record;
+}
+
+// ---------- Alumni network: explicit, reciprocal opt-in ----------
+// A member who ticks the box agrees to be visible (profile + email) to the other members of the
+// network — once they've been interviewed — and in return gets access to the network directory.
+// Leaving removes both at once.
+const isNetworkMember = (member) => !!(member && member.network && member.network.optedIn);
+
+async function setNetworkOptIn(session, optedIn, source) {
+  const existing = await readMember(session.email);
+  const now = new Date().toISOString();
+  const record = existing || {
+    name: session.name || "", email: session.email, picture: session.picture || null,
+    newsletter: false, source: source || "network", createdAt: now
+  };
+  record.network = optedIn
+    ? { optedIn: true, at: (existing && existing.network && existing.network.at) || now, source: (existing && existing.network && existing.network.source) || source || "network" }
+    : { optedIn: false, at: null, leftAt: now };
+  record.updatedAt = now;
   await writeJSON(memberPath(session.email), record);
   return record;
 }
@@ -296,6 +318,7 @@ async function upsertMember(session, newsletter, source) {
     updatedAt: new Date().toISOString()
   };
   if (existing && existing.details) record.details = existing.details; // keep the profile details they've saved
+  if (existing && existing.network) record.network = existing.network;
   await writeJSON(pathname, record);
   return record;
 }
@@ -371,7 +394,7 @@ module.exports = {
   crypto, defaults,
   parseCookies, adminSession, memberSession, requireAdmin, isAdminRequest, clip,
   readJSON, writeJSON, readCandidate, saveCandidate, listCandidates, deleteCandidate,
-  upsertMember, readMember, saveMemberDetails, cleanMemberDetails, FOCUS_TAGS, readBank, defaultBank, cleanSections, QUESTION_BANK_PATH,
+  upsertMember, readMember, saveMemberDetails, setNetworkOptIn, isNetworkMember, cleanMemberDetails, FOCUS_TAGS, readBank, defaultBank, cleanSections, QUESTION_BANK_PATH,
   deriveStatus, isLive, blankCandidate, cleanProfile, ID_RE, newId,
   slugify, CATEGORIES, defaultCategory, toPublicInterview, takenSlugs, FOCUS_LABELS
 };

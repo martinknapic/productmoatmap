@@ -221,6 +221,8 @@ deployment to test the OAuth round-trip end-to-end.
       `recommend.html` (not `apply.html`) with the form unlocked, "Your name"/"Your email"
       pre-filled but not editable, and only "Their LinkedIn URL" required for submit.
 
+**Alumni network:** an explicit, unticked-by-default checkbox on Apply (also joinable on `network.html` and My profile) records consent on the member record (`network.optedIn`). Ticking it grants access to the members-only directory (`network.html` → `api/_lib/routes/member-network.js`) and agrees to be visible — name, photo, role, company, location, focus, bio, links and email — once interviewed. The directory lists only people who are published **and** opted in; leaving removes visibility and access at once.
+
 **My profile details:** `account.html` lets a signed-in member keep their Apply details (name, role, company, location, years, several focus areas, LinkedIn/website/X, short bio, pull quote) on their private member record (`members/<hash>.json` → `details`, via `api/_lib/routes/member-profile.js`). Apply and Put yourself on the map prefill from it; no interview page is needed.
 
 **Calendar (`calendar.html`) is hidden for now:** its nav links are removed and `vercel.json` redirects `/calendar.html` to the
