@@ -221,6 +221,9 @@ deployment to test the OAuth round-trip end-to-end.
       `recommend.html` (not `apply.html`) with the form unlocked, "Your name"/"Your email"
       pre-filled but not editable, and only "Their LinkedIn URL" required for submit.
 
+**Calendar (`calendar.html`) is hidden for now:** its nav links are removed and `vercel.json` redirects `/calendar.html` to the
+home page. To bring it back, delete that redirect and re-add `<a href="calendar.html">Calendar</a>` to the nav of each page.
+
 ## Candidates → invitation → interview → publish
 
 Everyone who **applies** (`api/apply.js`), is **recommended** (`api/recommend.js`) or is **added by hand** in the

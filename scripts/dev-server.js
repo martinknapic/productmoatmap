@@ -34,7 +34,9 @@ const blobMock = {
 const origLoad = Module._load;
 Module._load = function (request, ...rest) { return request === "@vercel/blob" ? blobMock : origLoad.call(this, request, ...rest); };
 
-const rewrites = JSON.parse(fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8")).rewrites || [];
+const vercelConfig = JSON.parse(fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"));
+const rewrites = vercelConfig.rewrites || [];
+const redirects = vercelConfig.redirects || [];
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".jpg": "image/jpeg", ".png": "image/png", ".json": "application/json" };
 
 function signedCookie(name, data) {
@@ -45,6 +47,9 @@ function signedCookie(name, data) {
 
 http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
+
+  const redirect = redirects.find(r => r.source === url.pathname);
+  if (redirect) { res.writeHead(redirect.permanent ? 308 : 307, { Location: redirect.destination }); return res.end(); }
 
   if (url.pathname === "/dev-login") {
     res.writeHead(302, { "Set-Cookie": signedCookie("bo_session", { email: "admin@dev.local", name: "Dev Admin" }), Location: "/backoffice/candidates.html" });

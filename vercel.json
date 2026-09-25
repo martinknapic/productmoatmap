@@ -1,4 +1,11 @@
 {
+  "redirects": [
+    {
+      "source": "/calendar.html",
+      "destination": "/",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/interview/:category(productmanagement|productux)/:slug",
