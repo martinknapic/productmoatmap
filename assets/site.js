@@ -102,6 +102,7 @@ function memberInitials(name) {
 function initMemberNav() {
   const navInner = document.querySelector(".nav-inner");
   if (!navInner || navInner.querySelector(".member-nav") || navInner.querySelector(".signup-nav-link")) return;
+  ensureNavRight(navInner);
 
   fetch("/api/member-me", { credentials: "same-origin" })
     .then(resp => (resp.ok ? resp.json() : null))
@@ -115,12 +116,31 @@ function initMemberNav() {
     .catch(() => {});
 }
 
+// Groups the right-hand nav items so the Sign up CTA / avatar sits to the left
+// of the theme toggle (the toggle stays the right-most control). Pages that
+// already ship a .nav-right (map.html) are left as they are.
+function ensureNavRight(navInner) {
+  if (navInner.querySelector(".nav-right")) return;
+  const themeBtn = navInner.querySelector("#theme-btn");
+  if (!themeBtn) return;
+  const right = document.createElement("div");
+  right.className = "nav-right";
+  navInner.insertBefore(right, themeBtn);
+  right.appendChild(themeBtn);
+}
+
+function insertBeforeTheme(navInner, el) {
+  const right = navInner.querySelector(".nav-right") || navInner;
+  const themeBtn = right.querySelector("#theme-btn");
+  right.insertBefore(el, themeBtn);
+}
+
 function renderSignupCTA(navInner) {
   const link = document.createElement("a");
   link.className = "btn btn-primary nav-cta signup-nav-link";
   link.href = "signup.html";
   link.textContent = "Sign up";
-  (navInner.querySelector(".nav-right") || navInner).appendChild(link);
+  insertBeforeTheme(navInner, link);
 }
 
 function renderMemberNav(navInner, profile) {
@@ -139,7 +159,7 @@ function renderMemberNav(navInner, profile) {
       <a href="#" id="member-logout-link" role="menuitem">Log out</a>
     </div>
   `;
-  (navInner.querySelector(".nav-right") || navInner).appendChild(wrap);
+  insertBeforeTheme(navInner, wrap);
 
   const btn = wrap.querySelector("#member-avatar-btn");
   btn.addEventListener("click", () => {
@@ -209,7 +229,7 @@ function initSignup() {
       consentBlock.hidden = true;
       successNewsletterNote.textContent = newsletter
         ? "You're subscribed to the newsletter — every issue includes an unsubscribe link."
-        : "You opted out of the newsletter, so we won't add you to it.";
+        : "You're not subscribed to the newsletter — we'll only add you if you tick the box.";
       successBlock.hidden = false;
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
@@ -680,6 +700,29 @@ function initApply() {
 // your app's Client ID from https://www.linkedin.com/developers/apps.
 const LINKEDIN_CLIENT_ID = "778t1x9svtemxo";
 
+// The newsletter checkbox (#li-newsletter) sits next to every LinkedIn sign-in
+// button that isn't signup.html (which has its own #su-newsletter). It's opt-in:
+// unchecked by default, and only if it was ticked before the redirect do we
+// record a subscription once the sign-in comes back successfully.
+function rememberNewsletterChoice() {
+  const box = document.getElementById("li-newsletter");
+  sessionStorage.setItem("li_newsletter", box && box.checked ? "1" : "0");
+}
+
+async function applyNewsletterChoice(page) {
+  const wanted = sessionStorage.getItem("li_newsletter") === "1";
+  sessionStorage.removeItem("li_newsletter");
+  if (!wanted) return;
+  try {
+    await fetch("/api/member-signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ newsletter: true, source: page })
+    });
+  } catch (err) { /* the form itself still works; a failed subscribe shouldn't block it */ }
+}
+
 // Generic gate: locks every field in `formId` (except the sign-in button and
 // the submit button, which gets an aria-disabled treatment instead) until the
 // visitor verifies via LinkedIn OAuth. `page` is embedded in the OAuth
@@ -717,6 +760,7 @@ function initLinkedInGate({ page, formId, submitBtnId, onLocked, onVerified }) {
     errorEl.hidden = true;
     const nonce = crypto.randomUUID();
     sessionStorage.setItem("li_oauth_state", nonce);
+    rememberNewsletterChoice();
     const redirectUri = `${window.location.origin}/api/linkedin-callback`;
     const params = new URLSearchParams({
       response_type: "code",
@@ -735,6 +779,7 @@ function initLinkedInGate({ page, formId, submitBtnId, onLocked, onVerified }) {
       const resp = await fetch("/api/linkedin-profile", { credentials: "same-origin" });
       if (!resp.ok) throw new Error("not verified");
       const profile = await resp.json();
+      applyNewsletterChoice(page);
       setLocked(false);
       gate.innerHTML = `<div class="li-badge"><span class="li-badge-check">&check;</span> Verified as ${escapeHTML(profile.name || "LinkedIn member")} via LinkedIn</div>`;
       if (onVerified) onVerified(profile);
@@ -909,6 +954,7 @@ function initJoinMap() {
     const nonce = crypto.randomUUID();
     sessionStorage.setItem("li_oauth_state", nonce);
     sessionStorage.setItem("jm_pin", JSON.stringify(picked));
+    rememberNewsletterChoice();
     const redirectUri = `${window.location.origin}/api/linkedin-callback`;
     const params = new URLSearchParams({
       response_type: "code",
@@ -926,6 +972,7 @@ function initJoinMap() {
       const resp = await fetch("/api/linkedin-profile", { credentials: "same-origin" });
       if (!resp.ok) throw new Error("not verified");
       profile = await resp.json();
+      applyNewsletterChoice("join-map");
 
       gate.innerHTML = `<div class="li-badge"><span class="li-badge-check">&check;</span> Verified as ${escapeHTML(profile.name || "LinkedIn member")} via LinkedIn</div>`;
 

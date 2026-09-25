@@ -118,6 +118,12 @@ ul { list-style: none; }
   border: 1px solid var(--line);
   transition: background 0.15s ease, color 0.15s ease;
 }
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
 .theme-btn:hover { background: var(--ink); color: var(--paper); }
 .theme-btn svg { display: block; }
 

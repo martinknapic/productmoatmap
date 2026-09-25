@@ -739,7 +739,7 @@ footer {
   margin-top: 4px;
 }
 
-.apply-hero .about-lede { margin-top: 18px; }
+.apply-hero .about-lede { margin-top: 18px; max-width: none; }
 .apply-hero-links { display: flex; gap: 24px; margin-top: 20px; flex-wrap: wrap; }
 
 .recommend-callout {
@@ -1227,7 +1227,12 @@ footer {
   .featured-visual .index-mark { font-size: 90px; }
   .featured-body { padding: 28px; }
   .wrap { padding: 0 20px; }
-  .nav-inner { padding: 14px 20px; flex-wrap: wrap; row-gap: 12px; }
+  /* .wrap's shorthand padding above would zero this section's vertical padding */
+  .recommend-callout-inner { padding: 24px 20px; }
+  .nav-inner { padding: 14px 20px; flex-wrap: wrap; row-gap: 12px; column-gap: 12px; }
+  /* keep logo + Sign up + theme toggle on one row at phone widths */
+  .nav-right { gap: 10px; }
+  .nav-right .nav-cta { padding: 9px 12px; }
   .nav-links {
     order: 3;
     flex-basis: 100%;
@@ -1246,14 +1251,18 @@ footer {
     justify-content: center;
     white-space: nowrap;
   }
-  .stats-row { flex-direction: column; }
+  /* stay a single compact 3-up row on phones so the interviews start sooner */
+  .stats-row { flex-wrap: nowrap; }
   .stats-row > div {
-    width: 100%;
-    padding: 16px 0;
-    border-right: none;
-    border-top: 1px solid var(--line-soft);
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 14px 10px;
+    border-right: 1px solid var(--line-soft);
   }
-  .stats-row > div:first-child { border-top: none; padding-top: 0; }
+  .stats-row > div:first-child { padding-left: 0; }
+  .stats-row > div:last-child { padding-right: 0; border-right: none; }
+  .stat-num { font-size: 20px; }
+  .stat-label { margin-top: 2px; font-size: 9.5px; letter-spacing: 0.03em; line-height: 1.35; }
   .meta-item { border-right: none; margin-right: 0; padding-right: 0; width: 50%; }
   .avatar-xl { width: 76px; height: 76px; font-size: 26px; }
   .profile-nav { flex-direction: column; gap: 14px; }
@@ -1345,11 +1354,52 @@ footer {
 /* ================= Sign up page ================= */
 /* The consent copy + newsletter checkbox + LinkedIn button live directly in
    the hero (not a separate section below it) so the CTA sits above the fold
-   without scrolling — #su-consent matches .about-lede's reading measure so
-   the checkbox/button/link line up under it instead of stretching full width. */
+   without scrolling — the copy runs the full page width (no narrow reading
+   column) so it doesn't read as a boxed-in block. */
 
-#su-consent { max-width: 46ch; }
+#su-consent { max-width: none; }
+.signup-hero .about-lede { max-width: none; }
 
 .signup-hero .li-gate { margin-top: 24px; }
+
+/* Newsletter opt-in shown above each LinkedIn sign-in button */
+.li-newsletter-row { margin: 0 0 16px; }
+.li-optional { color: var(--ink-mute, var(--ink-body)); opacity: 0.75; }
+
+.signup-benefits {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+  margin-top: 36px;
+}
+.signup-benefit {
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.signup-benefit h3 {
+  font-weight: 700;
+  font-size: clamp(18px, 1.8vw, 21px);
+  line-height: 1.3;
+}
+.signup-benefit p {
+  color: var(--ink-body);
+  font-size: 15px;
+  line-height: 1.6;
+}
+.signup-fineprint {
+  margin: 28px 0 18px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-body);
+}
+@media (max-width: 860px) {
+  .signup-benefits { grid-template-columns: 1fr; }
+  .signup-benefit { padding: 24px 20px; }
+}
 
 .signup-privacy-note { margin-top: 22px; display: block; }

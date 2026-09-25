@@ -14,6 +14,11 @@ const { put } = require("@vercel/blob");
 
 const SESSION_COOKIE = "pm_session";
 
+// Where the newsletter tick-box was checked. signup.html always calls this (it
+// creates the profile); apply/recommend/join-map only call it when the visitor
+// explicitly ticked "Subscribe me to the newsletter" next to the LinkedIn button.
+const ALLOWED_SOURCES = new Set(["signup", "apply", "recommend", "join-map"]);
+
 function parseCookies(header) {
   const out = {};
   (header || "").split(";").forEach(part => {
@@ -55,6 +60,7 @@ module.exports = async (req, res) => {
   }
 
   const newsletter = !!(req.body && req.body.newsletter === true);
+  const source = req.body && ALLOWED_SOURCES.has(req.body.source) ? req.body.source : "signup";
   const emailKey = crypto.createHash("sha256").update(session.email.toLowerCase()).digest("hex");
 
   const record = {
@@ -62,6 +68,7 @@ module.exports = async (req, res) => {
     email: session.email,
     picture: session.picture || null,
     newsletter,
+    source,
     updatedAt: new Date().toISOString()
   };
 
