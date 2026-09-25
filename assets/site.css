@@ -1415,7 +1415,7 @@ footer {
   line-height: 1.6;
 }
 .signup-fineprint {
-  margin: 28px 0 18px;
+  margin: 22px 0 18px;
   font-size: 14px;
   line-height: 1.6;
   color: var(--ink-body);
@@ -1543,3 +1543,7 @@ footer {
 .mi-hero-actions .about-lede { padding-bottom: 24px; }
 .mi-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding-bottom: 64px; }
 @media (max-width: 640px) { .mi-actions { padding-bottom: 44px; } }
+
+/* Sign-up: the consent + button block now sits above the benefit cards */
+.signup-hero .signup-privacy-note { margin-bottom: 8px; }
+.signup-hero .signup-benefits { margin-top: 44px; }
