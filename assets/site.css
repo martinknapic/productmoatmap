@@ -1538,3 +1538,8 @@ footer {
   .qrow-body { grid-column: 1; }
   .qrow .q-badge { grid-column: 2; grid-row: 2; }
 }
+
+/* My interview (my-interview.html): buttons/links under the intro, with room below them */
+.mi-hero-actions .about-lede { padding-bottom: 24px; }
+.mi-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding-bottom: 64px; }
+@media (max-width: 640px) { .mi-actions { padding-bottom: 44px; } }

@@ -286,12 +286,12 @@ function initMyInterview() {
 
   const cta = `<a class="btn btn-primary" href="apply.html">Apply to be interviewed</a>`;
   const hero = (eyebrow, title, lede, extra = "") => `
-    <section class="why-hero">
+    <section class="why-hero${extra ? " mi-hero-actions" : ""}">
       <div class="wrap">
         <div class="eyebrow">${eyebrow}</div>
         <h1>${title}</h1>
         <p class="about-lede">${lede}</p>
-        ${extra}
+        ${extra ? `<div class="mi-actions">${extra}</div>` : ""}
       </div>
     </section>`;
 
