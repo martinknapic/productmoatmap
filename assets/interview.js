@@ -84,6 +84,7 @@ function initInterview() {
     const first = (state.profile.name || "").split(/\s+/)[0] || "there";
     document.title = `${first}'s interview — ProductMoat`;
     root.innerHTML = `
+      <div class="iv-steps-wrap"><div class="wrap"><ol class="iv-steps" id="iv-steps" aria-label="Your progress"></ol></div></div>
       <section class="why-hero iv-hero">
         <div class="wrap iv-hero-grid">
           <div class="iv-hero-text">
@@ -441,7 +442,46 @@ function initInterview() {
 
   // ---------- status, progress, submit ----------
 
-  function refreshAll() { refreshBanner(); refreshProgress(); refreshSubmit(); markMissing(); applyReadOnly(); }
+  function refreshAll() { refreshSteps(); refreshBanner(); refreshProgress(); refreshSubmit(); markMissing(); applyReadOnly(); }
+
+  // ---------- process steps: where we are, what's done, what's pending ----------
+  function refreshSteps() {
+    const el = document.getElementById("iv-steps");
+    if (!el) return;
+    const req = state.questionnaire.sections.flatMap(sec => sec.questions).filter(q => q.required);
+    const missing = missingRequired().length;
+    const approved = !!state.approval.approved;
+    const published = !!state.published || state.status === "published";
+    const scheduled = state.status === "scheduled";
+    const locked = state.locked;
+    const est = state.estimatedPublishDate ? formatDay(state.estimatedPublishDate) : "";
+
+    // index of the step we're on (0-based); everything before it is done, after it pending
+    let current;
+    if (published) current = 5;
+    else if (scheduled) current = 4;
+    else if (locked || approved) current = 3;
+    else current = 1;
+
+    const steps = [
+      { title: "Invited", sub: "You're in" },
+      { title: "Your answers", sub: current > 1 ? "Done" : `${req.length - missing} of ${req.length} required` },
+      { title: "Your sign-off", sub: current > 2 ? (approved ? "You're happy" : "Approved") : missing ? "After your answers" : "Ready — press the button" },
+      { title: "Our review", sub: current > 3 ? "Preview ready" : current === 3 ? (locked ? "Preparing your preview" : "We'll take it from here") : "Preview & final check" },
+      { title: "Published", sub: published ? "Live" : scheduled ? "Scheduled" : est ? `Est. ${est}` : "Coming up" }
+    ];
+    el.innerHTML = steps.map((st, i) => {
+      const status = i < current ? "done" : i === current ? "current" : "pending";
+      const ready = i === 2 && status === "pending" && missing === 0 && !approved; // sign-off is the next thing to do
+      return `<li class="iv-step is-${status}${ready ? " is-next" : ""}"${status === "current" ? ' aria-current="step"' : ""}>
+        <span class="iv-step-dot">${status === "done" ? "&check;" : i + 1}</span>
+        <span class="iv-step-text"><span class="iv-step-title">${escapeHTML(st.title)}</span><span class="iv-step-sub">${escapeHTML(st.sub)}</span></span>
+      </li>`;
+    }).join("");
+    // on narrow screens the strip scrolls sideways: keep the current step in view
+    const cur = el.querySelector(".is-current");
+    if (cur && el.scrollWidth > el.clientWidth) el.scrollLeft = Math.max(0, cur.offsetLeft - 16);
+  }
 
   // Same pattern as the Apply form: after a failed "finish" attempt, unanswered required fields
   // turn red (and clear again as soon as they're filled in).
