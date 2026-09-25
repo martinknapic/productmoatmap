@@ -227,7 +227,22 @@ function initSignup() {
     });
     window.location.href = `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
   }
-  signInBtn.addEventListener("click", startSignIn);
+  // Already signed in (e.g. via Apply)? Then no LinkedIn round trip: confirm to create the profile.
+  let sessionProfile = null;
+  signInBtn.addEventListener("click", () => {
+    if (sessionProfile) { errorEl.hidden = true; completeSignup(newsletterCheckbox.checked); } else { startSignIn(); }
+  });
+  if (!new URLSearchParams(window.location.search).get("li")) {
+    fetchMemberProfile().then(p => {
+      if (!p) return;
+      sessionProfile = p;
+      const badge = document.createElement("div");
+      badge.className = "li-badge";
+      badge.innerHTML = `<span class="li-badge-check">&check;</span> You're signed in as ${escapeHTML(p.name || "a LinkedIn member")} via LinkedIn`;
+      gate.insertBefore(badge, signInBtn);
+      signInBtn.lastChild.textContent = " Confirm & create my profile";
+    });
+  }
 
   async function completeSignup(newsletter) {
     try {
@@ -1031,6 +1046,55 @@ async function applyNewsletterChoice(page) {
   } catch (err) { /* the form itself still works; a failed subscribe shouldn't block it */ }
 }
 
+// ---------- Already signed in? ----------
+// A LinkedIn member session (pm_session) is set by every successful LinkedIn sign-in and lasts
+// 30 days. On pages that gate on LinkedIn (Apply, Recommend, Put yourself on the map, Sign up)
+// a visitor who already has one shouldn't be asked to sign in again — the page shows who
+// they're signed in as and unlocks. The server still re-checks the session on every submit.
+
+async function fetchMemberProfile() {
+  try {
+    const resp = await fetch("/api/member-me", { credentials: "same-origin" });
+    return resp.ok ? await resp.json() : null;
+  } catch (err) {
+    return null;
+  }
+}
+
+function sessionGateHTML(profile) {
+  return `
+    <div class="li-badge"><span class="li-badge-check">&check;</span> Signed in as ${escapeHTML(profile.name || "LinkedIn member")} via LinkedIn</div>
+    <div class="form-checkbox-row li-newsletter-row">
+      <input type="checkbox" id="li-newsletter">
+      <label for="li-newsletter" id="li-newsletter-label">Subscribe me to the ProductMoat newsletter <span class="li-optional">(optional)</span>.</label>
+    </div>`;
+}
+
+// Ticking the box subscribes right away (there's no redirect to carry the choice across).
+function wireSessionNewsletter(gate, page) {
+  const box = gate.querySelector("#li-newsletter");
+  if (!box) return;
+  box.addEventListener("change", async () => {
+    if (!box.checked) return; // unsubscribing happens through the link in each newsletter issue
+    box.disabled = true;
+    const label = gate.querySelector("#li-newsletter-label");
+    try {
+      const resp = await fetch("/api/member-signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ newsletter: true, source: page })
+      });
+      if (!resp.ok) throw new Error("subscribe failed");
+      label.textContent = "You're subscribed to the newsletter — every issue has an unsubscribe link.";
+    } catch (err) {
+      box.checked = false;
+      box.disabled = false;
+      label.textContent = "Couldn't subscribe just now — please try again.";
+    }
+  });
+}
+
 // Generic gate: locks every field in `formId` (except the sign-in button and
 // the submit button, which gets an aria-disabled treatment instead) until the
 // visitor verifies via LinkedIn OAuth. `page` is embedded in the OAuth
@@ -1098,7 +1162,17 @@ function initLinkedInGate({ page, formId, submitBtnId, onLocked, onVerified }) {
 
   const params = new URLSearchParams(window.location.search);
   const li = params.get("li");
-  if (!li) return;
+  if (!li) {
+    // no OAuth round trip in progress: already signed in?
+    fetchMemberProfile().then(profile => {
+      if (!profile) return;
+      setLocked(false);
+      gate.innerHTML = sessionGateHTML(profile);
+      wireSessionNewsletter(gate, page);
+      if (onVerified) onVerified(profile);
+    });
+    return;
+  }
 
   const returnedState = params.get("state");
   history.replaceState(null, "", window.location.pathname);
@@ -1337,7 +1411,23 @@ function initJoinMap() {
   // Resume after the LinkedIn OAuth redirect back to this page.
   const params = new URLSearchParams(window.location.search);
   const li = params.get("li");
-  if (!li) return;
+  if (!li) {
+    // already signed in: skip the LinkedIn step
+    fetchMemberProfile().then(p => {
+      if (!p) return;
+      profile = p;
+      gate.innerHTML = sessionGateHTML(p);
+      wireSessionNewsletter(gate, "join-map");
+      document.getElementById("jm-preview-avatar").innerHTML = p.picture
+        ? `<img src="${p.picture}" alt="">`
+        : `<div class="avatar">${escapeHTML(jmInitials(p.name))}</div>`;
+      document.getElementById("jm-preview-name").textContent = p.name || "";
+      document.getElementById("jm-preview-email").textContent = p.email || "";
+      preview.hidden = false;
+      refreshLocks();
+    });
+    return;
+  }
 
   const returnedState = params.get("state");
   history.replaceState(null, "", window.location.pathname);
