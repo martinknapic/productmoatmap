@@ -46,9 +46,15 @@ module.exports = async (req, res) => {
     return res.status(401).json({ error: "not_authenticated" });
   }
 
+  // Lets the nav show a "Backoffice" link to admins only. It's a UI hint: the backoffice pages
+  // themselves are still gated by middleware.js and their own LinkedIn login.
+  const admins = (process.env.BACKOFFICE_ALLOWED_EMAIL || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
+  const isAdmin = !!session.email && admins.includes(String(session.email).trim().toLowerCase());
+
   return res.status(200).json({
     name: session.name,
     email: session.email,
-    picture: session.picture
+    picture: session.picture,
+    isAdmin
   });
 };

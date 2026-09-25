@@ -167,6 +167,7 @@ function renderMemberNav(navInner, profile) {
     <div class="member-dropdown" role="menu">
       <a href="account.html" role="menuitem">My profile</a>
       <a href="my-interview.html" role="menuitem">My interview</a>
+      ${profile.isAdmin ? `<a href="/backoffice/candidates.html" role="menuitem">Backoffice</a>` : ""}
       <a href="#" id="member-logout-link" role="menuitem">Log out</a>
     </div>
   `;
