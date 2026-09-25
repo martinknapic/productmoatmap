@@ -92,7 +92,11 @@ async function initBackofficeCandidates() {
     try {
       const data = await boCandApi({ action: "create", profile, notes: String(f.get("notes") || "") });
       location.href = `candidate.html?id=${encodeURIComponent(data.id)}`;
-    } catch (err) { boToast("Couldn't add — a name is required."); }
+    } catch (err) {
+      boToast(err.message === "missing_name" ? "A name is required."
+        : err.message === "storage_failed" ? "Couldn't save: storage isn't reachable (is Vercel Blob connected to this project?)."
+        : "Couldn't add that person — please try again.");
+    }
   });
 
   try {
