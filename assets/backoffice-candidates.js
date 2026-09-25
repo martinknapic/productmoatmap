@@ -26,6 +26,17 @@ async function boCandApi(payload) {
   return data;
 }
 
+// Photo circle: initials underneath, the photo on top (removed if it fails to load, so a broken
+// or expired link falls back to initials). Photos are https URLs, or site paths like assets/photos/x.jpg.
+function boCandPhotoSrc(photo) {
+  if (!photo) return "";
+  return /^https?:\/\//i.test(photo) ? photo : `/${photo.replace(/^\/+/, "")}`;
+}
+function boCandAvatar(profile, extraClass = "") {
+  const src = boCandPhotoSrc(profile.photo);
+  return `<div class="avatar bo-cand-avatar ${extraClass}"><span>${boEscapeHTML(boInitials(profile.name))}</span>${src ? `<img src="${boEscapeHTML(src)}" alt="" referrerpolicy="no-referrer" loading="lazy" onerror="this.remove()">` : ""}</div>`;
+}
+
 const boPill = status => `<span class="bo-pill bo-pill-${boEscapeHTML(status)}">${boEscapeHTML(BO_STATUS_LABELS[status] || status)}</span>`;
 const boQuestionnaireLink = c => `${location.origin}/interview.html?t=${c.id}`;
 const boWhen = iso => (iso ? new Date(iso).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "—");
@@ -62,6 +73,7 @@ async function initBackofficeCandidates() {
     document.getElementById("bo-cand-empty").hidden = rows.length > 0;
     listEl.innerHTML = rows.map(c => `
       <tr class="bo-row-link" data-open="${boEscapeHTML(c.id)}">
+        <td class="bo-cell-photo">${boCandAvatar(c.profile)}</td>
         <td class="bo-cell-strong">${boEscapeHTML(boCandName(c))}<br><span class="bo-cell-dim">${boEscapeHTML(c.profile.email || "")}</span></td>
         <td>${boEscapeHTML(c.profile.role) || "—"}<br><span class="bo-cell-dim">${boEscapeHTML(c.profile.company)}</span></td>
         <td>${boEscapeHTML(c.profile.location) || "—"}</td>
@@ -181,10 +193,13 @@ async function initBackofficeCandidate() {
 
     root.innerHTML = `
       <div class="bo-cand-head">
-        <div>
+        <div class="bo-cand-title">
+          ${boCandAvatar(p, "bo-cand-avatar-lg")}
+          <div>
           <a class="bracket-link" href="candidates.html">[ ← All candidates ]</a>
           <h2>${boEscapeHTML(boCandName(c))} ${boPill(c.status)}</h2>
           <p class="bo-section-note">${boEscapeHTML(BO_SOURCE_LABELS[c.source] || c.source)} · added ${boEscapeHTML(boWhen(c.createdAt))}${c.approval && c.approval.approved ? ` · marked final by ${c.approval.by === "admin" ? "you (on their behalf)" : "the person"} ${boEscapeHTML(boWhen(c.approval.at))}` : ""}</p>
+          </div>
         </div>
         <div class="bo-cand-actions">
           ${c.status === "published" ? `<a class="btn btn-ghost" href="${boEscapeHTML(c.preview.url)}" target="_blank" rel="noopener">View live</a>` : ""}
@@ -206,7 +221,9 @@ async function initBackofficeCandidate() {
         <form id="bo-prof-form" class="bo-form-grid">
           ${[["name", "Full name"], ["email", "Email"], ["phone", "Phone"], ["role", "Role / title"], ["company", "Company"], ["location", "Location (city, country)"],
              ["yearsExperience", "Years of experience"], ["linkedin", "LinkedIn URL"], ["website", "Website"], ["twitter", "X / Twitter"], ["photo", "Photo URL (https://…)"], ["lat", "Latitude (map)"], ["lng", "Longitude (map)"]]
-            .map(([k, label]) => `<label class="bo-lbl">${label}<input class="bo-input" name="${k}" value="${boEscapeHTML(p[k] == null ? "" : p[k])}"></label>`).join("")}
+            .map(([k, label]) => k === "photo"
+              ? `<div class="bo-lbl bo-wide"><label for="bo-photo-input">${label}</label><div class="bo-photo-row"><div id="bo-photo-preview">${boCandAvatar(p, "bo-cand-avatar-lg")}</div><input class="bo-input" id="bo-photo-input" name="photo" value="${boEscapeHTML(p.photo || "")}" placeholder="https://… (LinkedIn photo for applicants, or paste a link)"></div></div>`
+              : `<label class="bo-lbl">${label}<input class="bo-input" name="${k}" value="${boEscapeHTML(p[k] == null ? "" : p[k])}"></label>`).join("")}
           <label class="bo-lbl">Focus area<select class="bo-input" name="focusTag">${BO_FOCUS.map(([v, l]) => `<option value="${v}"${v === p.focusTag ? " selected" : ""}>${l}</option>`).join("")}</select></label>
           <label class="bo-lbl bo-wide">Short bio (max 200)<textarea class="bo-input" name="snippet" rows="2" maxlength="200">${boEscapeHTML(p.snippet)}</textarea></label>
           <label class="bo-lbl bo-wide">Pull quote (max 160)<textarea class="bo-input" name="pullQuote" rows="2" maxlength="160">${boEscapeHTML(p.pullQuote)}</textarea></label>
@@ -312,6 +329,14 @@ async function initBackofficeCandidate() {
 
   function wire() {
     const on = (sel, fn) => { const el = root.querySelector(sel); if (el) el.addEventListener("click", fn); };
+
+    // live photo preview while typing/pasting a URL (and while the name changes, for the initials)
+    const form = root.querySelector("#bo-prof-form");
+    const refreshPhoto = () => {
+      root.querySelector("#bo-photo-preview").innerHTML = boCandAvatar({ name: form.elements.name.value, photo: form.elements.photo.value.trim() }, "bo-cand-avatar-lg");
+    };
+    form.elements.photo.addEventListener("input", refreshPhoto);
+    form.elements.name.addEventListener("input", refreshPhoto);
 
     root.querySelector("#bo-prof-form").addEventListener("submit", (e) => {
       e.preventDefault();

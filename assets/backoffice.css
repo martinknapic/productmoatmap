@@ -420,3 +420,14 @@ textarea.bo-input { resize: vertical; line-height: 1.5; }
 }
 
 .bo-form-grid[hidden], .bo-card[hidden] { display: none; }
+
+/* ---------- Candidate photos ---------- */
+
+.bo-cand-avatar { position: relative; }
+.bo-cand-avatar > span { position: relative; z-index: 0; }
+.bo-cand-avatar > img { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; object-fit: cover; }
+.bo-cand-avatar-lg { width: 72px; height: 72px; font-size: 24px; }
+.bo-cell-photo { width: 56px; padding-right: 0; }
+.bo-cand-title { display: flex; gap: 18px; align-items: flex-start; }
+.bo-photo-row { display: flex; gap: 14px; align-items: center; }
+.bo-photo-row .bo-input { flex: 1; }
