@@ -199,7 +199,7 @@ select.ivq-input { appearance: auto; }
 
 
 /* ----- hero: text left, large portrait right ----- */
-.iv-hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 56px; align-items: start; }
+.iv-hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 56px; align-items: center; }
 .iv-hero .about-lede { max-width: 62ch; }
 .iv-portrait {
   position: relative;
