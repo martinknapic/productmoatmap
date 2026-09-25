@@ -22,6 +22,11 @@ function interviewURL(p) {
   return `/interview/${interviewCategory(p)}/${encodeURIComponent(p.slug)}`;
 }
 
+// For values placed inside a double-quoted HTML attribute.
+function escapeAttr(s) {
+  return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+}
+
 function escapeHTML(str) {
   const div = document.createElement("div");
   div.textContent = str;
@@ -380,23 +385,119 @@ function initMyInterview() {
 // there's no database behind member accounts, just whatever LinkedIn handed
 // back at sign-in — so this simply confirms who you're signed in as.
 
+// Focus areas a member can pick (any number). Same list as the Apply form's dropdown.
+const MEMBER_FOCUS_OPTIONS = [
+  ["ai", "AI & ML"], ["b2b", "B2B SaaS"], ["design", "Product design / UX"], ["growth", "Consumer & Growth"],
+  ["fintech", "Fintech"], ["platform", "Platform & Infra"], ["marketplace", "Marketplace"], ["health", "Healthtech"],
+  ["leadership", "Product Leadership"], ["other", "Other"]
+];
+
 function initAccount() {
   const root = document.getElementById("account-root");
   if (!root) return;
+  const detailsRoot = document.getElementById("account-details");
 
-  fetch("/api/member-me", { credentials: "same-origin" })
+  fetch("/api/member-profile", { credentials: "same-origin" })
     .then(resp => (resp.ok ? resp.json() : null))
-    .then(profile => {
-      root.innerHTML = profile ? accountSignedInHTML(profile) : accountSignedOutHTML();
-      if (profile) {
-        document.getElementById("account-logout-btn").addEventListener("click", () => {
-          window.location.href = "/api/member-logout?next=%2Faccount.html";
-        });
-      }
+    .then(data => {
+      if (!data) { root.innerHTML = accountSignedOutHTML(); return; }
+      root.innerHTML = accountSignedInHTML(data.account);
+      document.getElementById("account-logout-btn").addEventListener("click", () => {
+        window.location.href = "/api/member-logout?next=%2Faccount.html";
+      });
+      if (detailsRoot) initAccountDetails(detailsRoot, data.details);
     })
     .catch(() => {
       root.innerHTML = accountSignedOutHTML();
     });
+}
+
+// "Your details": everything collected on Apply, editable any time. Private to the member; it prefills
+// Apply and Put yourself on the map, and doesn't need an interview page to exist.
+function initAccountDetails(el, d) {
+  const val = (v) => escapeAttr(v == null ? "" : v);
+  const field = (id, label, value, extra = "") => `<div class="form-field"><label for="${id}">${label}</label><input type="text" id="${id}" name="${id.replace("mp-", "")}" value="${val(value)}" ${extra}></div>`;
+  el.hidden = false;
+  el.innerHTML = `
+    <form class="account-form" id="account-form" novalidate>
+      <div class="fieldset-head">
+        <h2>Your details</h2>
+        <p>Private to you. They save time on Apply and Put yourself on the map, and you can update them whenever things change — no interview page needed.</p>
+      </div>
+      <div class="form-grid">
+        ${field("mp-name", 'Full name <span class="req">*</span>', d.name, 'maxlength="200" autocomplete="name" required')}
+        ${field("mp-role", "Current role", d.role, 'maxlength="200" placeholder="e.g. Senior Product Manager"')}
+        ${field("mp-company", "Company", d.company, 'maxlength="200"')}
+        ${field("mp-location", "Location", d.location, 'maxlength="200" placeholder="City, Country"')}
+        <div class="form-field"><label for="mp-yearsExperience">Years in product</label><input type="number" id="mp-yearsExperience" name="yearsExperience" min="0" max="60" value="${val(d.yearsExperience)}"></div>
+        <div class="form-field full">
+          <label>Focus areas <span class="hint-inline">(pick any that apply)</span></label>
+          <div class="focus-chips" id="mp-focus">
+            ${MEMBER_FOCUS_OPTIONS.map(([v, l]) => `<label class="focus-chip"><input type="checkbox" value="${v}"${(d.focusTags || []).includes(v) ? " checked" : ""}><span>${l}</span></label>`).join("")}
+          </div>
+        </div>
+        ${field("mp-linkedin", "LinkedIn URL", d.linkedin, 'maxlength="300" placeholder="https://www.linkedin.com/in/…"')}
+        ${field("mp-website", "Website", d.website, 'maxlength="300" placeholder="https://…"')}
+        ${field("mp-twitter", "X / Twitter", d.twitter, 'maxlength="300" placeholder="https://x.com/…"')}
+        <div class="form-field full">
+          <label for="mp-snippet">Short bio</label>
+          <textarea id="mp-snippet" name="snippet" rows="2" maxlength="200" placeholder="One sentence on what you're known for or currently working on.">${escapeHTML(d.snippet || "")}</textarea>
+          <span class="hint-inline" id="mp-snippet-count">${(d.snippet || "").length} / 200</span>
+        </div>
+        <div class="form-field full">
+          <label for="mp-pullQuote">Pull quote</label>
+          <textarea id="mp-pullQuote" name="pullQuote" rows="2" maxlength="160" placeholder="One punchy line that sums up how you think.">${escapeHTML(d.pullQuote || "")}</textarea>
+          <span class="hint-inline" id="mp-quote-count">${(d.pullQuote || "").length} / 160</span>
+        </div>
+      </div>
+      <div class="form-submit-row">
+        <button type="submit" class="btn btn-primary" id="account-save">Save my details</button>
+        <span class="hint-inline" id="account-save-status" role="status"></span>
+        <a class="bracket-link" href="join-map.html">[ Put yourself on the map → ]</a>
+      </div>
+    </form>`;
+
+  const form = el.querySelector("#account-form");
+  const status = el.querySelector("#account-save-status");
+  const count = (inputId, outId, max) => {
+    const input = el.querySelector(inputId), out = el.querySelector(outId);
+    input.addEventListener("input", () => { out.textContent = `${input.value.length} / ${max}`; });
+  };
+  count("#mp-snippet", "#mp-snippet-count", 200);
+  count("#mp-pullQuote", "#mp-quote-count", 160);
+  form.addEventListener("input", () => { status.textContent = ""; });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const g = (n) => form.elements[n].value;
+    if (!g("name").trim()) { form.elements.name.focus(); status.textContent = "Your name is required."; status.classList.add("is-error"); return; }
+    const btn = el.querySelector("#account-save");
+    btn.setAttribute("aria-disabled", "true");
+    status.classList.remove("is-error");
+    status.textContent = "Saving…";
+    try {
+      const resp = await fetch("/api/member-profile", {
+        method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+        body: JSON.stringify({ details: {
+          name: g("name"), role: g("role"), company: g("company"), location: g("location"),
+          yearsExperience: g("yearsExperience"),
+          focusTags: [...el.querySelectorAll("#mp-focus input:checked")].map(i => i.value),
+          linkedin: g("linkedin"), website: g("website"), twitter: g("twitter"),
+          snippet: g("snippet"), pullQuote: g("pullQuote")
+        } })
+      });
+      if (!resp.ok) throw new Error(String(resp.status));
+      const saved = (await resp.json()).details;
+      // show what was actually stored (e.g. links tidied to https://…)
+      ["linkedin", "website", "twitter"].forEach(k => { form.elements[k].value = saved[k]; });
+      status.textContent = "Saved ✓";
+    } catch (err) {
+      status.classList.add("is-error");
+      status.textContent = "Couldn't save just now — please try again.";
+    } finally {
+      btn.removeAttribute("aria-disabled");
+    }
+  });
 }
 
 function accountSignedInHTML(profile) {
@@ -410,7 +511,7 @@ function accountSignedInHTML(profile) {
       <div>
         <h1 class="account-name">${escapeHTML(profile.name || "ProductMoat member")}</h1>
         <p class="account-email">${escapeHTML(profile.email || "")}</p>
-        <p class="account-note">This is what LinkedIn shared when you signed in. Signing in again on Apply, Recommend, or Put yourself on the map refreshes it.</p>
+        <p class="account-note">Your photo and email come from LinkedIn (signing in again on Apply, Recommend, or Put yourself on the map refreshes them). Everything else below is yours to edit.</p>
         <button class="btn btn-ghost" id="account-logout-btn">Log out</button>
       </div>
     </div>
@@ -1061,6 +1162,24 @@ async function fetchMemberProfile() {
   }
 }
 
+// The details a member keeps on My profile (null if signed out / none saved yet); used to prefill forms.
+async function fetchMemberDetails() {
+  try {
+    const resp = await fetch("/api/member-profile", { credentials: "same-origin" });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data.saved ? data.details : null;
+  } catch (err) {
+    return null;
+  }
+}
+
+// Fill a field only if the person hasn't typed anything there.
+function fillIfEmpty(id, value) {
+  const el = document.getElementById(id);
+  if (el && !el.disabled && value != null && String(value) !== "" && !el.value) el.value = value;
+}
+
 function sessionGateHTML(profile) {
   return `
     <div class="li-badge"><span class="li-badge-check">&check;</span> Signed in as ${escapeHTML(profile.name || "LinkedIn member")} via LinkedIn</div>
@@ -1204,6 +1323,18 @@ function initApplyLinkedInGate() {
     onVerified(profile) {
       document.getElementById("f-name").value = profile.name || "";
       document.getElementById("f-email").value = profile.email || "";
+      // everything else they've saved on My profile
+      fetchMemberDetails().then(d => {
+        if (!d) return;
+        if (d.name) document.getElementById("f-name").value = d.name;
+        fillIfEmpty("f-role", d.role); fillIfEmpty("f-company", d.company); fillIfEmpty("f-location", d.location);
+        fillIfEmpty("f-years", d.yearsExperience); fillIfEmpty("f-linkedin", d.linkedin);
+        fillIfEmpty("f-website", d.website); fillIfEmpty("f-twitter", d.twitter);
+        fillIfEmpty("f-snippet", d.snippet); fillIfEmpty("f-quote", d.pullQuote);
+        if (d.focusTags && d.focusTags[0]) fillIfEmpty("f-focus", d.focusTags[0]);
+        const snip = document.getElementById("f-snippet"), counter = document.getElementById("snippet-counter");
+        if (snip && counter) counter.textContent = `${snip.value.length} / ${snip.maxLength}`;
+      });
       if (profile.picture) {
         document.getElementById("photo-preview").innerHTML = `<img src="${profile.picture}" alt="">`;
         document.getElementById("photo-filename").textContent = "Using your LinkedIn photo — choose a file to replace it.";
@@ -1306,6 +1437,18 @@ function initJoinMap() {
   });
   picker.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), "top-right");
 
+  // City / country / role / company from My profile (location is saved as "City, Country")
+  function prefillFromProfile() {
+    fetchMemberDetails().then(d => {
+      if (!d) return;
+      const parts = (d.location || "").split(",").map(x => x.trim()).filter(Boolean);
+      fillIfEmpty("jm-city", parts.length > 1 ? parts.slice(0, -1).join(", ") : parts[0] || "");
+      fillIfEmpty("jm-country", parts.length > 1 ? parts[parts.length - 1] : "");
+      fillIfEmpty("jm-role", d.role);
+      fillIfEmpty("jm-company", d.company);
+    });
+  }
+
   function setLockAttr(el, wrap, locked) {
     if (locked) el.setAttribute("aria-disabled", "true");
     else el.removeAttribute("aria-disabled");
@@ -1366,6 +1509,7 @@ function initJoinMap() {
       document.getElementById("jm-preview-name").textContent = profile.name || "";
       document.getElementById("jm-preview-email").textContent = profile.email || "";
       preview.hidden = false;
+      prefillFromProfile();
 
       refreshLocks();
     } catch (err) {
@@ -1425,6 +1569,7 @@ function initJoinMap() {
       document.getElementById("jm-preview-name").textContent = p.name || "";
       document.getElementById("jm-preview-email").textContent = p.email || "";
       preview.hidden = false;
+      prefillFromProfile();
       refreshLocks();
     });
     return;

@@ -617,10 +617,6 @@ function formatDay(iso) {
   const d = new Date(`${iso}T00:00:00`);
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString([], { dateStyle: "long" });
 }
-function escapeAttr(s) {
-  return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
-}
-
 function renderInvalid(root) {
   root.innerHTML = `
     <section class="why-hero">

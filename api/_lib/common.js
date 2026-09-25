@@ -221,13 +221,60 @@ function cleanProfile(p) {
 
 // ---------- Members (private profile + newsletter choice, written when someone signs up) ----------
 
+const memberPath = (email) => `members/${crypto.createHash("sha256").update(String(email).toLowerCase()).digest("hex")}.json`;
+
+// "twitter.com/x" / "www.site.com" -> https://…, then the usual http(s)-only rule
+function looseUrl(value, max) {
+  const v = clip(value, max);
+  return v && !/^[a-z][a-z0-9+.-]*:/i.test(v) ? cleanUrl(`https://${v}`, max) : cleanUrl(v, max);
+}
+
+// The details a member can keep on their My profile page (the same things collected on Apply).
+// Focus areas are a list: a person can work across several.
+function cleanMemberDetails(d) {
+  d = d || {};
+  const years = Number(d.yearsExperience);
+  const tags = [...new Set((Array.isArray(d.focusTags) ? d.focusTags : []).filter(t => FOCUS_TAGS.includes(t)))];
+  return {
+    name: plain(d.name, 200),
+    role: plain(d.role, 200),
+    company: plain(d.company, 200),
+    location: plain(d.location, 200),
+    yearsExperience: d.yearsExperience === "" || d.yearsExperience == null || !Number.isFinite(years) ? null : Math.max(0, Math.min(60, Math.round(years))),
+    focusTags: tags,
+    linkedin: looseUrl(d.linkedin, 300),
+    website: looseUrl(d.website, 300),
+    twitter: looseUrl(d.twitter, 300),
+    snippet: plain(d.snippet, 200),
+    pullQuote: plain(d.pullQuote, 160)
+  };
+}
+
+async function readMember(email) {
+  try { return await readJSON(memberPath(email)); } catch (err) { return null; }
+}
+
+async function saveMemberDetails(session, details) {
+  const existing = await readMember(session.email);
+  const record = {
+    name: session.name || (existing && existing.name) || "",
+    email: session.email,
+    picture: session.picture || (existing && existing.picture) || null,
+    newsletter: !!(existing && existing.newsletter),
+    source: (existing && existing.source) || "profile",
+    createdAt: (existing && existing.createdAt) || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    details
+  };
+  await writeJSON(memberPath(session.email), record);
+  return record;
+}
+
 // Overwrites in place, keeps createdAt, and never drops an existing newsletter subscription
 // (unsubscribing happens through the link in each newsletter issue).
 async function upsertMember(session, newsletter, source) {
-  const emailKey = crypto.createHash("sha256").update(session.email.toLowerCase()).digest("hex");
-  const pathname = `members/${emailKey}.json`;
-  let existing = null;
-  try { existing = await readJSON(pathname); } catch (err) { /* no previous record */ }
+  const pathname = memberPath(session.email);
+  const existing = await readMember(session.email);
   const record = {
     name: session.name || "",
     email: session.email,
@@ -237,6 +284,7 @@ async function upsertMember(session, newsletter, source) {
     createdAt: (existing && existing.createdAt) || new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
+  if (existing && existing.details) record.details = existing.details; // keep the profile details they've saved
   await writeJSON(pathname, record);
   return record;
 }
@@ -312,7 +360,7 @@ module.exports = {
   crypto, defaults,
   parseCookies, adminSession, memberSession, requireAdmin, clip,
   readJSON, writeJSON, readCandidate, saveCandidate, listCandidates, deleteCandidate,
-  upsertMember, readBank, defaultBank, cleanSections, QUESTION_BANK_PATH,
+  upsertMember, readMember, saveMemberDetails, cleanMemberDetails, FOCUS_TAGS, readBank, defaultBank, cleanSections, QUESTION_BANK_PATH,
   deriveStatus, isLive, blankCandidate, cleanProfile, ID_RE, newId,
   slugify, CATEGORIES, defaultCategory, toPublicInterview, takenSlugs, FOCUS_LABELS
 };

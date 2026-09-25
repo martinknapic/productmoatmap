@@ -54,6 +54,10 @@
     {
       "source": "/api/backoffice-logout",
       "destination": "/api/site?op=backoffice-logout"
+    },
+    {
+      "source": "/api/member-profile",
+      "destination": "/api/site?op=member-profile"
     }
   ],
   "functions": {

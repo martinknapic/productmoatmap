@@ -15,6 +15,7 @@ const routes = {
   "published": require("./_lib/routes/published"),
   "question-bank": require("./_lib/routes/question-bank"),
   "member-me": require("./_lib/routes/member-me"),
+  "member-profile": require("./_lib/routes/member-profile"),
   "member-logout": require("./_lib/routes/member-logout"),
   "backoffice-me": require("./_lib/routes/backoffice-me"),
   "backoffice-logout": require("./_lib/routes/backoffice-logout")
