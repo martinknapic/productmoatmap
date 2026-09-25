@@ -199,11 +199,12 @@ select.ivq-input { appearance: auto; }
 
 
 /* ----- hero: text left, large portrait right ----- */
-.iv-hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 48px; align-items: start; }
+.iv-hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 56px; align-items: start; }
 .iv-hero .about-lede { max-width: 62ch; }
 .iv-portrait {
   position: relative;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
   width: 100%;
   background: var(--ink);
   color: var(--paper);
@@ -211,11 +212,11 @@ select.ivq-input { appearance: auto; }
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 96px;
+  font-size: 72px;
   overflow: hidden;
   border: 1px solid var(--line);
 }
-.iv-portrait > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.iv-portrait > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; }
 @media (max-width: 860px) {
   .iv-hero-grid { grid-template-columns: 1fr; gap: 28px; }
   .iv-hero-photo { order: -1; width: 128px; }
