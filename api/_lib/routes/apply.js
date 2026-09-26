@@ -34,7 +34,8 @@ module.exports = async (req, res) => {
     // One application per person: anyone already on the candidate list (applied, invited,
     // published...) can't apply again. Declined applications don't count. Matched on the
     // verified LinkedIn email and on the contact email typed into the form.
-    const existing = (await C.findCandidatesByEmail([session.email, profile.email])).filter(c => !c.declined);
+    // A LinkedIn ID match catches the same person coming back with a different email.
+    const existing = (await C.findCandidatesByEmail([session.email, profile.email], session.sub)).filter(c => !c.declined);
     if (existing.length) {
       const live = existing.find(C.isLive);
       const state = live ? "published" : existing.some(c => c.invitation) ? "invited" : "applied";
@@ -43,7 +44,7 @@ module.exports = async (req, res) => {
 
     const networkOptIn = b.networkOptIn === true; // explicit tick on the form; never assumed
     const c = C.blankCandidate("applied", profile, {
-      verified: { name: session.name || "", email: session.email || "" },
+      verified: { name: session.name || "", email: session.email || "", linkedinId: session.sub || "" },
       networkOptIn: networkOptIn ? { optedIn: true, at: new Date().toISOString() } : null
     });
     await C.saveCandidate(c);

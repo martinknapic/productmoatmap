@@ -109,13 +109,41 @@ function deleteCandidate(id) {
 
 // Every candidate record tied to one of these emails (the LinkedIn-verified one or the contact
 // email typed on the form), declined ones included — callers decide what counts.
-async function findCandidatesByEmail(emails) {
+// A LinkedIn member ID (the OIDC `sub`), when given, matches too — same person, different email.
+async function findCandidatesByEmail(emails, linkedinId) {
   const wanted = new Set((emails || []).map(e => String(e || "").trim().toLowerCase()).filter(Boolean));
-  if (!wanted.size) return [];
+  const sub = String(linkedinId || "");
+  if (!wanted.size && !sub) return [];
   return (await listCandidates()).filter(c =>
-    [c.profile && c.profile.email, c.verified && c.verified.email].some(e => e && wanted.has(String(e).trim().toLowerCase()))
+    [c.profile && c.profile.email, c.verified && c.verified.email].some(e => e && wanted.has(String(e).trim().toLowerCase())) ||
+    !!(sub && c.verified && c.verified.linkedinId === sub)
   );
 }
+
+// ---------- "Put yourself on the map" pins ----------
+
+const MAP_PREFIX = "map-submissions/";
+const lowerTrim = v => String(v || "").trim().toLowerCase();
+
+// Everything that already puts this signed-in person on the map: their pins (matched on the
+// LinkedIn-verified email or LinkedIn ID) and a published interview with a location. One place
+// answers "is this person already on the map?" for both the form (blocks a second pin) and the
+// My map page. Only a rejected pin doesn't count, so they can try again with a corrected one.
+async function findMapPresence(session) {
+  const email = lowerTrim(session && session.email);
+  const sub = String((session && session.sub) || "");
+  const { blobs } = await list({ prefix: MAP_PREFIX });
+  const pins = (await Promise.all(blobs.map(b => readJSON(b.pathname))))
+    .filter(s => s && ((email && lowerTrim(s.email) === email) || (sub && s.linkedinId === sub)))
+    .sort((a, b) => (a.submittedAt < b.submittedAt ? 1 : -1));
+  const live = (await findCandidatesByEmail([email], sub))
+    .find(c => isLive(c) && typeof c.profile.lat === "number" && typeof c.profile.lng === "number") || null;
+  return { pins, live, onMap: !!live || pins.some(s => (s.status || "pending") !== "rejected") };
+}
+
+// Deterministic per person, so two simultaneous submissions land on the same blob and the second
+// is refused by the storage layer (allowOverwrite: false) instead of slipping past the check above.
+const mapPinId = session => crypto.createHash("sha256").update(lowerTrim(session.email) || `li:${session.sub}`).digest("hex");
 
 // ---------- Question bank ----------
 
@@ -413,7 +441,7 @@ async function takenSlugs(exceptId) {
 module.exports = {
   crypto, defaults,
   parseCookies, adminSession, memberSession, requireAdmin, isAdminRequest, clip,
-  readJSON, writeJSON, readCandidate, saveCandidate, listCandidates, findCandidatesByEmail, deleteCandidate,
+  readJSON, writeJSON, readCandidate, saveCandidate, listCandidates, findCandidatesByEmail, deleteCandidate, MAP_PREFIX, findMapPresence, mapPinId,
   upsertMember, readMember, saveMemberDetails, setNetworkOptIn, isNetworkMember, cleanMemberDetails, FOCUS_TAGS, readBank, defaultBank, cleanSections, QUESTION_BANK_PATH,
   requiredProgress, deriveStatus, isLive, blankCandidate, cleanProfile, ID_RE, newId,
   slugify, CATEGORIES, defaultCategory, toPublicInterview, takenSlugs, FOCUS_LABELS

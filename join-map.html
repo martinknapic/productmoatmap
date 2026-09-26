@@ -104,6 +104,14 @@
       <p class="hint-inline" id="jm-submit-error" hidden>Something went wrong submitting your pin — try again.</p>
     </div>
 
+    <div class="apply-success" id="jm-already" hidden>
+      <div class="eyebrow"><span class="num">&check;</span> Already on the map</div>
+      <h2>You're already on the map.</h2>
+      <p>Each person gets one pin, and yours is already there or waiting for review. You can see where it stands on your profile.</p>
+      <a class="btn btn-primary" href="my-map.html">See my pin &rarr;</a>
+      <a class="btn btn-ghost" href="map.html">&larr; Back to the map</a>
+    </div>
+
     <div class="apply-success" id="jm-success" hidden>
       <div class="eyebrow"><span class="num">✓</span> Received</div>
       <h2>Thanks — you're in the queue.</h2>
@@ -128,7 +136,7 @@
   </footer>
 
   <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
-  <script src="assets/site.js?v=43"></script>
+  <script src="assets/site.js?v=44"></script>
   <script>
     initTheme();
     initJoinMap();

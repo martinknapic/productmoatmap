@@ -7,16 +7,18 @@
 // nothing here writes straight to the public globe. See api/map-people.js
 // for what actually ends up rendered.
 //
-// The name/email/picture came from a verified LinkedIn sign-in (join-map.html
-// fetches them from /api/linkedin-profile before this call), same trust model
-// as apply.html/recommend.html: the OAuth gate proves the visitor controls
-// that LinkedIn account, this endpoint just persists what they submit.
+// Who is submitting comes from the visitor's verified LinkedIn session cookie
+// (set by api/linkedin-callback.js), never from the request body — the form only
+// supplies the pin and its optional city / country / role / company. One pin per
+// person: anyone already on the map (a pin that's pending, approved or removed, or a
+// published interview with a location), matched on the verified email or LinkedIn
+// ID, is refused with 409. A rejected pin doesn't count, so they can try again.
 
-const crypto = require("crypto");
 const { put } = require("@vercel/blob");
+const C = require("./_lib/common");
 
 function clip(value, max) {
-  return typeof value === "string" ? value.trim().slice(0, max) : "";
+  return typeof value === "string" ? value.trim().slice(0, max).replace(/[<>]/g, "") : "";
 }
 
 module.exports = async (req, res) => {
@@ -24,12 +26,11 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: "method_not_allowed" });
   }
 
-  const body = req.body || {};
-  const { name, email, picture, city, country, role, company, lat, lng } = body;
+  const session = C.memberSession(req);
+  if (!session || (!session.email && !session.sub)) return res.status(401).json({ error: "not_verified" });
 
-  if (!clip(name, 200) || !clip(email, 200)) {
-    return res.status(400).json({ error: "missing_profile" });
-  }
+  const { city, country, role, company, lat, lng } = req.body || {};
+  if (!clip(session.name, 200)) return res.status(400).json({ error: "missing_profile" });
   if (typeof lat !== "number" || typeof lng !== "number" || Number.isNaN(lat) || Number.isNaN(lng)) {
     return res.status(400).json({ error: "missing_location" });
   }
@@ -37,28 +38,46 @@ module.exports = async (req, res) => {
     return res.status(400).json({ error: "invalid_location" });
   }
 
-  const submission = {
-    id: crypto.randomUUID(),
-    name: clip(name, 200),
-    email: clip(email, 200),
-    picture: typeof picture === "string" ? clip(picture, 1000) : null,
-    city: clip(city, 200),
-    country: clip(country, 200),
-    role: clip(role, 200),
-    company: clip(company, 200),
-    lat,
-    lng,
-    status: "pending",
-    submittedAt: new Date().toISOString()
-  };
-
   try {
-    await put(`map-submissions/${submission.id}.json`, JSON.stringify(submission), {
-      access: "private",
-      addRandomSuffix: false,
-      contentType: "application/json"
-    });
-    return res.status(200).json({ ok: true, id: submission.id });
+    const { pins, live, onMap } = await C.findMapPresence(session);
+    if (onMap) {
+      return res.status(409).json({ error: "already_on_map", state: live ? "published" : (pins[0] && pins[0].status) || "pending" });
+    }
+
+    const id = C.mapPinId(session);
+    const submission = {
+      id,
+      name: clip(session.name, 200),
+      email: clip(session.email, 200),
+      linkedinId: clip(session.sub, 100),
+      picture: typeof session.picture === "string" ? clip(session.picture, 1000) : null,
+      city: clip(city, 200),
+      country: clip(country, 200),
+      role: clip(role, 200),
+      company: clip(company, 200),
+      lat,
+      lng,
+      status: "pending",
+      submittedAt: new Date().toISOString()
+    };
+
+    // Only an earlier *rejected* pin of theirs may be replaced; otherwise the write must be a
+    // first one, which is what stops two simultaneous submissions from both getting through.
+    const replacingRejected = pins.some(p => p.id === id);
+    try {
+      await put(`${C.MAP_PREFIX}${id}.json`, JSON.stringify(submission), {
+        access: "private",
+        addRandomSuffix: false,
+        allowOverwrite: replacingRejected,
+        contentType: "application/json"
+      });
+    } catch (err) {
+      if (/already exists/i.test(String((err && err.message) || ""))) {
+        return res.status(409).json({ error: "already_on_map", state: "pending" });
+      }
+      throw err;
+    }
+    return res.status(200).json({ ok: true, id });
   } catch (err) {
     console.error("[join-map] blob write failed:", (err && err.stack) || err);
     return res.status(500).json({ error: "storage_failed" });

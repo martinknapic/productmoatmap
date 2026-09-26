@@ -734,12 +734,15 @@ function initMyMap() {
         ...pins.map(p => `<li class="mm-card"><div><div class="mm-place">${escapeHTML(place(p))}</div><div class="mm-meta">Pin submitted ${escapeHTML(fmtDate(p.submittedAt))}</div></div><span class="mm-status is-${escapeAttr(p.status)}">${escapeHTML(STATUS[p.status] || p.status)}</span></li>`)
       ].filter(Boolean);
       const empty = !cards.length;
+      const canAdd = !data.onMap; // one pin per person; a rejected pin can be replaced
       root.innerHTML = hero(
-        empty ? "You're not on the map yet." : "Your place on the map.",
+        empty ? "You're not on the map yet." : data.onMap ? "Your place on the map." : "Your pin wasn't approved.",
         empty
           ? "Drop a pin where you work and join the map of product people. We review every pin before it goes live."
-          : "Everything you've put on the map, and where each pin stands. We review every new pin before it goes live.",
-        `<a class="btn btn-primary" href="join-map.html">${empty ? "Put yourself on the map" : "Add another pin"} &rarr;</a><a class="bracket-link" href="map.html">[ Open the map ]</a>`
+          : data.onMap
+            ? "You're on the map, and here's where your pin stands. Each person gets one pin, and we review it before it goes live."
+            : "We couldn't approve your pin as submitted. You can drop a new one where you work.",
+        `${canAdd ? `<a class="btn btn-primary" href="join-map.html">${empty ? "Put yourself on the map" : "Drop a new pin"} &rarr;</a>` : ""}<a class="${canAdd ? "bracket-link" : "btn btn-primary"}" href="map.html">${canAdd ? "[ Open the map ]" : "Open the map &rarr;"}</a>`
       ) + (empty ? "" : `<section class="wrap mm-list-wrap"><ul class="mm-list">${cards.join("")}</ul></section>`);
     })
     .catch(() => { root.innerHTML = hero("Something went wrong.", "We couldn't load your map details just now. Please refresh in a moment."); });
@@ -1684,6 +1687,20 @@ function initJoinMap() {
     });
   }
 
+  // One pin per person: once we know who they are, check whether they're already on the map and,
+  // if so, swap the form for a message (the server refuses a second pin regardless).
+  function showAlreadyOnMap() {
+    document.querySelectorAll(".jm-step, .jm-preview, .form-submit-row, .hint-inline.jm-picker-hint").forEach(el => { el.hidden = true; });
+    document.getElementById("jm-already").hidden = false;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  function guardAlreadyOnMap() {
+    return fetch("/api/member-map", { credentials: "same-origin", cache: "no-store" })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (d && d.onMap) showAlreadyOnMap(); })
+      .catch(() => { /* the server still refuses a second pin */ });
+  }
+
   function setLockAttr(el, wrap, locked) {
     if (locked) el.setAttribute("aria-disabled", "true");
     else el.removeAttribute("aria-disabled");
@@ -1745,6 +1762,7 @@ function initJoinMap() {
       document.getElementById("jm-preview-email").textContent = profile.email || "";
       preview.hidden = false;
       prefillFromProfile();
+      guardAlreadyOnMap();
 
       refreshLocks();
     } catch (err) {
@@ -1764,9 +1782,6 @@ function initJoinMap() {
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
         body: JSON.stringify({
-          name: profile.name,
-          email: profile.email,
-          picture: profile.picture,
           city: document.getElementById("jm-city").value.trim(),
           country: document.getElementById("jm-country").value.trim(),
           role: document.getElementById("jm-role").value.trim(),
@@ -1775,6 +1790,7 @@ function initJoinMap() {
           lng: picked.lng
         })
       });
+      if (resp.status === 409) return showAlreadyOnMap();
       if (!resp.ok) throw new Error("submit failed");
 
       document.querySelectorAll(".jm-step, .jm-preview, .form-submit-row").forEach(el => { el.hidden = true; });
@@ -1806,6 +1822,7 @@ function initJoinMap() {
       preview.hidden = false;
       prefillFromProfile();
       refreshLocks();
+      guardAlreadyOnMap();
     });
     return;
   }

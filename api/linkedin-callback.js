@@ -112,6 +112,7 @@ module.exports = async (req, res) => {
 
     const claims = decodeIdToken(tokenData.id_token);
     const profile = {
+      sub: claims.sub || "", // LinkedIn's stable member ID — used to spot the same person under another email
       name: claims.name || "",
       email: claims.email || "",
       picture: claims.picture || null
