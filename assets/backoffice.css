@@ -511,3 +511,25 @@ textarea.bo-input { resize: vertical; line-height: 1.5; }
 .bo-url-live { background: #2f7d4f; border-color: #2f7d4f; color: #fff; font-weight: 700; }
 .bo-url-preview, .bo-url-scheduled { border-color: var(--accent); color: var(--accent); }
 .bo-url-questionnaire { border-color: var(--ink); color: var(--ink); }
+
+
+/* ---------- Candidate page sub-menu (same look as the Profile / Map / Articles tabs on member profiles) ---------- */
+.bo-tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin-bottom: 24px; border-bottom: 1px solid var(--line-soft); }
+.bo-tabs::-webkit-scrollbar { display: none; }
+.bo-tabs a {
+  padding: 14px 20px 12px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  white-space: nowrap;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.bo-tabs a:first-child { padding-left: 0; }
+.bo-tabs a:hover { color: var(--ink); }
+.bo-tabs a.is-active { color: var(--ink); border-bottom-color: var(--ink); font-weight: 700; }
+.bo-tab-count { display: inline-block; margin-left: 4px; padding: 1px 6px; border: 1px solid var(--line-soft); font-size: 11px; }
+.bo-card[hidden] { display: none; }

@@ -295,6 +295,7 @@ async function initBackofficeCandidate() {
   let c;
   let qEditor = null;
   let msgChannel = null;
+  let activeTab = (location.hash || "").slice(1); // Profile | Invitation | Questions | Answers | Sign-off; kept in the URL hash
 
   async function load() {
     try {
@@ -329,6 +330,12 @@ async function initBackofficeCandidate() {
     const answered = Object.keys(c.answers || {}).length;
     const ro = c.status === "published";
 
+    // Before the invitation only Profile and Invitation exist; the rest appear once the questionnaire does.
+    const tabs = [["profile", "Profile"], ["invitation", "Invitation"],
+      ...(invited ? [["questions", "Questions"], ["answers", `Answers <span class="bo-tab-count">${answered}</span>`], ["signoff", "Sign-off &amp; preview"]] : [])];
+    if (!tabs.some(([k]) => k === activeTab)) activeTab = "profile";
+    const tab = k => `data-tab="${k}"${k === activeTab ? "" : " hidden"}`;
+
     root.innerHTML = `
       <div class="bo-cand-head">
         <div class="bo-cand-title">
@@ -346,15 +353,18 @@ async function initBackofficeCandidate() {
         </div>
       </div>
 
+      <nav class="bo-tabs" aria-label="Candidate sections">${tabs.map(([k, label]) =>
+        `<a href="#${k}" data-tabbtn="${k}"${k === activeTab ? ' class="is-active" aria-current="page"' : ""}>${label}</a>`).join("")}</nav>
+
       ${c.source === "recommended" && c.recommendation ? `
-      <section class="bo-card">
+      <section class="bo-card" ${tab("profile")}>
         <h3>Recommendation</h3>
         <p><strong>Why:</strong> ${boEscapeHTML(c.recommendation.reason) || "—"}</p>
         <p class="bo-cell-dim">Recommended by ${boEscapeHTML(c.recommendation.recommenderName || "unknown")}${c.recommendation.recommenderEmail ? ` (${boEscapeHTML(c.recommendation.recommenderEmail)})` : ""} <a class="bracket-link" href="${boEscapeHTML(boRecommenderLinkedIn(c.recommendation).url)}" target="_blank" rel="noopener noreferrer">[ LinkedIn${boRecommenderLinkedIn(c.recommendation).exact ? "" : " search"} ]</a>${c.recommendation.stayAnonymous ? " — asked to stay anonymous, so the invitation doesn't name them" : ""}.</p>
       </section>` : ""}
 
-      <section class="bo-card">
-        <h3>1 · Profile</h3>
+      <section class="bo-card" ${tab("profile")}>
+        <h3>Profile</h3>
         <p class="bo-section-note">Used for the article's header and directory card. For applicants this is what they submitted; complete or correct anything here.</p>
         <form id="bo-prof-form" class="bo-form-grid">
           ${[["name", "Full name"], ["email", "Email"], ["phone", "Phone"], ["role", "Role / title"], ["company", "Company"], ["location", "Location (city, country)"],
@@ -370,8 +380,8 @@ async function initBackofficeCandidate() {
         </form>
       </section>
 
-      <section class="bo-card">
-        <h3>2 · Invitation</h3>
+      <section class="bo-card" ${tab("invitation")}>
+        <h3>Invitation</h3>
         ${!invited ? `
           <p class="bo-section-note">Creating the invitation makes their private questionnaire page (a copy of the standard questions, which you can still edit). You then send them the link yourself — by email or LinkedIn.</p>
           <div class="bo-inline">
@@ -404,8 +414,8 @@ async function initBackofficeCandidate() {
       </section>
 
       ${invited ? `
-      <section class="bo-card">
-        <h3>3 · Their questions</h3>
+      <section class="bo-card" ${tab("questions")}>
+        <h3>Their questions</h3>
         <p class="bo-section-note">This person's own copy of the questionnaire. Edit, add or remove questions any time — before or while they're answering. Answers stay attached to a question as long as it isn't removed.</p>
         <div id="bo-qed-mount"></div>
         <div class="bo-savebar">
@@ -415,15 +425,15 @@ async function initBackofficeCandidate() {
         </div>
       </section>
 
-      <section class="bo-card">
-        <h3>4 · Answers <span class="bo-cell-dim">(${answered} answered${(c.custom || []).length ? ` · ${(c.custom || []).length} own` : ""} · last edited ${boEscapeHTML(boWhen(c.answersUpdatedAt))})</span></h3>
+      <section class="bo-card" ${tab("answers")}>
+        <h3>Answers <span class="bo-cell-dim">(${answered} answered${(c.custom || []).length ? ` · ${(c.custom || []).length} own` : ""} · last edited ${boEscapeHTML(boWhen(c.answersUpdatedAt))})</span></h3>
         <p class="bo-section-note">Read what they've written, or edit on their behalf. Saving edits clears their "final" sign-off.</p>
         <div id="bo-answers">${renderAnswers()}</div>
         <div class="bo-savebar"><button class="btn btn-primary" id="bo-answers-save" ${ro ? "disabled" : ""}>Save answers on their behalf</button></div>
       </section>
 
-      <section class="bo-card">
-        <h3>5 · Sign-off, lock &amp; preview</h3>
+      <section class="bo-card" ${tab("signoff")}>
+        <h3>Sign-off, lock &amp; preview</h3>
         <p class="bo-section-note">
           ${c.approval && c.approval.approved ? `Marked final by ${c.approval.by === "admin" ? "you" : "the person"} on ${boEscapeHTML(boWhen(c.approval.at))}.` : "Not marked as final yet — they do that on their page, or you can do it for them."}
           ${c.locked ? " Locked: they can no longer edit." : ""}
@@ -438,7 +448,7 @@ async function initBackofficeCandidate() {
         </div>
       </section>` : ""}
 
-      <section class="bo-card bo-danger">
+      <section class="bo-card bo-danger" ${tab("profile")}>
         <h3>Remove</h3>
         <div class="bo-inline">
           <button class="btn btn-ghost" id="bo-decline">${c.declined ? "Restore to pipeline" : "Decline / archive"}</button>
@@ -467,6 +477,15 @@ async function initBackofficeCandidate() {
 
   function wire() {
     const on = (sel, fn) => { const el = root.querySelector(sel); if (el) el.addEventListener("click", fn); };
+
+    // sub-menu: switch section without reloading (unsaved edits in other sections stay put)
+    root.querySelectorAll("[data-tabbtn]").forEach(a => a.addEventListener("click", (e) => {
+      e.preventDefault();
+      activeTab = a.dataset.tabbtn;
+      history.replaceState(null, "", `#${activeTab}`);
+      root.querySelectorAll("[data-tabbtn]").forEach(x => { const on = x === a; x.classList.toggle("is-active", on); if (on) x.setAttribute("aria-current", "page"); else x.removeAttribute("aria-current"); });
+      root.querySelectorAll("[data-tab]").forEach(sec => { sec.hidden = sec.dataset.tab !== activeTab; });
+    }));
 
     // live photo preview while typing/pasting a URL (and while the name changes, for the initials)
     const form = root.querySelector("#bo-prof-form");
