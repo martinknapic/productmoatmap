@@ -28,7 +28,7 @@ function initInterviewPreview() {
   function actionButtons() {
     const missing = data.missing.length;
     let approve = "";
-    if (data.locked || data.status === "published") approve = "";
+    if ((data.locked || data.status === "published") && !data.asAdmin) approve = "";
     else if (data.approval && data.approval.approved) approve = `<span class="iv-final-badge"><span class="li-badge-check">&check;</span> Marked as your final version</span>`;
     else approve = `<span class="submit-wrap${missing ? " locked" : ""}"><button type="button" class="btn btn-primary js-approve" ${missing ? 'aria-disabled="true"' : ""}>I'm happy with this version</button>${missing ? `<span class="submit-hint" role="tooltip">${missing} required answer${missing === 1 ? "" : "s"} still missing — go back to finish</span>` : ""}</span>`;
     return `<a class="btn btn-ghost" href="${back}">&larr; Back to my answers</a>${approve}`;

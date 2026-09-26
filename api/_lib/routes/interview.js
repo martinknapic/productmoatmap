@@ -10,8 +10,9 @@
 // reachable: a questionnaire with no email and no linked account yet can be claimed by the first
 // member who signs in with the link; from then on it belongs to that account alone.
 // Signed out -> 401 (the page asks them to sign in), someone else's -> 403.
-// It only works once the admin has invited the person, and stops working if the link is
-// revoked, the candidate was declined, or after publishing.
+// It only works once the admin has invited the person, and stops working for the person if the
+// link is revoked or the candidate was declined. Once locked or published it is read-only for the
+// person; admins can always open and edit it.
 //
 // GET  ?t=<token>                          -> profile, questionnaire, answers, status
 // POST { t, profile?, answers?, custom? }  -> save (blocked while locked)
@@ -71,7 +72,8 @@ module.exports = async (req, res) => {
 
   const raw = req.method === "GET" ? (req.query || {}).t : (req.body || {}).t;
   const c = await C.readCandidate(typeof raw === "string" ? raw : "").catch(() => null);
-  if (!c || !c.invitation || !c.questionnaire || c.linkRevoked || c.declined) {
+  // Admins can always open it (revoked, declined, locked or live); everyone else can't.
+  if (!c || !c.invitation || !c.questionnaire || ((c.linkRevoked || c.declined) && !C.isAdminRequest(req))) {
     return res.status(404).json({ error: "not_found" });
   }
 
@@ -128,7 +130,8 @@ module.exports = async (req, res) => {
     }
   }
 
-  if (c.locked || c.status === "published") return res.status(423).json({ error: "locked", ...view(c) });
+  // Locking only applies to the person; admins can still edit.
+  if ((c.locked || c.status === "published") && !who.admin) return res.status(423).json({ error: "locked", ...view(c) });
 
   try {
     if (typeof body.approve === "boolean") {

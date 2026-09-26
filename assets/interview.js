@@ -86,7 +86,7 @@ function initInterview() {
     state.saved = { profile: { ...state.profile }, answers: { ...state.answers }, custom: state.custom.map(c => ({ q: c.q, a: c.a })) };
   }
 
-  const readOnly = () => state.locked || !!state.published;
+  const readOnly = () => (state.locked || !!state.published) && !state.asAdmin; // admins can always edit
   const sections = () => state.questionnaire.sections.map(s => ({ ...s, questions: s.questions.filter(q => !q.fromProfile) }));
   const allQuestions = () => sections().flatMap(s => s.questions);
   const filled = id => typeof state.answers[id] === "string" && state.answers[id].trim() !== "";
@@ -549,7 +549,9 @@ function initInterview() {
   function refreshBanner() {
     const el = document.getElementById("iv-banner");
     if (!el) return;
-    if (state.published) {
+    if (state.asAdmin && (state.published || state.locked)) {
+      el.innerHTML = `<div class="iv-note is-locked"><strong>${state.published ? "Published" : "Locked"} for the person</strong> — they can't edit it any more, but as an admin you still can. Saving sends it back to draft.</div>`;
+    } else if (state.published) {
       el.innerHTML = `<div class="iv-note is-published">Your interview is live. <a class="bracket-link" href="${escapeAttr(state.published.url)}">[ Read it ]</a></div>`;
     } else if (state.locked) {
       el.innerHTML = `<div class="iv-note is-locked"><strong>Locked.</strong> This version is being prepared for publishing, so it can't be edited any more. Need a change? Just reply to us and we'll reopen it.</div>`;
@@ -586,7 +588,7 @@ function initInterview() {
   function actionsHTML() {
     const missing = missingRequired();
     let approvePart = "";
-    if (state.published || state.locked) {
+    if ((state.published || state.locked) && !state.asAdmin) {
       approvePart = "";
     } else if (state.approval.approved) {
       approvePart = `<span class="iv-final-badge"><span class="li-badge-check">&check;</span> Marked as your final version</span>
@@ -607,9 +609,9 @@ function initInterview() {
     const approved = state.approval.approved;
 
     let body;
-    if (state.published) {
+    if (state.published && !state.asAdmin) {
       body = `<h2>Published.</h2><p>Thank you — your interview is live.</p>`;
-    } else if (state.locked) {
+    } else if (state.locked && !state.asAdmin) {
       body = `<h2>Locked for publishing.</h2><p>Nothing more to do — we'll be in touch about the publish date. You can still preview it.</p>`;
     } else if (approved) {
       body = `<h2>You're happy with this version.</h2>

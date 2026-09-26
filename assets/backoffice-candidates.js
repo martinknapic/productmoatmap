@@ -37,9 +37,11 @@ function boCandAvatar(profile, extraClass = "") {
   return `<div class="avatar bo-cand-avatar ${extraClass}"><span>${boEscapeHTML(boInitials(profile.name))}</span>${src ? `<img src="${boEscapeHTML(src)}" alt="" referrerpolicy="no-referrer" loading="lazy" onerror="this.remove()">` : ""}</div>`;
 }
 
-// Questionnaire link (Link column): their private interview page while it's with them.
+// Questionnaire link (Link column): their private interview page. It stays available in every
+// status once the questionnaire exists (admins can always open it; it's just read-only for the
+// person once locked or live).
 function boCandLink(c) {
-  if (["invited", "drafting", "ready"].includes(c.status)) {
+  if (c.invitation && c.questionnaire && c.status !== "declined") {
     if (c.linkRevoked) return { kind: "Revoked", text: "link revoked", url: null };
     return { kind: "Questionnaire", text: `interview?t=${c.id.slice(0, 8)}…`, url: `${location.origin}/interview.html?t=${c.id}` };
   }
