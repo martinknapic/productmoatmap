@@ -10,7 +10,7 @@
 
 .hero-inner {
   display: grid;
-  grid-template-columns: 8fr 4fr;
+  grid-template-columns: 7fr 5fr;
 }
 
 .hero-main {
@@ -58,6 +58,17 @@
   line-height: 1.65;
   color: var(--ink-body);
   max-width: 34ch;
+}
+
+/* Substack signup embed (transparent, so it picks up the page background) */
+.hero-subscribe {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  height: 320px;
+  margin-top: 24px;
+  border: 0;
+  background: transparent;
 }
 
 .stats-row {
@@ -1246,6 +1257,7 @@ footer {
   .hero-inner { grid-template-columns: 1fr; }
   .hero-main { border-right: none; padding-right: 0; padding-bottom: 32px; }
   .hero-side { padding-left: 0; border-top: 1px solid var(--line-soft); padding-top: 32px; }
+  .hero-subscribe { height: 360px; } /* narrower, so the embed's text wraps onto more lines */
   .featured-card { grid-template-columns: 1fr; }
   .featured-visual { min-height: 180px; border-right: none; border-bottom: 1px solid var(--line); }
   .featured-visual .avatar-big { width: 62px; height: 62px; font-size: 22px; }
