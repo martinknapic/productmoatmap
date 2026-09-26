@@ -7,7 +7,8 @@
   <title>Map submissions — ProductMoat Backoffice</title>
   <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
   <link rel="stylesheet" href="../assets/swiss.css?v=17">
-  <link rel="stylesheet" href="../assets/backoffice.css?v=18">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="../assets/backoffice.css?v=21">
 </head>
 <body class="light">
   <nav class="nav bo-nav">
@@ -29,7 +30,7 @@
   <main class="wrap bo-main">
     <div class="bo-section-head">
       <h2>Map submissions <span class="bo-count" id="bo-map-count"></span></h2>
-      <p class="bo-section-note">"Put yourself on the map" pins, verified via LinkedIn. Approve to publish on the public globe.</p>
+      <p class="bo-section-note">"Put yourself on the map" pins, verified via LinkedIn. Approve to publish on the public globe; Delete takes a pin off it (it stays here as Removed); Edit adjusts the pin on the map.</p>
     </div>
     <div class="bo-table-wrap">
       <table class="bo-table" id="bo-map-submissions-table">
@@ -39,10 +40,10 @@
             <th>Name</th>
             <th>Email</th>
             <th>Role / Company</th>
-            <th>Location</th>
-            <th>Pin</th>
+            <th>Location / Pin</th>
             <th>Submitted</th>
             <th>Status</th>
+            <th class="bo-col-actions">Actions</th>
           </tr>
         </thead>
         <tbody id="bo-map-submissions-body"></tbody>
@@ -53,7 +54,8 @@
     <div class="bo-pagination" id="bo-map-submissions-pagination"></div>
   </main>
 
-  <script src="../assets/backoffice.js?v=12"></script>
+  <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
+  <script src="../assets/backoffice.js?v=15"></script>
   <script>initBackofficeMapSubmissions();</script>
 </body>
 </html>

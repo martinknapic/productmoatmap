@@ -267,6 +267,49 @@
 .bo-status-accepted, .bo-status-contacted, .bo-status-approved { border-color: var(--ink); color: var(--ink); font-weight: 700; }
 .bo-status-rejected, .bo-status-declined { color: var(--ink-dim); }
 
+/* Map submissions: status badge + row actions + edit dialog */
+.bo-status-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border: 1px solid var(--line-soft);
+  color: var(--ink-body);
+}
+.bo-status-badge.bo-status-approved { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.bo-status-badge.bo-status-rejected { color: var(--ink-dim); }
+.bo-status-badge.bo-status-removed { border-color: var(--accent); color: var(--accent); }
+
+.bo-actions { display: flex; gap: 6px; flex-wrap: nowrap; }
+.bo-action {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  padding: 5px 10px;
+  border: 1px solid var(--line-soft);
+  background: var(--paper);
+  color: var(--ink-body);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.bo-action:hover { border-color: var(--ink); color: var(--ink); }
+.bo-action-primary { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.bo-action-primary:hover { color: var(--paper); opacity: 0.85; }
+.bo-action-danger:hover { border-color: var(--accent); color: var(--accent); }
+
+.bo-modal { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(0, 0, 0, 0.5); }
+.bo-modal-card { width: min(640px, 100%); max-height: 100%; overflow-y: auto; padding: 24px; background: var(--paper); border: 1px solid var(--ink); }
+.bo-modal-card h3 { font-size: 20px; margin-bottom: 4px; }
+.bo-editor-map { height: 320px; margin: 14px 0 8px; border: 1px solid var(--line); }
+.bo-editor-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+.bo-field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--ink-dim); }
+.bo-field input { padding: 8px 10px; border: 1px solid var(--line-soft); background: var(--paper); color: var(--ink); font: inherit; }
+.bo-field input:focus { outline: none; border-color: var(--ink); }
+.bo-modal-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+@media (max-width: 560px) { .bo-editor-form { grid-template-columns: 1fr; } }
+
 @media (max-width: 860px) {
   .bo-nav .nav-inner { flex-wrap: wrap; row-gap: 12px; padding: 14px 20px; }
   .bo-subnav {

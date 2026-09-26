@@ -284,11 +284,21 @@ function boMapAvatarHTML(s) {
   return `<div class="avatar">${boEscapeHTML(boInitials(s.name))}</div>`;
 }
 
-function boMapStatusSelect(id, currentStatus) {
-  const opts = ["pending", "approved", "rejected"].map(s =>
-    `<option value="${s}"${s === currentStatus ? " selected" : ""}>${s.charAt(0).toUpperCase() + s.slice(1)}</option>`
-  ).join("");
-  return `<select class="bo-status-select bo-status-${boEscapeHTML(currentStatus)}" data-map-status-id="${boEscapeHTML(id)}">${opts}</select>`;
+const BO_MAP_STATUS_LABELS = { pending: "Pending", approved: "Approved", rejected: "Rejected", removed: "Removed" };
+
+function boMapStatusBadge(status) {
+  return `<span class="bo-status-badge bo-status-${boEscapeHTML(status)}">${boEscapeHTML(BO_MAP_STATUS_LABELS[status] || status)}</span>`;
+}
+
+// Approve / Reject / Delete / Edit. A button that would repeat the current status is left out.
+function boMapActions(s) {
+  const btn = (action, label, cls = "") => `<button type="button" class="bo-action ${cls}" data-map-action="${action}" data-map-id="${boEscapeHTML(s.id)}">${label}</button>`;
+  return `<div class="bo-actions">
+    ${s.status !== "approved" ? btn("approved", "Approve", "bo-action-primary") : ""}
+    ${s.status !== "rejected" ? btn("rejected", "Reject") : ""}
+    ${btn("edit", "Edit")}
+    ${s.status !== "removed" ? btn("removed", "Delete", "bo-action-danger") : ""}
+  </div>`;
 }
 
 function boRenderMapSubmissions() {
@@ -298,41 +308,126 @@ function boRenderMapSubmissions() {
       <td class="bo-cell-strong">${boEscapeHTML(s.name)}</td>
       <td>${boEscapeHTML(s.email)}</td>
       <td>${boEscapeHTML(s.role) || "—"}<br><span class="bo-cell-dim">${boEscapeHTML(s.company)}</span></td>
-      <td>${boEscapeHTML([s.city, s.country].filter(Boolean).join(", ")) || "—"}</td>
-      <td>${s.lat.toFixed(2)}, ${s.lng.toFixed(2)}</td>
-      <td>${boEscapeHTML(new Date(s.submittedAt).toLocaleString())}</td>
-      <td>${boMapStatusSelect(s.id, s.status)}</td>
+      <td>${boEscapeHTML([s.city, s.country].filter(Boolean).join(", ")) || "—"}<br><span class="bo-cell-dim">${s.lat.toFixed(2)}, ${s.lng.toFixed(2)}</span></td>
+      <td>${boEscapeHTML(new Date(s.submittedAt).toLocaleDateString())}</td>
+      <td>${boMapStatusBadge(s.status)}</td>
+      <td class="bo-col-actions">${boMapActions(s)}</td>
     </tr>
   `, { bodyId: "bo-map-submissions-body", countId: "bo-map-count", emptyId: "bo-map-submissions-empty", paginationId: "bo-map-submissions-pagination" });
 }
 
+async function boPostMapSubmission(payload) {
+  const resp = await fetch("/api/map-submissions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify(payload)
+  });
+  if (!resp.ok) throw new Error(String(resp.status));
+  return (await resp.json()).submission;
+}
+
 async function boSetMapSubmissionStatus(id, status) {
+  const submission = boMapSubmissions.find(s => s.id === id);
+  if (!submission) return;
+  if (status === "removed" && !window.confirm(`Delete ${submission.name}'s pin? It comes off the public map right away; you can bring it back with Approve.`)) return;
   try {
-    const resp = await fetch("/api/map-submissions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify({ id, status })
-    });
-    if (!resp.ok) throw new Error("update failed");
-    const submission = boMapSubmissions.find(s => s.id === id);
-    if (submission) submission.status = status;
+    await boPostMapSubmission({ id, status });
+    submission.status = status;
   } catch (err) {
     console.error("Failed to update map submission status:", err);
-    boRenderMapSubmissions(); // revert the <select> back to its last known-good state
+    window.alert("Couldn't update that pin — please try again.");
   }
+  boRenderMapSubmissions();
+}
+
+// Edit dialog: drag the pin (or click the map) to adjust where it sits, and correct the details.
+let boEditMap = null;
+function boCloseMapEditor() {
+  const dlg = document.getElementById("bo-map-editor");
+  if (boEditMap) { boEditMap.remove(); boEditMap = null; }
+  if (dlg) dlg.remove();
+}
+
+function boOpenMapEditor(id) {
+  const s = boMapSubmissions.find(x => x.id === id);
+  if (!s || typeof maplibregl === "undefined") return;
+  boCloseMapEditor();
+  const field = (name, label, value) => `<label class="bo-field"><span>${label}</span><input type="text" name="${name}" maxlength="200" value="${boEscapeHTML(value || "")}"></label>`;
+  const dlg = document.createElement("div");
+  dlg.id = "bo-map-editor";
+  dlg.className = "bo-modal";
+  dlg.setAttribute("role", "dialog");
+  dlg.setAttribute("aria-modal", "true");
+  dlg.setAttribute("aria-label", `Edit ${s.name}'s pin`);
+  dlg.innerHTML = `
+    <div class="bo-modal-card">
+      <h3>Edit pin — ${boEscapeHTML(s.name)}</h3>
+      <p class="bo-section-note">Drag the pin, or click the map, to move it.</p>
+      <div class="bo-editor-map" id="bo-editor-map"></div>
+      <p class="bo-cell-dim" id="bo-editor-coords"></p>
+      <form id="bo-editor-form" class="bo-editor-form">
+        ${field("city", "City", s.city)}${field("country", "Country", s.country)}
+        ${field("role", "Role", s.role)}${field("company", "Company", s.company)}
+      </form>
+      <div class="bo-modal-actions">
+        <button type="button" class="bo-action bo-action-primary" id="bo-editor-save">Save pin</button>
+        <button type="button" class="bo-action" id="bo-editor-cancel">Cancel</button>
+        <span class="bo-cell-dim" id="bo-editor-status" role="status"></span>
+      </div>
+    </div>`;
+  document.body.appendChild(dlg);
+
+  let pos = { lat: s.lat, lng: s.lng };
+  const coords = document.getElementById("bo-editor-coords");
+  const showCoords = () => { coords.textContent = `${pos.lat.toFixed(4)}, ${pos.lng.toFixed(4)}`; };
+  showCoords();
+
+  boEditMap = new maplibregl.Map({
+    container: "bo-editor-map",
+    style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+    center: [pos.lng, pos.lat],
+    zoom: 4,
+    attributionControl: { compact: true }
+  });
+  boEditMap.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), "top-right");
+  const marker = new maplibregl.Marker({ draggable: true, color: "#e6432b" }).setLngLat([pos.lng, pos.lat]).addTo(boEditMap);
+  const moved = ll => { pos = { lat: ll.lat, lng: ((ll.lng + 540) % 360) - 180 }; showCoords(); };
+  marker.on("dragend", () => moved(marker.getLngLat()));
+  boEditMap.on("click", e => { marker.setLngLat(e.lngLat); moved(e.lngLat); });
+
+  dlg.addEventListener("click", e => { if (e.target === dlg) boCloseMapEditor(); });
+  document.getElementById("bo-editor-cancel").addEventListener("click", boCloseMapEditor);
+  document.getElementById("bo-editor-save").addEventListener("click", async () => {
+    const f = document.getElementById("bo-editor-form").elements;
+    const status = document.getElementById("bo-editor-status");
+    status.textContent = "Saving…";
+    try {
+      const saved = await boPostMapSubmission({
+        id, edit: { lat: pos.lat, lng: pos.lng, city: f.city.value, country: f.country.value, role: f.role.value, company: f.company.value }
+      });
+      Object.assign(s, saved);
+      boCloseMapEditor();
+      boRenderMapSubmissions();
+    } catch (err) {
+      console.error("Failed to save pin:", err);
+      status.textContent = "Couldn't save — please try again.";
+    }
+  });
 }
 
 let boMapStatusWired = false;
 function boWireMapSubmissionActions() {
   if (boMapStatusWired) return;
   boMapStatusWired = true;
-  document.addEventListener("change", (e) => {
-    const select = e.target.closest("[data-map-status-id]");
-    if (!select) return;
-    select.className = `bo-status-select bo-status-${select.value}`;
-    boSetMapSubmissionStatus(select.dataset.mapStatusId, select.value);
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-map-action]");
+    if (!btn) return;
+    const { mapAction: action, mapId: id } = btn.dataset;
+    if (action === "edit") boOpenMapEditor(id);
+    else boSetMapSubmissionStatus(id, action);
   });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") boCloseMapEditor(); });
 }
 
 async function initBackofficeMapSubmissions() {
