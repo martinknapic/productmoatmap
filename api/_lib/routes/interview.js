@@ -1,7 +1,15 @@
 // Vercel Function — the public side of a person's personal questionnaire.
 //
-// The invitee opens /interview.html?t=<token>; the token is the candidate record's own id
-// (unguessable, 192 bits) and is the only credential — no sign-in, nothing is ever listed.
+// The invitee opens /interview.html?t=<token>. The token (the candidate record's own id, unguessable)
+// only says WHICH questionnaire; who may open it is decided by the session:
+//   - the person it was created for: a signed-in member whose LinkedIn email is the one on the
+//     record (the email they applied with / the admin entered / the one linked when they first
+//     signed in from this page), and
+//   - admins (backoffice session, or a member whose email is on the admin list).
+// Nobody else gets in, however they got the link. One exception keeps recommended people
+// reachable: a questionnaire with no email and no linked account yet can be claimed by the first
+// member who signs in with the link; from then on it belongs to that account alone.
+// Signed out -> 401 (the page asks them to sign in), someone else's -> 403.
 // It only works once the admin has invited the person, and stops working if the link is
 // revoked, the candidate was declined, or after publishing.
 //
@@ -15,6 +23,24 @@ const C = require("../common");
 
 const MAX_ANSWER = 2000;
 const MAX_CUSTOM = 3;
+
+const norm = e => String(e || "").trim().toLowerCase();
+
+// Who is asking, and how do they relate to this questionnaire?
+function access(req, c) {
+  const admin = C.isAdminRequest(req);
+  const session = C.memberSession(req);
+  const email = session ? norm(session.email) : "";
+  const owner = !!email && [c.verified && c.verified.email, c.profile && c.profile.email].some(e => norm(e) === email);
+  const claimable = !!email && !admin && !c.verified && !norm(c.profile && c.profile.email);
+  return { admin, session, owner, claimable };
+}
+
+// j***@g***.com — enough to tell the owner which account to use, not enough to identify it
+function maskEmail(e) {
+  const m = /^([^@]{1,})@([^@]+)\.([^.@]+)$/.exec(String(e || "").trim());
+  return m ? `${m[1][0]}***@${m[2][0]}***.${m[3]}` : "";
+}
 
 function view(c) {
   const inv = c.invitation || {};
@@ -49,19 +75,24 @@ module.exports = async (req, res) => {
     return res.status(404).json({ error: "not_found" });
   }
 
+  const who = access(req, c);
+  const isClaim = req.method === "POST" && (req.body || {}).claim === true;
+
+  // Everything except claiming needs to be the owner or an admin.
+  if (!isClaim && !who.admin && !who.owner) {
+    if (!who.session) return res.status(401).json({ error: "not_authenticated" });
+    if (who.claimable) return res.status(403).json({ error: "claim_required" });
+    return res.status(403).json({ error: "not_owner", hint: maskEmail((c.verified && c.verified.email) || (c.profile && c.profile.email)) });
+  }
+
   if (req.method === "GET" && (req.query || {}).preview) {
-    // Private preview: exactly what would be published, visible only to the person this interview is
-    // for (a signed-in member whose LinkedIn email is linked to it) and to admins.
-    const member = C.memberSession(req);
-    if (!member && !C.isAdminRequest(req)) return res.status(401).json({ error: "not_authenticated" });
-    const email = member && member.email ? String(member.email).trim().toLowerCase() : "";
-    const owner = !!email && [c.verified && c.verified.email, c.profile && c.profile.email].some(e => e && String(e).trim().toLowerCase() === email);
-    if (!owner && !C.isAdminRequest(req)) return res.status(403).json({ error: "not_owner" });
+    // Private preview: exactly what would be published.
+    const owner = who.owner;
     const pub = { ...c, publish: { ...c.publish, slug: (c.publish && c.publish.slug) || C.slugify(c.profile.name) } };
     return res.status(200).json({ preview: C.toPublicInterview(pub), approval: c.approval, status: c.status, locked: !!c.locked, missing: requiredMissing(c), asAdmin: !owner });
   }
 
-  if (req.method === "GET") return res.status(200).json(view(c));
+  if (req.method === "GET") return res.status(200).json({ ...view(c), asAdmin: !who.owner });
   if (req.method !== "POST") return res.status(405).json({ error: "method_not_allowed" });
   const body = req.body || {};
 
@@ -72,8 +103,14 @@ module.exports = async (req, res) => {
   //   claim + register: true also creates their private member profile (with the newsletter choice
   //                          they made next to the sign-up button) — same record as signup.html.
   if (body.claim === true) {
-    const session = C.memberSession(req);
+    const session = who.session;
     if (!session || !session.email) return res.status(401).json({ error: "not_authenticated" });
+    // Only the person it's for (or, while nobody is linked yet, the first to sign in) may link it.
+    // An admin browsing with a member session never claims someone else's page.
+    if (!who.owner && !who.claimable) {
+      if (who.admin) return res.status(200).json({ ok: true, linked: false, ...view(c), asAdmin: true });
+      return res.status(403).json({ error: "not_owner", hint: maskEmail((c.verified && c.verified.email) || (c.profile && c.profile.email)) });
+    }
     try {
       if (body.register === true) await C.upsertMember(session, body.newsletter === true, "interview");
       const mine = !c.verified || String(c.verified.email || "").toLowerCase() === session.email.toLowerCase();
@@ -99,7 +136,7 @@ module.exports = async (req, res) => {
         // must have the required questions answered (profile-backed ones count via the profile)
         const missing = requiredMissing(c);
         if (missing.length) return res.status(400).json({ error: "missing_required", missing });
-        c.approval = { approved: true, by: "user", at: new Date().toISOString() };
+        c.approval = { approved: true, by: who.owner ? "user" : "admin", at: new Date().toISOString() };
       } else {
         c.approval = { approved: false, by: null, at: null };
       }

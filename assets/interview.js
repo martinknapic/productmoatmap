@@ -44,10 +44,29 @@ function initInterview() {
     dirty: false, saving: false, saveTimer: null
   };
 
-  fetch(`/api/interview?t=${encodeURIComponent(token)}`, { credentials: "omit" })
-    .then(resp => (resp.ok ? resp.json() : Promise.reject(resp.status)))
-    .then(data => { apply(data); render(); })
-    .catch(() => renderInvalid(root));
+  // The questionnaire is private: only the person it was created for (signed in with LinkedIn) and
+  // admins can open it. Boot order: 1) coming back from LinkedIn? link this page to the new sign-in,
+  // 2) load it, 3) if the server says sign in / wrong account / not yet linked, show that instead.
+  boot();
+
+  async function boot() {
+    const back = await handleLinkedInReturn();
+    let resp = await fetch(`/api/interview?t=${encodeURIComponent(token)}`, { credentials: "same-origin" }).catch(() => null);
+    if (resp && resp.status === 403) {
+      const err = await resp.clone().json().catch(() => ({}));
+      if (err.error === "claim_required") {
+        // signed in, and nobody has been linked to this page yet: link it to them, then load it
+        await claim({});
+        resp = await fetch(`/api/interview?t=${encodeURIComponent(token)}`, { credentials: "same-origin" }).catch(() => null);
+      }
+    }
+    if (!resp) return renderInvalid(root);
+    if (resp.status === 401) return renderGate(root, "signin", {}, back);
+    if (resp.status === 403) return renderGate(root, "wrong-account", await resp.json().catch(() => ({})), back);
+    if (!resp.ok) return renderInvalid(root);
+    apply(await resp.json());
+    render(back.registeredNow);
+  }
 
   function apply(data) {
     state.profile = data.profile || state.profile;
@@ -62,6 +81,7 @@ function initInterview() {
     state.published = data.published;
     state.registered = !!data.registered;
     state.source = data.source;
+    state.asAdmin = !!data.asAdmin;
   }
 
   const readOnly = () => state.locked || !!state.published;
@@ -81,7 +101,7 @@ function initInterview() {
 
   // ---------- rendering ----------
 
-  function render() {
+  function render(registeredNow) {
     const first = (state.profile.name || "").split(/\s+/)[0] || "there";
     document.title = `${first}'s interview — ProductMoat`;
     root.innerHTML = `
@@ -117,12 +137,13 @@ function initInterview() {
     `;
     wire();
     refreshAll();
-    initRegistration();
+    initRegistration(registeredNow);
   }
 
-  // ---------- registration (for people who came in via a recommendation) ----------
-  // Sign up with LinkedIn right from this page (the same OAuth + member profile as signup.html);
-  // the callback sends them straight back here, where the page is linked to their new profile.
+  // ---------- sign-in & linking ----------
+  // Signing in with LinkedIn (the same OAuth + private member profile as signup.html) is what
+  // opens the page; the callback sends them straight back here, where the page is linked to the
+  // account they signed in with.
 
   async function claim(extra) {
     try {
@@ -144,7 +165,7 @@ function initInterview() {
     }
   }
 
-  function startRegister() {
+  function startSignIn() {
     const nonce = crypto.randomUUID();
     sessionStorage.setItem("li_oauth_state", nonce);
     const box = document.getElementById("iv-reg-newsletter");
@@ -159,51 +180,79 @@ function initInterview() {
     window.location.href = `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
   }
 
+  // Back from the LinkedIn round trip? Check it's ours, then register + link this page.
+  async function handleLinkedInReturn() {
+    const out = { registeredNow: false, error: false };
+    const params = new URLSearchParams(location.search);
+    const li = params.get("li");
+    if (!li) return out;
+    const returnedState = params.get("state");
+    history.replaceState(null, "", `${location.pathname}?t=${encodeURIComponent(token)}`);
+    const expected = sessionStorage.getItem("li_oauth_state");
+    const wantsNewsletter = sessionStorage.getItem("iv_newsletter") === "1";
+    sessionStorage.removeItem("li_oauth_state");
+    sessionStorage.removeItem("iv_newsletter");
+    if (li === "ok" && returnedState && returnedState === expected) {
+      out.registeredNow = !!(await claim({ register: true, newsletter: wantsNewsletter }));
+    } else {
+      out.error = li !== "ok" || !!returnedState;
+    }
+    return out;
+  }
+
+  const LI_BUTTON = `<button type="button" class="btn btn-primary li-btn" id="iv-signin-btn">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 1 1 0-4.124 2.062 2.062 0 0 1 0 4.124zM7.119 20.452H3.554V9h3.565v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+    Sign in with LinkedIn
+  </button>`;
+
+  // Shown instead of the questionnaire when the visitor isn't (yet) allowed in.
+  function renderGate(rootEl, kind, info, back) {
+    const logout = `/api/member-logout?next=${encodeURIComponent(location.pathname + "?t=" + token)}`;
+    if (kind === "signin") {
+      rootEl.innerHTML = `
+        <section class="why-hero">
+          <div class="wrap">
+            <div class="eyebrow">Your interview</div>
+            <h1>Sign in to open your interview.</h1>
+            <p class="about-lede">This questionnaire is private: it can only be opened by the person it was created for. Sign in with the LinkedIn account you use with ProductMoat &mdash; it takes one click, and you come straight back to this page.</p>
+            <div class="iv-register">
+              <div class="iv-register-text">
+                <p>Signing in creates your <strong>private ProductMoat profile</strong> (name, email, photo), which is never published, and puts your avatar in the site menu.</p>
+                ${back && back.error ? `<p class="hint-inline li-error">LinkedIn sign-in didn't go through &mdash; try again.</p>` : ""}
+              </div>
+              <div class="iv-register-actions">
+                <div class="form-checkbox-row"><input type="checkbox" id="iv-reg-newsletter"><label for="iv-reg-newsletter">Subscribe me to the ProductMoat newsletter <span class="li-optional">(optional)</span>.</label></div>
+                ${LI_BUTTON}
+              </div>
+            </div>
+          </div>
+        </section>`;
+      document.getElementById("iv-signin-btn").addEventListener("click", startSignIn);
+      return;
+    }
+    rootEl.innerHTML = `
+      <section class="why-hero">
+        <div class="wrap">
+          <div class="eyebrow">Your interview</div>
+          <h1>This interview is for someone else.</h1>
+          <p class="about-lede">You're signed in, but not with the account this questionnaire was created for${info.hint ? ` (${escapeHTML(info.hint)})` : ""}. Sign out and sign in again with the right LinkedIn account, or reply to the message we sent you and we'll sort it out.</p>
+          <a class="btn btn-ghost" href="${logout}">Sign out</a>
+        </div>
+      </section>`;
+  }
+
   function renderRegisterBox() {
     const el = document.getElementById("iv-register");
     if (!el) return;
     if (state.member) {
-      el.innerHTML = `<div class="iv-register is-done"><span class="li-badge-check">&check;</span> ${state.registered ? `You're registered and signed in as <strong>${escapeHTML(state.member.name || "a LinkedIn member")}</strong> — this page is linked to your ProductMoat profile.` : `You're signed in as <strong>${escapeHTML(state.member.name || "a LinkedIn member")}</strong>.`}</div>`;
-      return;
+      el.innerHTML = `<div class="iv-register is-done"><span class="li-badge-check">&check;</span> You're signed in as <strong>${escapeHTML(state.member.name || "a LinkedIn member")}</strong>${state.registered ? " &mdash; this page is linked to your ProductMoat profile." : "."}</div>`;
+    } else if (state.asAdmin) {
+      el.innerHTML = `<div class="iv-register is-done"><span class="li-badge-check">&check;</span> Viewing as a ProductMoat admin.</div>`;
     }
-    el.innerHTML = `
-      <div class="iv-register">
-        <div class="iv-register-text">
-          <strong>Create your ProductMoat profile</strong>
-          <p>Sign up with LinkedIn in one click — you'll come straight back to this page. It creates a <strong>private profile</strong> (name, email, photo) that's never published, and puts your avatar in the site menu. Optional, and you can answer the questions without it.</p>
-          ${state.registerError ? `<p class="hint-inline li-error">LinkedIn sign-in didn't go through — try again.</p>` : ""}
-        </div>
-        <div class="iv-register-actions">
-          <div class="form-checkbox-row"><input type="checkbox" id="iv-reg-newsletter"><label for="iv-reg-newsletter">Subscribe me to the ProductMoat newsletter <span class="li-optional">(optional)</span>.</label></div>
-          <button type="button" class="btn btn-primary li-btn" id="iv-register-btn">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 1 1 0-4.124 2.062 2.062 0 0 1 0 4.124zM7.119 20.452H3.554V9h3.565v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-            Sign up with LinkedIn
-          </button>
-        </div>
-      </div>`;
-    document.getElementById("iv-register-btn").addEventListener("click", startRegister);
   }
 
-  async function initRegistration() {
-    const params = new URLSearchParams(location.search);
-    const li = params.get("li");
-    let registeredNow = false;
-    if (li) {
-      // back from the LinkedIn round trip
-      const returnedState = params.get("state");
-      history.replaceState(null, "", `${location.pathname}?t=${encodeURIComponent(token)}`);
-      const expected = sessionStorage.getItem("li_oauth_state");
-      const wantsNewsletter = sessionStorage.getItem("iv_newsletter") === "1";
-      sessionStorage.removeItem("li_oauth_state");
-      sessionStorage.removeItem("iv_newsletter");
-      if (li === "ok" && returnedState && returnedState === expected) {
-        registeredNow = !!(await claim({ register: true, newsletter: wantsNewsletter }));
-      } else {
-        state.registerError = li !== "ok" || !!returnedState;
-      }
-    }
+  async function initRegistration(registeredNow) {
     state.member = await fetchMemberProfile();
-    if (state.member && !state.registered) await claim({}); // signed in already: just link this page to them
     renderRegisterBox();
     if (registeredNow) setToast("You're registered — welcome to ProductMoat!", true);
   }
@@ -600,7 +649,7 @@ function initInterview() {
 
   async function post(body) {
     const resp = await fetch("/api/interview", {
-      method: "POST", headers: { "Content-Type": "application/json" }, credentials: "omit", body
+      method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body
     });
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok) throw Object.assign(new Error("request failed"), { status: resp.status, data });

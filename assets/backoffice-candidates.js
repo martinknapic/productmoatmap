@@ -46,9 +46,14 @@ function boCandLink(c) {
   return null;
 }
 
-// The article itself (Article column): "Preview" -> the admin preview page once it's locked (or
-// scheduled), "Published" -> the public URL once it's live.
+// The article itself (Article column): "Preview" -> the article as it stands, from the moment the
+// questionnaire exists (the private preview page, which admins may open; the admin preview page once
+// it's locked or scheduled), "Published" -> the public URL once it's live.
 function boArticleLink(c) {
+  if (["invited", "drafting", "ready"].includes(c.status) && c.invitation && c.questionnaire) {
+    // a revoked questionnaire link also closes the private preview page, so use the admin preview then
+    return { kind: "Preview", url: c.linkRevoked ? `${location.origin}/backoffice/preview.html?id=${c.id}` : `${location.origin}/interview-preview.html?t=${c.id}` };
+  }
   if (c.status === "locked" || c.status === "scheduled") {
     return { kind: c.status === "scheduled" ? "Scheduled" : "Preview", url: `${location.origin}/backoffice/preview.html?id=${c.id}` };
   }
@@ -255,7 +260,10 @@ function boInviteMessage(c, channel, link, estimated) {
   const est = estimated ? new Date(`${estimated}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "";
   const rec = c.recommendation || {};
   const how = `It's a set of questions about your path into product, how you think, and how AI is changing the craft. Only a handful are required and the rest are optional; you can also add up to three questions of your own. Your answers save automatically, so come back any time. When you're happy with them, press the button at the bottom of the page — we'll then prepare a preview together, and nothing goes public until you've had the final say.`;
-  const signupLine = c.source === "recommended" ? `\n\nIf you'd like a ProductMoat profile too, the page has a one-click "Sign up with LinkedIn" — you'll land right back on it.` : "";
+  // The page is private: opening it means signing in with LinkedIn (which also creates their private profile).
+  const signupLine = c.source === "recommended" || !c.profile.email
+    ? `\n\nThe page is private, so you'll be asked to sign in with LinkedIn first — one click, and you land right back on it.`
+    : `\n\nThe page is private, so you'll be asked to sign in with LinkedIn first — please use the account that goes with ${c.profile.email}.`;
   const estLine = est ? `\n\nWe're aiming to publish around ${est}.` : "";
 
   let opening;
