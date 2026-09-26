@@ -1042,7 +1042,6 @@ function renderPersonPage(root, p, opts = {}) {
               ${p.links.twitter ? `<a class="bracket-link" href="${escapeHTML(p.links.twitter)}" target="_blank" rel="noopener">[ X ]</a>` : ""}
             </div>
 
-            ${p.pullQuote ? `<blockquote class="pull-quote">&ldquo;${escapeHTML(p.pullQuote)}&rdquo;</blockquote>` : ""}
           </div>
 
           ${hasCoords ? `
@@ -1055,6 +1054,7 @@ function renderPersonPage(root, p, opts = {}) {
             </a>
           </div>` : ""}
         </div>
+        ${p.pullQuote ? `<div class="hero-quote"><blockquote class="pull-quote">&ldquo;${escapeHTML(p.pullQuote)}&rdquo;</blockquote></div>` : ""}
       </div>
     </section>
 

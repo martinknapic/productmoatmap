@@ -402,14 +402,18 @@ footer {
   border-top: 1px solid var(--line-soft);
 }
 
+/* The pull quote gets a full-width row under the hero (text column + map), not the narrow text column. */
+.hero-quote { padding: 0 0 56px; }
+
 .pull-quote {
-  margin: 0 0 48px;
-  font-size: clamp(20px, 2.6vw, 28px);
+  margin: 0;
+  width: 100%;
+  font-size: clamp(24px, 3.6vw, 44px);
   font-weight: 700;
-  line-height: 1.4;
-  max-width: 26ch;
+  line-height: 1.22;
+  letter-spacing: -0.015em;
   border-left: 3px solid var(--accent);
-  padding-left: 22px;
+  padding-left: 26px;
 }
 
 .foreword {
