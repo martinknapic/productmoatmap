@@ -339,6 +339,8 @@ footer {
   gap: 24px;
 }
 
+.footer-logo { margin-bottom: 16px; }
+
 .footer-blurb {
   max-width: 42ch;
   color: var(--ink-body);

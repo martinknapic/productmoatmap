@@ -76,18 +76,41 @@ ul { list-style: none; }
 .logo {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 17px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+  gap: 12px;
 }
 
+/* ProductMoat logo: orange frame (logo-frame.svg) with the ink-coloured square drawn on top,
+   and the wordmark as an ink-coloured mask (logo-word.svg), so both follow the light/dark theme. */
 .logo-mark {
-  width: 22px;
-  height: 22px;
-  background: url("favicon.svg") no-repeat center / contain;
+  position: relative;
+  width: 30px;
+  height: 30px;
+  background: url("logo-frame.svg") no-repeat center / contain;
   flex-shrink: 0;
+}
+.logo-mark::after {
+  content: "";
+  position: absolute;
+  left: 21.875%;
+  top: 21.875%;
+  width: 56.25%;
+  height: 56.25%;
+  background: var(--ink);
+}
+
+.logo-word {
+  width: 130.5px;
+  height: 18px;
+  background: var(--ink);
+  -webkit-mask: url("logo-word.svg") no-repeat center / contain;
+  mask: url("logo-word.svg") no-repeat center / contain;
+  flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  .logo { gap: 9px; }
+  .logo-mark { width: 26px; height: 26px; }
+  .logo-word { width: 108.75px; height: 15px; }
 }
 
 .nav-links {
