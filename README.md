@@ -110,6 +110,29 @@ invite) asks for confirmation in a dialog (`boConfirm` in `assets/backoffice-can
 Cancel is focused first and Esc or a click outside also cancels. The API calls are the same
 `/api/candidates` actions the detail pages use, so nothing new on the server.
 
+## All users and the newsletter list (`backoffice/users.html`)
+
+The old Profiles view is now **All users**: one row per person the site knows about (members who
+signed up or logged in with LinkedIn, candidates, map pins), matched on email, with role /
+company, location, type, since, **Newsletter** (opted in or not, and how) and **Double opt-in**
+(Confirmed, Awaiting confirmation, Subscribed, Not sent yet, Unsubscribed, Sync failed). Filter by
+type, newsletter, double opt-in status or search; icons (with tooltips) open the candidate page,
+copy the email, or send someone to the list now. `profiles.html` redirects here.
+
+**Sync to SendFox** (`api/_lib/newsletter.js`): the moment a member opts in (`upsertMember` in
+`api/_lib/common.js`, so every sign-up path), they are added to the SendFox list. It never
+blocks signing up: a failure is stored on the member (`newsletterSync`) and shows as "Sync failed"
+with a retry icon. "Send all opted-in to the list" catches up anyone missed. People who did not opt
+in are never sent. Statuses are read live from SendFox (`/api/backoffice-users`, admin only):
+`confirmed_at` = confirmed, `confirmation_sent_at` = awaiting, and on a list with no confirmation
+email everyone is simply "Subscribed". Double opt-in itself is a list setting inside SendFox
+(turn on a confirmation email for the list there); the API token cannot switch it on.
+
+Configuration is by environment variables in Vercel only, never in the repo:
+`SENDFOX_API_TOKEN` (personal access token from sendfox.com/account/oauth) and `SENDFOX_LIST_ID`
+(numeric id of the list). Without them everything still works and All users shows "Sync off".
+`SENDFOX_API_BASE` overrides the API address (used to test against a local mock).
+
 ## Newsletter prompt on sign-up
 
 Every "Sign up / Sign in with LinkedIn" button (signup, apply, recommend, put yourself on the

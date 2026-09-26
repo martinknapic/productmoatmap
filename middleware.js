@@ -16,6 +16,7 @@ export const config = {
     "/backoffice/candidate.html",
     "/backoffice/preview.html",
     "/backoffice/questions.html",
+    "/backoffice/users.html",
     "/backoffice/profiles.html",
     "/backoffice/map-submissions.html"
   ]

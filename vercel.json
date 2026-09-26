@@ -4,6 +4,11 @@
       "source": "/calendar.html",
       "destination": "/",
       "permanent": false
+    },
+    {
+      "source": "/backoffice/profiles.html",
+      "destination": "/backoffice/users.html",
+      "permanent": false
     }
   ],
   "rewrites": [
@@ -54,6 +59,10 @@
     {
       "source": "/api/backoffice-me",
       "destination": "/api/site?op=backoffice-me"
+    },
+    {
+      "source": "/api/backoffice-users",
+      "destination": "/api/site?op=backoffice-users"
     },
     {
       "source": "/api/backoffice-logout",

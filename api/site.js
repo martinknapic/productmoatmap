@@ -21,6 +21,7 @@ const routes = {
   "member-map": require("./_lib/routes/member-map"),
   "member-logout": require("./_lib/routes/member-logout"),
   "backoffice-me": require("./_lib/routes/backoffice-me"),
+  "backoffice-users": require("./_lib/routes/backoffice-users"),
   "backoffice-logout": require("./_lib/routes/backoffice-logout")
 };
 

@@ -387,6 +387,35 @@ async function readMember(email) {
   try { return await readJSON(memberPath(email)); } catch (err) { return null; }
 }
 
+async function listMembers() {
+  const { blobs } = await list({ prefix: "members/" });
+  return (await Promise.all(blobs.map(b => readJSON(b.pathname).catch(() => null)))).filter(Boolean);
+}
+
+// Fields a member record carries besides the basics, kept whenever it is rewritten.
+function keepMemberExtras(existing, record) {
+  if (!existing) return record;
+  ["details", "network", "newsletterAt", "newsletterSync"].forEach(k => { if (existing[k] !== undefined && record[k] === undefined) record[k] = existing[k]; });
+  return record;
+}
+
+// Adds an opted-in member to the newsletter list and records the outcome on their record. Never
+// throws: a failure is stored as newsletterSync.state = "failed" so it shows in the backoffice and
+// can be retried there, and signing up is never held up by it.
+async function syncMemberToList(record) {
+  const newsletter = require("./newsletter");
+  if (!record.newsletter || !newsletter.configured()) return record;
+  try {
+    const contact = await newsletter.subscribe({ email: record.email, name: record.name });
+    record.newsletterSync = { state: "sent", at: new Date().toISOString(), contactId: (contact && contact.id) || null };
+  } catch (err) {
+    console.error("[newsletter] sync failed:", (err && err.message) || err);
+    record.newsletterSync = { state: "failed", at: new Date().toISOString(), error: String((err && err.message) || "failed").slice(0, 200) };
+  }
+  await writeJSON(memberPath(record.email), record);
+  return record;
+}
+
 async function saveMemberDetails(session, details) {
   const existing = await readMember(session.email);
   const record = {
@@ -399,7 +428,7 @@ async function saveMemberDetails(session, details) {
     updatedAt: new Date().toISOString(),
     details
   };
-  if (existing && existing.network) record.network = existing.network;
+  keepMemberExtras(existing, record);
   await writeJSON(memberPath(session.email), record);
   return record;
 }
@@ -439,9 +468,11 @@ async function upsertMember(session, newsletter, source) {
     createdAt: (existing && existing.createdAt) || new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
-  if (existing && existing.details) record.details = existing.details; // keep the profile details they've saved
-  if (existing && existing.network) record.network = existing.network;
+  keepMemberExtras(existing, record); // the profile details they've saved, their network choice, newsletter sync state
+  if (record.newsletter && !record.newsletterAt) record.newsletterAt = new Date().toISOString();
   await writeJSON(pathname, record);
+  // the moment someone opts in (or an earlier attempt failed), send them to the newsletter list
+  if (record.newsletter && !(record.newsletterSync && record.newsletterSync.state === "sent")) await syncMemberToList(record);
   return record;
 }
 
@@ -530,5 +561,6 @@ module.exports = {
   upsertMember, readMember, saveMemberDetails, setNetworkOptIn, isNetworkMember, cleanMemberDetails, FOCUS_TAGS, readBank, defaultBank, cleanSections, QUESTION_BANK_PATH,
   requiredProgress, deriveStatus, isLive, blankCandidate, cleanProfile, ID_RE, newId,
   slugify, CATEGORIES, defaultCategory, toPublicInterview, takenSlugs, FOCUS_LABELS,
-  parsePhotoDataUrl, savePhoto, readPhoto, deletePhoto, photoView
+  parsePhotoDataUrl, savePhoto, readPhoto, deletePhoto, photoView,
+  listMembers, syncMemberToList, memberPath
 };

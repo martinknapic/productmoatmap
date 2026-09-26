@@ -1,4 +1,4 @@
-// ProductMoat Backoffice - login gate + shared table helpers, profiles and map submissions
+// ProductMoat Backoffice - login gate + shared table helpers and map submissions
 // (the candidate pipeline lives in backoffice-candidates.js)
 //
 // Login is real LinkedIn OAuth (same app as the public Apply form's verification
@@ -224,51 +224,9 @@ function boWireRowActions(rerender) {
   });
 }
 
-// ---------- Profiles page ----------
-// Reads the real, published dataset (assets/people-data.js) - not demo data, so no
-// DEMO badge, status, or remove/clear actions here. Add/edit/remove a profile by
-// editing that file directly.
-
+// Initials for the round avatar (used wherever a person has no photo).
 function boInitials(name) {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("");
-}
-
-function boAvatarHTML(person) {
-  // Photo paths in people-data.js are root-relative (e.g. "assets/photos/x.jpg"),
-  // but backoffice pages live one directory down, hence the "../" prefix.
-  if (person.photo) {
-    return `<div class="avatar"><img src="../${boEscapeHTML(person.photo)}" alt="${boEscapeHTML(person.name)}"></div>`;
-  }
-  return `<div class="avatar">${boEscapeHTML(boInitials(person.name))}</div>`;
-}
-
-function boRenderProfiles() {
-  const rows = typeof INTERVIEWS !== "undefined" ? INTERVIEWS : [];
-
-  boPaginate("profiles", rows, p => {
-    const iv = p.interview || { answers: {}, custom: [] };
-    const questionCount = Object.values(iv.answers || {}).filter(a => a && String(a).trim()).length + (iv.custom || []).length;
-    return `
-    <tr data-slug="${boEscapeHTML(p.slug)}">
-      <td>${boAvatarHTML(p)}</td>
-      <td class="bo-cell-strong">${boEscapeHTML(p.name)}</td>
-      <td>${boEscapeHTML(p.role)}<br><span class="bo-cell-dim">${boEscapeHTML(p.company)}</span></td>
-      <td>${boEscapeHTML(p.location)}</td>
-      <td>${boEscapeHTML(boFocusLabel(p.focusTag))}</td>
-      <td>${p.yearsExperience != null ? `${boEscapeHTML(p.yearsExperience)} yrs` : "-"}</td>
-      <td>${questionCount}</td>
-      <td>${boEscapeHTML(p.publishedDate)}</td>
-      <td>${p.links && p.links.linkedin ? `<a class="bracket-link" href="${boEscapeHTML(p.links.linkedin)}" target="_blank" rel="noopener">[ Profile ]</a>` : "-"}</td>
-      <td><a class="bracket-link" href="${boEscapeHTML(`/interview/${p.focusTag === "design" ? "productux" : "productmanagement"}/${encodeURIComponent(p.slug)}`)}" target="_blank" rel="noopener">[ View ]</a></td>
-    </tr>
-  `;
-  }, { bodyId: "bo-profiles-body", countId: "bo-profile-count", emptyId: "bo-profiles-empty", paginationId: "bo-profiles-pagination" });
-}
-
-async function initBackofficeProfiles() {
-  if (!(await boCurrentGuard())) return;
-  boRenderProfiles();
-  boWirePaginationControls({ profiles: boRenderProfiles });
+  return String(name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("") || "?";
 }
 
 // ---------- Map submissions page ----------

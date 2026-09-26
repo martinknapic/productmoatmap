@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>All users - ProductMoat Backoffice</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg?v=2">
+  <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png?v=2">
+  <link rel="stylesheet" href="../assets/swiss.css?v=20">
+  <link rel="stylesheet" href="../assets/backoffice.css?v=25">
+</head>
+<body class="light">
+  <nav class="nav bo-nav">
+    <div class="nav-inner">
+      <a class="logo" href="/"><span class="logo-mark"></span><span class="logo-word" role="img" aria-label="ProductMoat"></span> <span class="bo-nav-tag">Backoffice</span></a>
+      <div class="bo-subnav">
+        <a href="candidates.html">Candidates</a>
+        <a href="questions.html">Questions</a>
+        <a href="map-submissions.html">Map submissions</a>
+        <a href="users.html" class="bo-subnav-active">All users</a>
+      </div>
+      <div class="bo-nav-right">
+        <span class="bo-user" id="bo-user"></span>
+        <button class="btn btn-ghost bo-logout" id="bo-logout">Log out</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="wrap bo-main bo-main-wide">
+    <div class="bo-section-head bo-head-row">
+      <div>
+        <h2>All users <span class="bo-count" id="bo-users-count"></span></h2>
+        <p class="bo-section-note">Everyone the site knows about: people who signed up or logged in with LinkedIn, candidates, and people with a map pin, one row per person (matched on email). Newsletter opt-ins are sent to your SendFox list the moment they opt in.</p>
+      </div>
+      <div class="bo-head-actions">
+        <button type="button" class="btn btn-ghost" id="bo-users-refresh">Refresh status</button>
+        <button type="button" class="btn btn-primary" id="bo-users-syncall">Send all opted-in to the list</button>
+      </div>
+    </div>
+
+    <div class="bo-banner" id="bo-users-banner" hidden></div>
+    <div class="bo-summary" id="bo-users-summary"></div>
+
+    <div class="bo-filters">
+      <div class="bo-chips" id="bo-users-chips"></div>
+      <select class="bo-input bo-filter-src" id="bo-users-nl" aria-label="Newsletter"><option value="all">Newsletter: all</option><option value="in">Opted in</option><option value="out">Not opted in</option></select>
+      <select class="bo-input bo-filter-src" id="bo-users-dbl" aria-label="Double opt-in status"><option value="all">Double opt-in: all</option><option value="confirmed">Confirmed</option><option value="pending">Awaiting confirmation</option><option value="subscribed">Subscribed (no confirmation)</option><option value="not_synced">Not sent yet</option><option value="unsubscribed">Unsubscribed</option><option value="problem">Problem</option></select>
+      <input class="bo-input bo-filter-search" id="bo-users-search" type="search" placeholder="Search name, company, email…">
+    </div>
+
+    <div class="bo-table-wrap">
+      <table class="bo-table" id="bo-users-table">
+        <thead><tr><th></th><th>Person</th><th>Role / Company</th><th>Location</th><th>Type</th><th>Since</th><th>Newsletter</th><th>Double opt-in</th><th class="bo-th-actions">Actions</th></tr></thead>
+        <tbody id="bo-users-body"></tbody>
+      </table>
+      <p class="bo-empty" id="bo-users-empty" hidden>Nobody matches.</p>
+      <p class="bo-empty" id="bo-users-error" hidden>Couldn't load users - if this keeps happening, check that Vercel Blob storage is connected to the project.</p>
+    </div>
+  </main>
+
+  <script src="../assets/backoffice.js?v=14"></script>
+  <script src="../assets/backoffice-candidates.js?v=20"></script>
+  <script src="../assets/backoffice-users.js?v=4"></script>
+  <script>initBackofficeUsers();</script>
+</body>
+</html>
