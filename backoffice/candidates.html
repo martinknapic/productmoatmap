@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg?v=2">
   <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png?v=2">
   <link rel="stylesheet" href="../assets/swiss.css?v=20">
-  <link rel="stylesheet" href="../assets/backoffice.css?v=23">
+  <link rel="stylesheet" href="../assets/backoffice.css?v=24">
 </head>
 <body class="light">
   <nav class="nav bo-nav">
@@ -27,11 +27,11 @@
     </div>
   </nav>
 
-  <main class="wrap bo-main">
+  <main class="wrap bo-main bo-main-wide">
     <div class="bo-section-head bo-head-row">
       <div>
         <h2>Candidates <span class="bo-count" id="bo-cand-count"></span></h2>
-        <p class="bo-section-note">Everyone who applied, was recommended, or that you add by hand. Open someone to invite them, edit their questions, and take them through to publishing.</p>
+        <p class="bo-section-note">Everyone who applied, was recommended, or that you add by hand, with where they stand and the actions to move them along. Hover any icon to see what it does; anything that deletes asks you to confirm first.</p>
       </div>
       <button type="button" class="btn btn-primary" id="bo-add-toggle">+ Add a person</button>
     </div>
@@ -50,13 +50,14 @@
 
     <div class="bo-filters">
       <div class="bo-chips" id="bo-cand-chips"></div>
+      <select class="bo-input bo-filter-src" id="bo-cand-sort" aria-label="Sort by"><option value="updated">Sort: recently updated</option><option value="created">Sort: newest added</option><option value="published">Sort: publish date</option><option value="name">Sort: name A-Z</option></select>
       <select class="bo-input bo-filter-src" id="bo-cand-source"><option value="all">All sources</option><option value="applied">Applied</option><option value="recommended">Recommended</option><option value="manual">Added by you</option></select>
       <input class="bo-input bo-filter-search" id="bo-cand-search" type="search" placeholder="Search name, company, email…">
     </div>
 
     <div class="bo-table-wrap">
       <table class="bo-table">
-        <thead><tr><th></th><th>Person</th><th>Role / Company</th><th>Location</th><th>LinkedIn</th><th>Source</th><th>Recommended by</th><th>Status</th><th>Article</th><th>Questionnaire</th><th>Invited</th><th>Updated</th><th></th></tr></thead>
+        <thead><tr><th></th><th>Person</th><th>Role / Company</th><th>Location</th><th>Source</th><th>Status</th><th>Published</th><th>Article</th><th>Questionnaire</th><th>Updated</th><th class="bo-th-actions">Actions</th></tr></thead>
         <tbody id="bo-cand-body"></tbody>
       </table>
       <p class="bo-empty" id="bo-cand-empty" hidden>No one here yet. Applications and recommendations from the site will appear automatically.</p>
@@ -65,7 +66,7 @@
   </main>
 
   <script src="../assets/backoffice.js?v=13"></script>
-  <script src="../assets/backoffice-candidates.js?v=16"></script>
+  <script src="../assets/backoffice-candidates.js?v=19"></script>
   <script>initBackofficeCandidates();</script>
 </body>
 </html>

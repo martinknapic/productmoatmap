@@ -149,12 +149,150 @@ function boContactTooltip() {
   return { show, hideSoon, isFor: (a) => current === a };
 }
 
+// ---------- icons, tooltips and confirmation for the per-row actions ----------
+
+const boIcon = d => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const BO_ICONS = {
+  edit: boIcon('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>'),
+  link: boIcon('<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>'),
+  send: boIcon('<path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4Z"/>'),
+  ban: boIcon('<circle cx="12" cy="12" r="10"/><path d="M4.9 4.9l14.2 14.2"/>'),
+  undo: boIcon('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>'),
+  check: boIcon('<path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="M22 4 12 14l-3-3"/>'),
+  lock: boIcon('<rect x="5" y="11" width="14" height="10" rx="1"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'),
+  unlock: boIcon('<rect x="5" y="11" width="14" height="10" rx="1"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/>'),
+  eye: boIcon('<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>'),
+  down: boIcon('<circle cx="12" cy="12" r="10"/><path d="M8 12l4 4 4-4"/><path d="M12 8v8"/>'),
+  archive: boIcon('<path d="M3 4h18v4H3z"/><path d="M5 8v12h14V8"/><path d="M10 12h4"/>'),
+  trash: boIcon('<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>'),
+  live: boIcon('<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>')
+};
+
+// One small floating tooltip for every element with data-tip (position: fixed, so the table's
+// horizontal scroll can't clip it). Shown on hover and on keyboard focus.
+function boIconTooltips(container) {
+  let tip = null;
+  const ensure = () => {
+    if (!tip) { tip = document.createElement("div"); tip.className = "bo-tip"; tip.setAttribute("role", "tooltip"); tip.hidden = true; document.body.appendChild(tip); }
+    return tip;
+  };
+  const hide = () => { if (tip) tip.hidden = true; };
+  const show = (el) => {
+    const t = ensure();
+    t.textContent = el.dataset.tip;
+    t.hidden = false;
+    const a = el.getBoundingClientRect(), w = t.offsetWidth, h = t.offsetHeight;
+    t.style.left = `${Math.max(8, Math.min(a.left + a.width / 2 - w / 2, window.innerWidth - w - 8))}px`;
+    t.style.top = `${a.top - h - 8 < 8 ? a.bottom + 8 : a.top - h - 8}px`;
+  };
+  const target = e => e.target.closest && e.target.closest("[data-tip]");
+  container.addEventListener("mouseover", e => { const el = target(e); if (el) show(el); });
+  container.addEventListener("mouseout", e => { if (target(e)) hide(); });
+  container.addEventListener("focusin", e => { const el = target(e); if (el) show(el); });
+  container.addEventListener("focusout", e => { if (target(e)) hide(); });
+  container.addEventListener("click", hide);
+  window.addEventListener("scroll", hide, true);
+}
+
+// Confirmation dialog: resolves true only if they press the confirm button. Cancel is focused first,
+// and Esc, the backdrop and Cancel all say no.
+function boConfirm({ title, message, confirmLabel = "Confirm", danger = false }) {
+  return new Promise(resolve => {
+    const opener = document.activeElement;
+    const el = document.createElement("div");
+    el.className = "bo-modal";
+    el.innerHTML = `
+      <div class="bo-modal-card bo-confirm" role="alertdialog" aria-modal="true" aria-labelledby="bo-confirm-title" aria-describedby="bo-confirm-msg">
+        <h3 id="bo-confirm-title">${boEscapeHTML(title)}</h3>
+        <p id="bo-confirm-msg" class="bo-confirm-msg">${message}</p>
+        <div class="bo-confirm-actions">
+          <button type="button" class="btn btn-ghost" data-r="no">Cancel</button>
+          <button type="button" class="btn ${danger ? "bo-confirm-danger" : "btn-primary"}" data-r="yes">${boEscapeHTML(confirmLabel)}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(el);
+    const done = (v) => { document.removeEventListener("keydown", onKey, true); el.remove(); if (opener && opener.focus) opener.focus(); resolve(v); };
+    const onKey = (e) => {
+      if (e.key === "Escape") { e.preventDefault(); done(false); return; }
+      if (e.key === "Tab") {
+        const b = [...el.querySelectorAll("button")]; const f = b[0], l = b[b.length - 1];
+        if (e.shiftKey && document.activeElement === f) { e.preventDefault(); l.focus(); } else if (!e.shiftKey && document.activeElement === l) { e.preventDefault(); f.focus(); }
+      }
+    };
+    document.addEventListener("keydown", onKey, true);
+    el.addEventListener("click", e => { if (e.target === el) return done(false); const b = e.target.closest("[data-r]"); if (b) done(b.dataset.r === "yes"); });
+    el.querySelector('[data-r="no"]').focus();
+  });
+}
+
+// The date column: when it went live, when it is scheduled, or (dim) what we told them to expect.
+function boPublishedCell(c) {
+  const pub = c.publish || {};
+  const day = iso => (iso ? new Date(iso).toLocaleDateString([], { dateStyle: "medium" }) : "");
+  if (c.status === "published") return `<span class="bo-cell-strong">${boEscapeHTML(day(pub.publishedAt || pub.displayDate) || "-")}</span>`;
+  if (c.status === "scheduled") return `<span class="bo-pub-sched">Scheduled</span><br><span class="bo-cell-dim">${boEscapeHTML(day(pub.scheduledPublishAt))}</span>`;
+  const est = c.invitation && c.invitation.estimatedPublishDate;
+  if (est) return `<span class="bo-cell-dim">Est. ${boEscapeHTML(new Date(`${est}T00:00:00`).toLocaleDateString([], { dateStyle: "medium" }))}</span>`;
+  return `<span class="bo-cell-dim">-</span>`;
+}
+const boPublishedTime = c => { const p = c.publish || {}; return Date.parse(p.publishedAt || p.scheduledPublishAt || "") || 0; };
+
+// Every action that already exists on the candidate and preview pages, as one row of icon buttons.
+// Which ones show depends on where the person is in the pipeline. [group, key, icon, tooltip, {href|danger}]
+function boRowActions(c) {
+  const id = encodeURIComponent(c.id);
+  const invited = !!(c.invitation && c.questionnaire);
+  const live = c.status === "published", sched = c.status === "scheduled", declined = !!c.declined;
+  const approved = !!(c.approval && c.approval.approved);
+  const a = [];
+  a.push(["main", "edit", "edit", "Edit: profile, invitation, questions and answers", { href: `candidate.html?id=${id}` }]);
+  if (declined) {
+    a.push(["main", "restore", "undo", "Restore to the pipeline"]);
+  } else {
+    if (!invited) a.push(["main", "invite", "send", "Invite: create their questionnaire and mark as invited"]);
+    if (invited) {
+      a.push(["link", "copyLink", "link", "Copy their private questionnaire link"]);
+      a.push(["link", c.linkRevoked ? "restoreLink" : "revokeLink", c.linkRevoked ? "undo" : "ban", c.linkRevoked ? "Restore the questionnaire link" : "Revoke the questionnaire link (they can no longer open it)"]);
+    }
+    if (invited && !live && !sched) {
+      a.push(["flow", approved ? "unapprove" : "approve", approved ? "undo" : "check", approved ? "Reopen: clear the final sign-off" : "Make final on their behalf"]);
+      if (!c.locked) a.push(["flow", "lock", "lock", "Lock and prepare the review (they can no longer edit)"]);
+      else a.push(["flow", "unlock", "unlock", "Unlock so they can edit again"]);
+    }
+    if (c.locked || sched || live) a.push(["flow", "preview", "eye", "Open the preview, then schedule or publish", { href: `preview.html?id=${id}` }]);
+    if (live || sched) a.push(["flow", "unpublish", "down", live ? "Unpublish: take it offline and return to preview" : "Cancel the schedule and return to preview"]);
+    a.push(["danger", "decline", "archive", "Decline / archive: remove from the pipeline (can be restored)"]);
+  }
+  a.push(["danger", "delete", "trash", "Delete permanently", { danger: true }]);
+  return a;
+}
+
+function boActionsHTML(c) {
+  const rows = boRowActions(c);
+  let last = "";
+  return `<div class="bo-actions" role="group" aria-label="Actions for ${boEscapeHTML(boCandName(c))}">` + rows.map(([group, key, icon, tip, o = {}]) => {
+    const sep = last && last !== group ? '<span class="bo-actions-sep" aria-hidden="true"></span>' : "";
+    last = group;
+    const cls = `bo-icon-btn${o.danger ? " is-danger" : ""}`;
+    return sep + (o.href
+      ? `<a class="${cls}" href="${boEscapeHTML(o.href)}" data-tip="${boEscapeHTML(tip)}" aria-label="${boEscapeHTML(tip)}">${BO_ICONS[icon]}</a>`
+      : `<button type="button" class="${cls}" data-act="${key}" data-id="${boEscapeHTML(c.id)}" data-tip="${boEscapeHTML(tip)}" aria-label="${boEscapeHTML(tip)}">${BO_ICONS[icon]}</button>`);
+  }).join("") + `</div>`;
+}
+
 async function initBackofficeCandidates() {
   if (!(await boCurrentGuard())) return;
 
-  const state = { all: [], status: "all", source: "all", q: "" };
+  const state = { all: [], status: "all", source: "all", q: "", sort: "updated" };
   const listEl = document.getElementById("bo-cand-body");
   const chipsEl = document.getElementById("bo-cand-chips");
+
+  const SORTS = {
+    updated: (x, y) => (y.updatedAt || "").localeCompare(x.updatedAt || ""),
+    created: (x, y) => (y.createdAt || "").localeCompare(x.createdAt || ""),
+    published: (x, y) => boPublishedTime(y) - boPublishedTime(x),
+    name: (x, y) => boCandName(x).localeCompare(boCandName(y))
+  };
 
   function render() {
     const counts = {};
@@ -167,19 +305,20 @@ async function initBackofficeCandidates() {
       (state.status === "all" || c.status === state.status) &&
       (state.source === "all" || c.source === state.source) &&
       (!q || [c.profile.name, c.profile.company, c.profile.role, c.profile.email, c.profile.location].join(" ").toLowerCase().includes(q))
-    );
+    ).sort(SORTS[state.sort] || SORTS.updated);
     document.getElementById("bo-cand-count").textContent = `(${rows.length})`;
     document.getElementById("bo-cand-empty").hidden = rows.length > 0;
     listEl.innerHTML = rows.map(c => `
-      <tr class="bo-row-link" data-open="${boEscapeHTML(c.id)}">
+      <tr class="bo-row-link${c.declined ? " is-declined" : ""}" data-open="${boEscapeHTML(c.id)}">
         <td class="bo-cell-photo">${boCandAvatar(c.profile)}</td>
-        <td class="bo-cell-strong">${boEscapeHTML(boCandName(c))}<br><span class="bo-cell-dim">${boEscapeHTML(c.profile.email || "")}</span></td>
+        <td class="bo-cell-strong">${boEscapeHTML(boCandName(c))}
+          ${c.profile.linkedin ? `<a class="bo-rec bo-li bo-li-inline" data-tip-cand="${boEscapeHTML(c.id)}" href="${boEscapeHTML(c.profile.linkedin)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${boEscapeHTML(boCandName(c))}'s LinkedIn profile - hover for name and email">${BO_LINKEDIN_SVG}</a>` : ""}
+          <br><span class="bo-cell-dim">${boEscapeHTML(c.profile.email || "")}</span></td>
         <td>${boEscapeHTML(c.profile.role) || "-"}<br><span class="bo-cell-dim">${boEscapeHTML(c.profile.company)}</span></td>
         <td>${boEscapeHTML(c.profile.location) || "-"}</td>
-        <td class="bo-cell-rec">${c.profile.linkedin ? `<a class="bo-rec bo-li" data-tip-cand="${boEscapeHTML(c.id)}" href="${boEscapeHTML(c.profile.linkedin)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${boEscapeHTML(boCandName(c))}'s LinkedIn profile - hover for name and email">${BO_LINKEDIN_SVG}</a>` : `<span class="bo-cell-dim">-</span>`}</td>
-        <td><span class="bo-badge bo-badge-src">${boEscapeHTML(BO_SOURCE_LABELS[c.source] || c.source)}</span></td>
-        <td class="bo-cell-rec">${c.recommendation ? `<a class="bo-rec" data-tip-rec="${boEscapeHTML(c.id)}" href="${boEscapeHTML(boRecommenderLinkedIn(c.recommendation).url)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${boEscapeHTML(c.recommendation.recommenderName || "the recommender")}'s LinkedIn - hover for name and email">${BO_LINKEDIN_SVG}</a>` : `<span class="bo-cell-dim">-</span>`}</td>
+        <td><span class="bo-badge bo-badge-src">${boEscapeHTML(BO_SOURCE_LABELS[c.source] || c.source)}</span>${c.recommendation ? ` <a class="bo-rec bo-li-inline" data-tip-rec="${boEscapeHTML(c.id)}" href="${boEscapeHTML(boRecommenderLinkedIn(c.recommendation).url)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${boEscapeHTML(c.recommendation.recommenderName || "the recommender")}'s LinkedIn - hover for who recommended them">${BO_LINKEDIN_SVG}</a>` : ""}</td>
         <td>${boPill(c.status)}</td>
+        <td>${boPublishedCell(c)}</td>
         <td class="bo-cell-url">${(() => {
           const a = boArticleLink(c);
           if (!a) return `<span class="bo-cell-dim">-</span>`;
@@ -189,18 +328,19 @@ async function initBackofficeCandidates() {
           const l = boCandLink(c);
           if (!l) return `<span class="bo-cell-dim">-</span>`;
           if (!l.url) return `<span class="bo-cell-dim">${boEscapeHTML(l.text)}</span>`;
-          return `<a class="bo-url" href="${boEscapeHTML(l.url)}" target="_blank" rel="noopener noreferrer" title="${boEscapeHTML(l.url)}"><span class="bo-url-kind bo-url-${boEscapeHTML(l.kind.toLowerCase())}">${boEscapeHTML(l.kind)}</span><span class="bo-url-text">${boEscapeHTML(l.text)}</span><span aria-hidden="true">↗</span></a>`;
+          return `<a class="bo-url" href="${boEscapeHTML(l.url)}" target="_blank" rel="noopener noreferrer" title="${boEscapeHTML(l.url)}"><span class="bo-url-kind bo-url-${boEscapeHTML(l.kind.toLowerCase())}">${boEscapeHTML(l.kind)}</span><span aria-hidden="true">↗</span></a>`;
         })()}</td>
-        <td>${c.invitation ? `${boEscapeHTML(c.invitation.channel === "linkedin" ? "LinkedIn" : "Email")} · ${boEscapeHTML(new Date(c.invitation.sentAt).toLocaleDateString())}` : "-"}</td>
-        <td>${boEscapeHTML(boWhen(c.updatedAt))}</td>
-        <td><a class="bracket-link" href="candidate.html?id=${encodeURIComponent(c.id)}">[ Open ]</a></td>
+        <td>${boEscapeHTML(boWhen(c.updatedAt))}${c.invitation ? `<br><span class="bo-cell-dim">Invited by ${boEscapeHTML(c.invitation.channel === "linkedin" ? "LinkedIn" : "email")}, ${boEscapeHTML(new Date(c.invitation.sentAt).toLocaleDateString())}</span>` : ""}</td>
+        <td class="bo-cell-actions">${boActionsHTML(c)}</td>
       </tr>`).join("");
   }
 
   chipsEl.addEventListener("click", (e) => { const b = e.target.closest("[data-status]"); if (b) { state.status = b.dataset.status; render(); } });
   document.getElementById("bo-cand-source").addEventListener("change", (e) => { state.source = e.target.value; render(); });
+  document.getElementById("bo-cand-sort").addEventListener("change", (e) => { state.sort = e.target.value; render(); });
   document.getElementById("bo-cand-search").addEventListener("input", (e) => { state.q = e.target.value; render(); });
   const tip = boContactTooltip();
+  boIconTooltips(listEl);
   // what the hover card shows for a given icon: data-tip-cand = the candidate, data-tip-rec = their recommender
   const infoOf = (btn) => {
     const c = state.all.find(x => x.id === (btn.dataset.tipCand || btn.dataset.tipRec));
@@ -224,8 +364,72 @@ async function initBackofficeCandidates() {
   listEl.addEventListener("focusin", (e) => { const b = tipTarget(e); const i = b && infoOf(b); if (i) tip.show(b, i); });
   listEl.addEventListener("focusout", (e) => { if (tipTarget(e)) tip.hideSoon(); });
   window.addEventListener("scroll", () => tip.hideSoon(), true);
-  listEl.addEventListener("click", (e) => {
-    if (e.target.closest("a")) return; // LinkedIn icons open their own tab; never open the row
+
+  // ----- row actions -----
+  const replace = (cand) => { const i = state.all.findIndex(x => x.id === cand.id); if (i !== -1) state.all[i] = cand; };
+  const ERRORS = { unpublish_first: "Unpublish it first.", lock_first: "Lock it first.", storage_failed: "Couldn't save: storage isn't reachable." };
+
+  async function run(key, c) {
+    const name = boEscapeHTML(boCandName(c));
+    const call = async (payload, okMsg) => {
+      try {
+        const data = await boCandApi({ id: c.id, ...payload });
+        if (data.deleted) state.all = state.all.filter(x => x.id !== c.id); else if (data.candidate) replace(data.candidate);
+        render();
+        if (okMsg) boToast(okMsg);
+        return data;
+      } catch (err) { boToast(ERRORS[err.message] || "That didn't work - try again."); return null; }
+    };
+    switch (key) {
+      case "copyLink":
+        try { await navigator.clipboard.writeText(boQuestionnaireLink(c)); boToast("Questionnaire link copied"); } catch (err) { window.prompt("Copy this link:", boQuestionnaireLink(c)); }
+        return;
+      case "invite": {
+        if (!(await boConfirm({ title: "Invite this person?", message: `This creates <strong>${name}</strong>'s private questionnaire and marks them as invited. You then send them the link yourself, and the next screen has the message ready to copy.`, confirmLabel: "Create & invite" }))) return;
+        const data = await call({ action: "invite", channel: c.source === "recommended" ? "linkedin" : "email" });
+        if (data) location.href = `candidate.html?id=${encodeURIComponent(c.id)}#invitation`;
+        return;
+      }
+      case "revokeLink":
+        if (!(await boConfirm({ title: "Revoke the questionnaire link?", message: `<strong>${name}</strong> will no longer be able to open their questionnaire until you restore the link.`, confirmLabel: "Revoke link", danger: true }))) return;
+        return call({ action: "revokeLink", revoked: true }, "Link revoked");
+      case "restoreLink": return call({ action: "revokeLink", revoked: false }, "Link restored");
+      case "approve": return call({ action: "approve", approved: true }, "Marked as final on their behalf");
+      case "unapprove": return call({ action: "approve", approved: false }, "Sign-off cleared");
+      case "lock": {
+        const approved = !!(c.approval && c.approval.approved);
+        if (!(await boConfirm({ title: "Lock and prepare the review?", message: `${approved ? "" : `<strong>${name}</strong> hasn't marked this version as final. `}Locking means they can no longer edit, and you can then preview and publish. You can unlock it again later.`, confirmLabel: "Lock & prepare review" }))) return;
+        const data = await call({ action: "lock", locked: true });
+        if (data) location.href = `preview.html?id=${encodeURIComponent(c.id)}`;
+        return;
+      }
+      case "unlock": return call({ action: "lock", locked: false }, "Unlocked, they can edit again");
+      case "unpublish": {
+        const live = c.status === "published";
+        if (!(await boConfirm({ title: live ? "Take this interview offline?" : "Cancel the schedule?", message: live ? `<strong>${name}</strong>'s interview goes offline and returns to preview. It stays locked, so you can review or reschedule it.` : `<strong>${name}</strong>'s interview will no longer go live on schedule and returns to preview.`, confirmLabel: live ? "Unpublish" : "Cancel schedule", danger: true }))) return;
+        return call({ action: "unpublish" }, live ? "Unpublished, back in preview" : "Schedule cancelled");
+      }
+      case "decline":
+        if (!(await boConfirm({ title: "Decline and archive?", message: `<strong>${name}</strong> is removed from the pipeline and their questionnaire link stops working. Nothing is deleted, and you can restore them any time.`, confirmLabel: "Decline / archive", danger: true }))) return;
+        return call({ action: "decline", declined: true }, "Archived");
+      case "restore": return call({ action: "decline", declined: false }, "Restored to the pipeline");
+      case "delete":
+        if (!(await boConfirm({ title: "Delete permanently?", message: `<strong>${name}</strong> and everything attached to them will be removed for good: their profile and answers${c.featuredPhoto ? ", their featured photo" : ""}${c.status === "published" ? " and the published interview" : ""}. <strong>This can't be undone.</strong> If you only want them out of the pipeline, decline / archive them instead.`, confirmLabel: "Delete permanently", danger: true }))) return;
+        return call({ action: "delete" }, `${boCandName(c)} was deleted`);
+    }
+  }
+
+  listEl.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-act]");
+    if (btn) {
+      e.stopPropagation();
+      const c = state.all.find(x => x.id === btn.dataset.id);
+      if (!c || btn.disabled) return;
+      btn.disabled = true;
+      try { await run(btn.dataset.act, c); } finally { btn.disabled = false; }
+      return;
+    }
+    if (e.target.closest("a")) return; // links (LinkedIn, article, questionnaire, actions) open on their own; never open the row
     const row = e.target.closest("[data-open]");
     if (row) location.href = `candidate.html?id=${encodeURIComponent(row.dataset.open)}`;
   });

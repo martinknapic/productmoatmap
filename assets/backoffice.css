@@ -529,3 +529,51 @@ textarea.bo-input { resize: vertical; line-height: 1.5; }
 .bo-tabs a.is-active { color: var(--ink); border-bottom-color: var(--ink); font-weight: 700; }
 .bo-tab-count { display: inline-block; margin-left: 4px; padding: 1px 6px; border: 1px solid var(--line-soft); font-size: 11px; }
 .bo-card[hidden] { display: none; }
+
+
+/* ---------- Candidates list: wide layout, actions column, icon buttons, tooltip, confirm ---------- */
+
+.bo-main.bo-main-wide { max-width: 1680px; }
+.bo-li-inline { display: inline-flex; vertical-align: middle; width: 22px; height: 22px; margin-left: 4px; }
+.bo-li-inline svg { width: 17px; height: 17px; }
+.bo-row-link.is-declined td { opacity: 0.6; }
+.bo-row-link.is-declined td.bo-cell-actions { opacity: 1; }
+.bo-pub-sched { color: var(--accent); font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; }
+
+/* the actions column stays in view while the rest of the table scrolls sideways */
+.bo-table th.bo-th-actions, .bo-table td.bo-cell-actions {
+  position: sticky; right: 0; z-index: 2;
+  background: var(--paper); box-shadow: -1px 0 0 var(--line-soft);
+}
+.bo-table th.bo-th-actions { background: var(--paper-alt); }
+.bo-row-link:hover td.bo-cell-actions { background: var(--paper-alt); }
+
+.bo-actions { display: flex; align-items: center; gap: 4px; }
+.bo-actions-sep { width: 1px; height: 18px; margin: 0 4px; background: var(--line-soft); }
+.bo-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; flex-shrink: 0;
+  border: 1px solid var(--line-soft); background: var(--paper); color: var(--ink-body);
+  cursor: pointer; transition: border-color 0.12s ease, color 0.12s ease, background 0.12s ease;
+}
+.bo-icon-btn svg { width: 16px; height: 16px; }
+.bo-icon-btn:hover, .bo-icon-btn:focus-visible { border-color: var(--ink); color: var(--ink); background: var(--paper-alt); outline: none; }
+.bo-icon-btn:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+.bo-icon-btn.is-danger:hover, .bo-icon-btn.is-danger:focus-visible { border-color: var(--accent); color: var(--accent); }
+.bo-icon-btn:disabled { opacity: 0.4; cursor: wait; }
+
+.bo-tip {
+  position: fixed; z-index: 300; max-width: 280px; padding: 7px 10px;
+  background: var(--ink); color: var(--paper);
+  font-family: var(--font-mono); font-size: 11.5px; line-height: 1.4; letter-spacing: 0.01em;
+  pointer-events: none;
+}
+.bo-tip[hidden] { display: none; }
+
+.bo-confirm { width: min(460px, 100%); border-width: 1px; box-shadow: 8px 8px 0 var(--ink); }
+.bo-confirm h3 { margin-bottom: 10px; }
+.bo-confirm-msg { color: var(--ink-body); font-size: 15px; line-height: 1.55; }
+.bo-confirm-msg strong { color: var(--ink); }
+.bo-confirm-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+.bo-confirm-danger { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+.bo-confirm-danger:hover { filter: brightness(0.92); }

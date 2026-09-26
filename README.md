@@ -92,6 +92,24 @@ answer).
   Skipped for admins previewing, once published, and under prefers-reduced-motion; add
   `?confetti=1` to either URL to replay it.
 
+## Backoffice candidates list (`backoffice/candidates.html`)
+
+The main view of everyone in the pipeline: person (with LinkedIn icon), role / company, location,
+source (with the recommender's icon), status, **published date** (live date, the scheduled date,
+or the estimated date we told them), article and questionnaire links, and last update. Sort by
+recently updated, newest, publish date or name; filter by status, source or search.
+
+The last column is a pinned toolbar of icon buttons with the actions that already existed on the
+candidate and preview pages, shown only where they make sense for that person's stage: edit,
+invite (create the questionnaire, then straight to the message), copy / revoke / restore the
+questionnaire link, make final on their behalf / reopen, lock and prepare the review / unlock,
+open preview and publish, unpublish / cancel schedule, decline / archive / restore to the
+pipeline, and delete. Every icon has a tooltip (hover or keyboard focus) and an accessible
+name. Anything that removes or closes something (delete, decline, revoke link, unpublish, lock,
+invite) asks for confirmation in a dialog (`boConfirm` in `assets/backoffice-candidates.js`);
+Cancel is focused first and Esc or a click outside also cancels. The API calls are the same
+`/api/candidates` actions the detail pages use, so nothing new on the server.
+
 ## Newsletter prompt on sign-up
 
 Every "Sign up / Sign in with LinkedIn" button (signup, apply, recommend, put yourself on the

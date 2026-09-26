@@ -120,16 +120,29 @@ function initMemberNav() {
   if (document.body.hasAttribute("data-no-member-nav")) return; // e.g. personal interview links: keep the page focused
   ensureNavRight(navInner);
 
+  // map.html's "Put yourself on the map" button is pointless for someone who is already on the map
+  // (a pin pending / approved, or a published interview with a location), so it's hidden for them.
+  // It stays hidden only while we check, then comes back unless they are on the map.
+  const mapCta = navInner.querySelector(".jm-nav-cta");
+  if (mapCta) mapCta.style.visibility = "hidden";
+  const settleMapCta = (onMap) => { if (mapCta) { if (onMap) mapCta.style.display = "none"; mapCta.style.visibility = ""; } };
+
   fetch("/api/member-me", { credentials: "same-origin" })
     .then(resp => (resp.ok ? resp.json() : null))
     .then(profile => {
       if (profile) {
         renderMemberNav(navInner, profile);
-      } else if (!/(^|\/)signup\.html$/.test(location.pathname)) {
-        renderSignupCTA(navInner);
+        if (!mapCta) return;
+        fetch("/api/member-map", { credentials: "same-origin", cache: "no-store" })
+          .then(r => (r.ok ? r.json() : null))
+          .then(d => settleMapCta(!!(d && d.onMap)))
+          .catch(() => settleMapCta(false));
+      } else {
+        settleMapCta(false);
+        if (!/(^|\/)signup\.html$/.test(location.pathname)) renderSignupCTA(navInner);
       }
     })
-    .catch(() => {});
+    .catch(() => settleMapCta(false));
 }
 
 // Groups the right-hand nav items so the Sign up CTA / avatar sits to the left
