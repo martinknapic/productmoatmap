@@ -107,6 +107,16 @@ function deleteCandidate(id) {
   return del(`${CANDIDATE_PREFIX}${id}.json`);
 }
 
+// Every candidate record tied to one of these emails (the LinkedIn-verified one or the contact
+// email typed on the form), declined ones included — callers decide what counts.
+async function findCandidatesByEmail(emails) {
+  const wanted = new Set((emails || []).map(e => String(e || "").trim().toLowerCase()).filter(Boolean));
+  if (!wanted.size) return [];
+  return (await listCandidates()).filter(c =>
+    [c.profile && c.profile.email, c.verified && c.verified.email].some(e => e && wanted.has(String(e).trim().toLowerCase()))
+  );
+}
+
 // ---------- Question bank ----------
 
 function defaultBank() {
@@ -403,7 +413,7 @@ async function takenSlugs(exceptId) {
 module.exports = {
   crypto, defaults,
   parseCookies, adminSession, memberSession, requireAdmin, isAdminRequest, clip,
-  readJSON, writeJSON, readCandidate, saveCandidate, listCandidates, deleteCandidate,
+  readJSON, writeJSON, readCandidate, saveCandidate, listCandidates, findCandidatesByEmail, deleteCandidate,
   upsertMember, readMember, saveMemberDetails, setNetworkOptIn, isNetworkMember, cleanMemberDetails, FOCUS_TAGS, readBank, defaultBank, cleanSections, QUESTION_BANK_PATH,
   requiredProgress, deriveStatus, isLive, blankCandidate, cleanProfile, ID_RE, newId,
   slugify, CATEGORIES, defaultCategory, toPublicInterview, takenSlugs, FOCUS_LABELS

@@ -62,6 +62,10 @@
     {
       "source": "/api/member-network",
       "destination": "/api/site?op=member-network"
+    },
+    {
+      "source": "/api/member-map",
+      "destination": "/api/site?op=member-map"
     }
   ],
   "functions": {

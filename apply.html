@@ -7,7 +7,7 @@
   <meta name="description" content="Apply to be interviewed for ProductMoat — an interview series for product people building at the intersection of AI.">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="stylesheet" href="assets/swiss.css?v=18">
-  <link rel="stylesheet" href="assets/site.css?v=45">
+  <link rel="stylesheet" href="assets/site.css?v=46">
 </head>
 <body class="light">
   <script>try{if(localStorage.getItem("pm-theme")==="dark")document.body.classList.remove("light")}catch(e){}</script>
@@ -51,6 +51,13 @@
   </section>
 
   <main class="wrap">
+    <div class="apply-success" id="apply-exists" hidden>
+      <div class="eyebrow"><span class="num">✓</span> Already on our list</div>
+      <h2>You've already applied.</h2>
+      <p id="apply-exists-text"></p>
+      <a class="btn btn-ghost" href="index.html">&larr; Back to all conversations</a>
+    </div>
+
     <form id="apply-form" novalidate>
 
       <fieldset class="form-fieldset">
@@ -226,7 +233,7 @@
   </footer>
 
   <script src="assets/people-data.js?v=14"></script>
-  <script src="assets/site.js?v=39"></script>
+  <script src="assets/site.js?v=41"></script>
   <script>
     initTheme();
     initApply();

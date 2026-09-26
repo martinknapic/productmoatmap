@@ -45,9 +45,7 @@ module.exports = async (req, res) => {
   const email = session.email.trim().toLowerCase();
 
   try {
-    const mine = (await C.listCandidates()).filter(c =>
-      [c.profile && c.profile.email, c.verified && c.verified.email].some(e => e && e.trim().toLowerCase() === email)
-    );
+    const mine = await C.findCandidatesByEmail([email]);
     let best = { state: "none" };
     mine.forEach(c => { const r = classify(c); if (RANK[r.state] > RANK[best.state]) best = r; });
     return res.status(200).json(best);

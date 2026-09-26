@@ -299,6 +299,39 @@ function initSignup() {
   completeSignup(newsletterPref);
 }
 
+// ---------- Profile / Map / Articles (signed-in profile pages) ----------
+// Every page of a member's own profile carries the same three sub-menus: Profile (their details),
+// Map (their pin) and Articles (their application / interview). Each page fills #member-tabs once
+// it knows the visitor is signed in.
+
+const MEMBER_TABS = [
+  ["profile", "Profile", "account.html"],
+  ["map", "Map", "my-map.html"],
+  ["articles", "Articles", "my-interview.html"]
+];
+
+function showMemberTabs(current) {
+  const el = document.getElementById("member-tabs");
+  if (!el) return;
+  el.innerHTML = `<div class="wrap"><nav class="member-tabs" aria-label="My profile sections">${MEMBER_TABS.map(([id, label, href]) =>
+    `<a href="${href}"${id === current ? ' class="is-active" aria-current="page"' : ""}>${label}</a>`).join("")}</nav></div>`;
+  el.hidden = false;
+}
+
+// Where someone stands on the list, in one sentence (uses the /api/my-interview answer).
+function applicationStatusHTML(d) {
+  const fmt = iso => (iso ? new Date(iso).toLocaleDateString([], { dateStyle: "long" }) : "");
+  const articles = `<a class="bracket-link" href="my-interview.html">[ See it under Articles ]</a>`;
+  if (d.state === "published") return `<strong>Your interview is live.</strong> ${articles}`;
+  if (d.state === "invited") return `<strong>You've been invited.</strong> Your interview is open. ${articles}`;
+  if (d.state === "applied") {
+    return d.source === "recommended"
+      ? `<strong>Someone recommended you.</strong> We'll be in touch if it looks like a fit. ${articles}`
+      : `<strong>You applied${d.appliedAt ? ` on ${escapeHTML(fmt(d.appliedAt))}` : ""}.</strong> Your application is pending review. ${articles}`;
+  }
+  return `You haven't applied to be interviewed yet. <a class="bracket-link" href="apply.html">[ Apply ]</a>`;
+}
+
 // ---------- The whole journey as a strip of steps ----------
 // Shared by My interview and the personal questionnaire page so both show the same seven stages:
 // Applied -> In review -> Invited -> Your answers -> Your sign-off -> Our review -> Published.
@@ -452,6 +485,7 @@ function initMyInterview() {
   fetch("/api/my-interview", { credentials: "same-origin" })
     .then(resp => (resp.status === 401 ? { state: "signed-out" } : resp.ok ? resp.json() : Promise.reject(resp.status)))
     .then(data => {
+      if (data.state !== "signed-out") showMemberTabs("articles");
       if (data.state === "invited") {
         show(interviewPanel(data));
       } else if (data.state === "published") {
@@ -500,6 +534,14 @@ function initAccount() {
     .then(data => {
       if (!data) { root.innerHTML = accountSignedOutHTML(); return; }
       root.innerHTML = accountSignedInHTML(data.account);
+      showMemberTabs("profile");
+      fetch("/api/my-interview", { credentials: "same-origin" })
+        .then(resp => (resp.ok ? resp.json() : null))
+        .then(d => {
+          const box = document.getElementById("account-status");
+          if (d && box) { box.innerHTML = applicationStatusHTML(d); box.hidden = false; }
+        })
+        .catch(() => {});
       document.getElementById("account-logout-btn").addEventListener("click", () => {
         window.location.href = "/api/member-logout?next=%2Faccount.html";
       });
@@ -638,6 +680,7 @@ function accountSignedInHTML(profile) {
         <button class="btn btn-ghost" id="account-logout-btn">Log out</button>
       </div>
     </div>
+    <p class="account-status" id="account-status" hidden></p>
   `;
 }
 
@@ -653,6 +696,54 @@ function accountSignedOutHTML() {
       form also signs you in site-wide.
     </p>
   `;
+}
+
+// ---------- My map (my-map.html) — the Map tab ----------
+// Their "Put yourself on the map" pins (with review status) and, once published, the pin their
+// interview puts them on.
+
+function initMyMap() {
+  const root = document.getElementById("mm-root");
+  if (!root) return;
+  const fmtDate = iso => (iso ? new Date(iso).toLocaleDateString([], { dateStyle: "long" }) : "");
+  const hero = (title, lede, extra = "") => `
+    <section class="why-hero${extra ? " mi-hero-actions" : ""}">
+      <div class="wrap">
+        <div class="eyebrow">My map</div>
+        <h1>${title}</h1>
+        <p class="about-lede">${lede}</p>
+        ${extra ? `<div class="mi-actions">${extra}</div>` : ""}
+      </div>
+    </section>`;
+  const STATUS = { pending: "Pending review", approved: "Live on the map", rejected: "Not approved", removed: "Removed" };
+
+  fetch("/api/member-map", { credentials: "same-origin" })
+    .then(resp => (resp.status === 401 ? { signedOut: true } : resp.ok ? resp.json() : Promise.reject(resp.status)))
+    .then(data => {
+      if (data.signedOut) {
+        root.innerHTML = hero("Sign in to see your place on the map.",
+          "Your pin is tied to your LinkedIn account. Sign up or sign in and it will show up here.",
+          `<a class="btn btn-primary" href="signup.html">Sign up with LinkedIn</a>`);
+        return;
+      }
+      showMemberTabs("map");
+      const pins = data.pins || [];
+      const iv = data.interview;
+      const place = p => [p.city, p.country].filter(Boolean).join(", ") || "Pinned location";
+      const cards = [
+        iv ? `<li class="mm-card"><div><div class="mm-place">${escapeHTML(iv.location || "Your location")}</div><div class="mm-meta">Your interview puts you on the map</div></div><a class="bracket-link" href="${escapeAttr(iv.url)}">[ Read it ]</a></li>` : "",
+        ...pins.map(p => `<li class="mm-card"><div><div class="mm-place">${escapeHTML(place(p))}</div><div class="mm-meta">Pin submitted ${escapeHTML(fmtDate(p.submittedAt))}</div></div><span class="mm-status is-${escapeAttr(p.status)}">${escapeHTML(STATUS[p.status] || p.status)}</span></li>`)
+      ].filter(Boolean);
+      const empty = !cards.length;
+      root.innerHTML = hero(
+        empty ? "You're not on the map yet." : "Your place on the map.",
+        empty
+          ? "Drop a pin where you work and join the map of product people. We review every pin before it goes live."
+          : "Everything you've put on the map, and where each pin stands. We review every new pin before it goes live.",
+        `<a class="btn btn-primary" href="join-map.html">${empty ? "Put yourself on the map" : "Add another pin"} &rarr;</a><a class="bracket-link" href="map.html">[ Open the map ]</a>`
+      ) + (empty ? "" : `<section class="wrap mm-list-wrap"><ul class="mm-list">${cards.join("")}</ul></section>`);
+    })
+    .catch(() => { root.innerHTML = hero("Something went wrong.", "We couldn't load your map details just now. Please refresh in a moment."); });
 }
 
 // ---------- Homepage ----------
@@ -1147,7 +1238,7 @@ function formatDate(iso) {
 // list (source: applied). Identity comes from the LinkedIn session, not from this form.
 
 // POSTs JSON, disabling the button meanwhile; shows an inline error under it on failure.
-async function submitJSON(url, payload, btn, idleLabel) {
+async function submitJSON(url, payload, btn, idleLabel, onConflict) {
   let err = document.getElementById("submit-error");
   if (!err) {
     err = document.createElement("p");
@@ -1165,6 +1256,10 @@ async function submitJSON(url, payload, btn, idleLabel) {
       credentials: "same-origin",
       body: JSON.stringify(payload)
     });
+    if (resp.status === 409 && onConflict) {
+      onConflict(await resp.json().catch(() => ({})));
+      return false;
+    }
     if (!resp.ok) throw new Error(String(resp.status));
     return true;
   } catch (e) {
@@ -1174,6 +1269,18 @@ async function submitJSON(url, payload, btn, idleLabel) {
     btn.textContent = idleLabel;
     return false;
   }
+}
+
+// Someone already on the candidate list (applied, invited or published) can't apply again: swap the
+// form for where they stand. The server enforces this too (409 from /api/apply).
+function showAlreadyApplied(d) {
+  const box = document.getElementById("apply-exists");
+  const form = document.getElementById("apply-form");
+  if (!box || !form) return;
+  form.hidden = true;
+  box.querySelector("#apply-exists-text").innerHTML = applicationStatusHTML(d);
+  box.hidden = false;
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function initApply() {
@@ -1232,7 +1339,7 @@ function initApply() {
       networkOptIn: data.get("networkOptIn") === "on" // explicit tick only; unticked by default
     };
 
-    submitJSON("/api/apply", application, submitBtn, "Submit application").then(ok => {
+    submitJSON("/api/apply", application, submitBtn, "Submit application", d => showAlreadyApplied(d)).then(ok => {
       if (!ok) return;
       form.hidden = true;
       document.getElementById("apply-success").hidden = false;
@@ -1445,6 +1552,11 @@ function initApplyLinkedInGate() {
       if (photoBtn) photoBtn.classList.toggle("is-locked", locked);
     },
     onVerified(profile) {
+      // already on the list? then there's nothing to apply for
+      fetch("/api/my-interview", { credentials: "same-origin" })
+        .then(resp => (resp.ok ? resp.json() : null))
+        .then(d => { if (d && d.state !== "none") showAlreadyApplied(d); })
+        .catch(() => {});
       document.getElementById("f-name").value = profile.name || "";
       document.getElementById("f-email").value = profile.email || "";
       // everything else they've saved on My profile

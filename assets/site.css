@@ -1610,3 +1610,35 @@ footer {
 .net-links { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: auto; }
 .net-empty { color: var(--ink-body); max-width: 60ch; line-height: 1.6; }
 .net-leave { margin-top: 36px; font-size: 14px; color: var(--ink-dim); }
+
+
+/* ---------- Profile / Map / Articles sub-menu (account.html, my-map.html, my-interview.html) ---------- */
+.member-tabs-wrap { border-bottom: 1px solid var(--line-soft); background: var(--paper); }
+.member-tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+.member-tabs::-webkit-scrollbar { display: none; }
+.member-tabs a {
+  padding: 16px 20px 14px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.member-tabs a:first-child { padding-left: 0; }
+.member-tabs a:hover { color: var(--ink); }
+.member-tabs a.is-active { color: var(--ink); border-bottom-color: var(--ink); font-weight: 700; }
+
+.account-status { margin-top: 28px; max-width: 68ch; padding: 14px 18px; border: 1px solid var(--line-soft); color: var(--ink-body); line-height: 1.6; }
+.account-status strong { color: var(--ink); }
+
+.mm-list-wrap { padding-bottom: 72px; }
+.mm-list { list-style: none; max-width: 760px; border-top: 1px solid var(--line-soft); }
+.mm-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--line-soft); }
+.mm-place { font-weight: 700; font-size: 17px; }
+.mm-meta { margin-top: 4px; font-size: 14px; color: var(--ink-dim); }
+.mm-status { flex-shrink: 0; padding: 5px 10px; border: 1px solid var(--line-soft); font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-body); }
+.mm-status.is-approved { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.mm-status.is-rejected { color: var(--accent); border-color: var(--accent); }

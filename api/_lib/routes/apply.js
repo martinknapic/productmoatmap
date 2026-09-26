@@ -31,6 +31,16 @@ module.exports = async (req, res) => {
   if (!profile.name || !profile.role || !profile.company) return res.status(400).json({ error: "missing_fields" });
 
   try {
+    // One application per person: anyone already on the candidate list (applied, invited,
+    // published...) can't apply again. Declined applications don't count. Matched on the
+    // verified LinkedIn email and on the contact email typed into the form.
+    const existing = (await C.findCandidatesByEmail([session.email, profile.email])).filter(c => !c.declined);
+    if (existing.length) {
+      const live = existing.find(C.isLive);
+      const state = live ? "published" : existing.some(c => c.invitation) ? "invited" : "applied";
+      return res.status(409).json({ error: "already_applied", state });
+    }
+
     const networkOptIn = b.networkOptIn === true; // explicit tick on the form; never assumed
     const c = C.blankCandidate("applied", profile, {
       verified: { name: session.name || "", email: session.email || "" },
