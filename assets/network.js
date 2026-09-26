@@ -1,8 +1,8 @@
-// ProductMoat — the alumni network (network.html)
+// ProductMoat - the alumni network (network.html)
 //
 // A members-only directory of the product people ProductMoat has interviewed. It's reciprocal and
 // explicit: a member ticks the consent box (here, on Apply, or on My profile) to be visible to the
-// other members — once they've been interviewed — and in return gets access to the directory.
+// other members - once they've been interviewed - and in return gets access to the directory.
 // GET /api/member-network only returns people to members who have opted in.
 
 function initNetwork() {
@@ -33,14 +33,14 @@ function initNetwork() {
           <button type="button" class="btn btn-primary" id="net-join" aria-disabled="true">Join the network</button>
           <span class="submit-hint" role="tooltip">Tick the box to agree first</span>
         </span>
-        <p class="hint-inline li-error" id="net-error" hidden>Couldn't join just now — please try again.</p>
+        <p class="hint-inline li-error" id="net-error" hidden>Couldn't join just now - please try again.</p>
       </div>
     </section>`;
 
   function show(html) { root.innerHTML = html; }
 
   function renderJoin() {
-    show(hero("The people we've interviewed.", "A members-only network of the product people featured on ProductMoat — for those who've agreed to be visible to each other.") + consentCard);
+    show(hero("The people we've interviewed.", "A members-only network of the product people featured on ProductMoat - for those who've agreed to be visible to each other.") + consentCard);
     const box = document.getElementById("net-agree"), btn = document.getElementById("net-join"), wrap = document.getElementById("net-join-wrap");
     box.addEventListener("change", () => {
       btn.toggleAttribute("aria-disabled", !box.checked);
@@ -88,7 +88,7 @@ function initNetwork() {
 
   function renderDirectory(people) {
     const tags = [...new Set(people.flatMap(p => p.focusTags))];
-    show(hero("The people we've interviewed.", `Everyone here has been featured on ProductMoat and agreed to be visible to fellow members. Please use these details respectfully — they're shared for genuine peer-to-peer connection, not outreach at scale.`,
+    show(hero("The people we've interviewed.", `Everyone here has been featured on ProductMoat and agreed to be visible to fellow members. Please use these details respectfully - they're shared for genuine peer-to-peer connection, not outreach at scale.`,
       `<div class="net-count">${people.length} member${people.length === 1 ? "" : "s"}</div>`) + `
       <section class="wrap net-body">
         <div class="net-filters">
@@ -97,7 +97,7 @@ function initNetwork() {
         </div>
         ${people.length ? `<div class="net-grid" id="net-grid">${people.map(cardHTML).join("")}</div>
           <p class="bo-empty net-empty" id="net-none" hidden>No one matches that.</p>`
-          : `<p class="net-empty">No one is listed yet. Members appear here once they've been interviewed and have agreed to be visible — you'll be one of them when it's your turn.</p>`}
+          : `<p class="net-empty">No one is listed yet. Members appear here once they've been interviewed and have agreed to be visible - you'll be one of them when it's your turn.</p>`}
         <p class="net-leave">Changed your mind? <a class="bracket-link" href="account.html">[ Leave the network from My profile ]</a></p>
       </section>`);
     const grid = document.getElementById("net-grid");

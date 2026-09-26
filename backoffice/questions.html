@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
-  <title>Questions — ProductMoat Backoffice</title>
+  <title>Questions - ProductMoat Backoffice</title>
   <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg?v=2">
   <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png?v=2">
   <link rel="stylesheet" href="../assets/swiss.css?v=20">
@@ -33,7 +33,7 @@
       <p class="bo-section-note">
         The question bank every new invitation starts from, and what the public
         <a class="bracket-link" href="../questions.html" target="_blank" rel="noopener">[ questions page ]</a> shows.
-        Changing it doesn't touch people who are already invited — each of them has their own copy, which you can edit from their candidate page.
+        Changing it doesn't touch people who are already invited - each of them has their own copy, which you can edit from their candidate page.
       </p>
     </div>
 
@@ -46,9 +46,9 @@
     </div>
   </main>
 
-  <script src="../assets/questions-default.js?v=1"></script>
-  <script src="../assets/backoffice.js?v=12"></script>
-  <script src="../assets/backoffice-questions.js?v=1"></script>
+  <script src="../assets/questions-default.js?v=2"></script>
+  <script src="../assets/backoffice.js?v=13"></script>
+  <script src="../assets/backoffice-questions.js?v=2"></script>
   <script>
     (async () => {
       if (!(await boCurrentGuard())) return;
@@ -67,7 +67,7 @@
           body: JSON.stringify({ sections: editor.getSections() })
         });
         if (resp.ok) { editor.setSections((await resp.json()).sections); status.textContent = "Saved ✓"; }
-        else status.textContent = "Couldn't save — check that every section has a title.";
+        else status.textContent = "Couldn't save - check that every section has a title.";
       });
       document.getElementById("bo-q-reset").addEventListener("click", () => {
         if (!window.confirm("Replace the editor contents with the built-in default questions? (Nothing is saved until you press Save.)")) return;

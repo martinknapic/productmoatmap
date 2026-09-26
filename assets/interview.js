@@ -1,4 +1,4 @@
-// ProductMoat — a person's personal interview page (interview.html?t=<token>)
+// ProductMoat - a person's personal interview page (interview.html?t=<token>)
 //
 // The admin invites someone from the backoffice; that creates this questionnaire (a copy of
 // the standard questions the admin can still edit). The page loads it from /api/interview,
@@ -14,7 +14,7 @@ const IV_FOCUS_OPTIONS = [
   ["leadership", "Product Leadership"], ["other", "Other"]
 ];
 
-// Profile-backed questions (Q1–Q5) are edited in the "Your details" block.
+// Profile-backed questions (Q1-Q5) are edited in the "Your details" block.
 const IV_PROFILE_FIELDS = [
   { key: "name", label: "Full name", max: 200, required: true },
   { key: "role", label: "Current role", max: 200, required: true },
@@ -25,8 +25,8 @@ const IV_PROFILE_FIELDS = [
   { key: "linkedin", label: "LinkedIn URL", max: 300, type: "url" },
   { key: "website", label: "Website (optional)", max: 300, type: "url" },
   { key: "twitter", label: "X / Twitter (optional)", max: 300, type: "url" },
-  { key: "snippet", label: "Short bio — one line used to introduce you", max: 200, area: true },
-  { key: "pullQuote", label: "Pull quote — one punchy line that sums up how you think (optional)", max: 160, area: true }
+  { key: "snippet", label: "Short bio - one line used to introduce you", max: 200, area: true },
+  { key: "pullQuote", label: "Pull quote - one punchy line that sums up how you think (optional)", max: 160, area: true }
 ];
 
 function initInterview() {
@@ -105,16 +105,16 @@ function initInterview() {
 
   function render(registeredNow) {
     const first = (state.profile.name || "").split(/\s+/)[0] || "there";
-    document.title = `${first}'s interview — ProductMoat`;
+    document.title = `${first}'s interview - ProductMoat`;
     root.innerHTML = `
       <div class="iv-steps-wrap"><div class="wrap"><ol class="iv-steps" id="iv-steps" aria-label="Your progress"></ol></div></div>
       <section class="why-hero iv-hero">
         <div class="wrap iv-hero-grid">
           <div class="iv-hero-text">
             <div class="eyebrow">Your interview</div>
-            <h1>Hi ${escapeHTML(first)} — let's hear your story.</h1>
+            <h1>Hi ${escapeHTML(first)} - let's hear your story.</h1>
             <p class="about-lede">
-              This page is yours alone. Open a question to answer it — press <strong>Save</strong> under an answer
+              This page is yours alone. Open a question to answer it - press <strong>Save</strong> under an answer
               to keep it, then leave and come back to the same link any time. Only the
               <span class="q-badge q-badge-req">Required</span> questions are needed; skip any
               <span class="q-badge q-badge-opt">Optional</span> ones. The wording may be adjusted as we
@@ -216,11 +216,11 @@ function initInterview() {
           <div class="wrap">
             <div class="eyebrow">Your interview</div>
             <h1>Sign in to open your interview.</h1>
-            <p class="about-lede">This questionnaire is private: it can only be opened by the person it was created for. Sign in with the LinkedIn account you use with ProductMoat &mdash; it takes one click, and you come straight back to this page.</p>
+            <p class="about-lede">This questionnaire is private: it can only be opened by the person it was created for. Sign in with the LinkedIn account you use with ProductMoat - it takes one click, and you come straight back to this page.</p>
             <div class="iv-register">
               <div class="iv-register-text">
                 <p>Signing in creates your <strong>private ProductMoat profile</strong> (name, email, photo), which is never published, and puts your avatar in the site menu.</p>
-                ${back && back.error ? `<p class="hint-inline li-error">LinkedIn sign-in didn't go through &mdash; try again.</p>` : ""}
+                ${back && back.error ? `<p class="hint-inline li-error">LinkedIn sign-in didn't go through - try again.</p>` : ""}
               </div>
               <div class="iv-register-actions">
                 <div class="form-checkbox-row"><input type="checkbox" id="iv-reg-newsletter"><label for="iv-reg-newsletter">Subscribe me to the ProductMoat newsletter <span class="li-optional">(optional)</span>.</label></div>
@@ -247,7 +247,7 @@ function initInterview() {
     const el = document.getElementById("iv-register");
     if (!el) return;
     if (state.member) {
-      el.innerHTML = `<div class="iv-register is-done"><span class="li-badge-check">&check;</span> You're signed in as <strong>${escapeHTML(state.member.name || "a LinkedIn member")}</strong>${state.registered ? " &mdash; this page is linked to your ProductMoat profile." : "."}</div>`;
+      el.innerHTML = `<div class="iv-register is-done"><span class="li-badge-check">&check;</span> You're signed in as <strong>${escapeHTML(state.member.name || "a LinkedIn member")}</strong>${state.registered ? " - this page is linked to your ProductMoat profile." : "."}</div>`;
     } else if (state.asAdmin) {
       el.innerHTML = `<div class="iv-register is-done"><span class="li-badge-check">&check;</span> Viewing as a ProductMoat admin.</div>`;
     }
@@ -256,7 +256,7 @@ function initInterview() {
   async function initRegistration(registeredNow) {
     state.member = await fetchMemberProfile();
     renderRegisterBox();
-    if (registeredNow) setToast("You're registered — welcome to ProductMoat!", true);
+    if (registeredNow) setToast("You're registered - welcome to ProductMoat!", true);
   }
 
   // Large portrait of the person (photo set by the admin / from LinkedIn); initials if there's none or it fails to load.
@@ -273,7 +273,7 @@ function initInterview() {
         <div class="iv-section-head">
           <div>
             <h2>Your details</h2>
-            <p>How you'll be introduced. Check they're right — you can edit anything.</p>
+            <p>How you'll be introduced. Check they're right - you can edit anything.</p>
           </div>
         </div>
         <div class="iv-details">
@@ -443,7 +443,7 @@ function initInterview() {
       if (next) {
         const qs = allQuestions();
         const idx = qs.findIndex(q => q.id === next.dataset.next);
-        if (isDirty(next.dataset.next)) setToast("That answer isn't saved yet — press Save answer to keep it.", true, true);
+        if (isDirty(next.dataset.next)) setToast("That answer isn't saved yet - press Save answer to keep it.", true, true);
         setOpen(next.closest(".ivq"), false);
         if (qs[idx + 1]) openQuestion(qs[idx + 1].id);
         else document.getElementById("iv-submit").scrollIntoView({ behavior: "smooth", block: "center" });
@@ -547,7 +547,7 @@ function initInterview() {
     const el = document.getElementById("iv-banner");
     if (!el) return;
     if (state.asAdmin && (state.published || state.locked)) {
-      el.innerHTML = `<div class="iv-note is-locked"><strong>${state.published ? "Published" : "Locked"} for the person</strong> — they can't edit it any more, but as an admin you still can. Saving sends it back to draft.</div>`;
+      el.innerHTML = `<div class="iv-note is-locked"><strong>${state.published ? "Published" : "Locked"} for the person</strong> - they can't edit it any more, but as an admin you still can. Saving sends it back to draft.</div>`;
     } else if (state.published) {
       el.innerHTML = `<div class="iv-note is-published">Your interview is live. <a class="bracket-link" href="${escapeAttr(state.published.url)}">[ Read it ]</a></div>`;
     } else if (state.locked) {
@@ -556,7 +556,7 @@ function initInterview() {
       const who = state.approval.by === "admin" ? "ProductMoat marked this version as final on your behalf" : "You marked this version as final";
       el.innerHTML = `<div class="iv-note is-approved"><strong>&check; ${who}</strong> on ${escapeHTML(formatWhen(state.approval.at))}. If you change anything, it goes back to draft and you can mark it final again.</div>`;
     } else {
-      el.innerHTML = `<div class="iv-note is-draft"><strong>Draft.</strong> You're still working on this version — nothing is final until you say so at the bottom.</div>`;
+      el.innerHTML = `<div class="iv-note is-draft"><strong>Draft.</strong> You're still working on this version - nothing is final until you say so at the bottom.</div>`;
     }
   }
 
@@ -581,7 +581,7 @@ function initInterview() {
   }
 
   // The two actions live in a bar at the top of the questions and again at the bottom:
-  // Preview (see it as it will be published — private) and "I'm happy with this version".
+  // Preview (see it as it will be published - private) and "I'm happy with this version".
   function actionsHTML() {
     const missing = missingRequired();
     let approvePart = "";
@@ -607,16 +607,16 @@ function initInterview() {
 
     let body;
     if (state.published && !state.asAdmin) {
-      body = `<h2>Published.</h2><p>Thank you — your interview is live.</p>`;
+      body = `<h2>Published.</h2><p>Thank you - your interview is live.</p>`;
     } else if (state.locked && !state.asAdmin) {
-      body = `<h2>Locked for publishing.</h2><p>Nothing more to do — we'll be in touch about the publish date. You can still preview it.</p>`;
+      body = `<h2>Locked for publishing.</h2><p>Nothing more to do - we'll be in touch about the publish date. You can still preview it.</p>`;
     } else if (approved) {
       body = `<h2>You're happy with this version.</h2>
-        <p>We'll take it from here. Want to change something? Reopen it — it goes back to draft.</p>`;
+        <p>We'll take it from here. Want to change something? Reopen it - it goes back to draft.</p>`;
     } else {
       body = `<h2>Happy with this version?</h2>
         <p>${missing.length
-          ? `Still needed before you can finish — click one to jump to it: ${missing.map(q => `<button type="button" class="iv-jump" data-jump="${escapeAttr(q.id)}">${escapeHTML(q.text)}</button>`).join(" ")}`
+          ? `Still needed before you can finish - click one to jump to it: ${missing.map(q => `<button type="button" class="iv-jump" data-jump="${escapeAttr(q.id)}">${escapeHTML(q.text)}</button>`).join(" ")}`
           : "All required questions are answered. Optional ones can stay blank. When you press the button we'll treat this as the version you're happy with."}</p>`;
     }
     box.innerHTML = `${body}<div class="iv-actions">${actionsHTML()}</div>`;
@@ -627,7 +627,7 @@ function initInterview() {
   }
 
   function tryApprove() {
-    if (isDirty()) { setToast("You have unsaved changes — press Save first, then mark this version as final.", true, true); return; }
+    if (isDirty()) { setToast("You have unsaved changes - press Save first, then mark this version as final.", true, true); return; }
     const stillMissing = missingRequired();
     if (stillMissing.length) {
       // disabled: show exactly what's missing, in red, and take them to the first one
@@ -724,7 +724,7 @@ function initInterview() {
       setToast(`Saved ${when}`, true);
     } catch (err) {
       if (err.status === 423) { apply(err.data); render(); setToast("This interview has been locked.", true, true); }
-      else setToast("Couldn't save — check your connection and press Save again.", false, true);
+      else setToast("Couldn't save - check your connection and press Save again.", false, true);
     } finally {
       state.saving = false;
       refreshSaveStates();
@@ -740,9 +740,9 @@ function initInterview() {
       state.status = data.status;
       refreshAll();
       if (approve) window.scrollTo({ top: 0, behavior: "smooth" });
-      setToast(approve ? "Marked as your final version — thank you!" : "Reopened — back to draft.", true);
+      setToast(approve ? "Marked as your final version - thank you!" : "Reopened - back to draft.", true);
     } catch (err) {
-      setToast("Couldn't update — please try again.", false, true);
+      setToast("Couldn't update - please try again.", false, true);
     }
   }
 

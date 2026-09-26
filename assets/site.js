@@ -1,5 +1,5 @@
-// ProductMoat — shared portal logic (theme, avatars, homepage grid, person page)
-// Avatars are flat ink-on-paper medallions (see .avatar rules in swiss.css) by default —
+// ProductMoat - shared portal logic (theme, avatars, homepage grid, person page)
+// Avatars are flat ink-on-paper medallions (see .avatar rules in swiss.css) by default -
 // no per-person color. A person with a `photo` field gets that photo instead.
 
 function initials(name) {
@@ -201,8 +201,8 @@ function renderMemberNav(navInner, profile) {
 
 // ---------- Sign up (signup.html) ----------
 // The explicit account-creation entry point reached from the nav's "Sign up"
-// CTA. Unlike apply/recommend/join-map — where the persistent session is a
-// side effect of verifying for that page's own form — this page's whole
+// CTA. Unlike apply/recommend/join-map - where the persistent session is a
+// side effect of verifying for that page's own form - this page's whole
 // purpose is creating the profile: it shows the consent/newsletter copy
 // first, and completing sign-in here is the only path that calls
 // api/member-signup.js to actually persist a profile record.
@@ -267,8 +267,8 @@ function initSignup() {
 
       consentBlock.hidden = true;
       successNewsletterNote.textContent = newsletter
-        ? "You're subscribed to the newsletter — every issue includes an unsubscribe link."
-        : "You're not subscribed to the newsletter — we'll only add you if you tick the box.";
+        ? "You're subscribed to the newsletter - every issue includes an unsubscribe link."
+        : "You're not subscribed to the newsletter - we'll only add you if you tick the box.";
       successBlock.hidden = false;
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
@@ -354,10 +354,10 @@ function buildProcessSteps(ctx) {
   const steps = [
     { title: ctx.source === "recommended" ? "Recommended" : "Applied",
       sub: !ctx.hasRecord ? "Start here" : ctx.source === "recommended" ? "You were recommended" : "Application sent" },
-    { title: "In review", sub: stage > 1 ? "Reviewed" : stage === 1 ? "Pending — we read every one" : "We read every one" },
+    { title: "In review", sub: stage > 1 ? "Reviewed" : stage === 1 ? "Pending - we read every one" : "We read every one" },
     { title: "Invited", sub: stage > 2 ? "You're in" : "By email or LinkedIn" },
     { title: "Your answers", sub: stage > 3 ? "Done" : stage === 3 ? `${done} of ${total} required` : "Answer at your pace" },
-    { title: "Your sign-off", sub: stage > 4 ? (ctx.approved ? "You're happy" : "Approved") : signOffReady ? "Ready — press the button" : "After your answers" },
+    { title: "Your sign-off", sub: stage > 4 ? (ctx.approved ? "You're happy" : "Approved") : signOffReady ? "Ready - press the button" : "After your answers" },
     { title: "Our review", sub: stage > 5 ? "Preview ready" : stage === 5 ? (ctx.locked ? "Preparing your preview" : "We'll take it from here") : "Preview & final check" },
     { title: "Published", sub: ctx.published ? "Live" : ctx.scheduled ? "Scheduled" : ctx.estimate ? `Est. ${ctx.estimate}` : "Coming up" }
   ];
@@ -409,7 +409,7 @@ function initMyInterview() {
       <div class="benefits-grid">
         <div class="benefit-item">
           <h3>Your story, told properly</h3>
-          <p>A structured conversation about your path, how you think, and how AI is changing the craft &mdash; in your own words, on your own private page.</p>
+          <p>A structured conversation about your path, how you think, and how AI is changing the craft - in your own words, on your own private page.</p>
         </div>
         <div class="benefit-item">
           <h3>You stay in control</h3>
@@ -456,11 +456,11 @@ function initMyInterview() {
       primary = `<a class="btn btn-primary" href="${preview}">Preview my interview</a>`;
     } else if (d.approved) {
       title = "You're happy with this version.";
-      lede = "Thank you — we'll take it from here. Want to change something? Open your interview and reopen it for editing.";
+      lede = "Thank you - we'll take it from here. Want to change something? Open your interview and reopen it for editing.";
       primary = `<a class="btn btn-primary" href="${preview}">Preview my interview</a><a class="btn btn-ghost" href="${link}">Open my answers</a>`;
     } else {
       title = "Your interview is open.";
-      lede = "You've been invited. Answer at your pace — press Save under each answer to keep it, and only the required questions are needed.";
+      lede = "You've been invited. Answer at your pace - press Save under each answer to keep it, and only the required questions are needed.";
       primary = `<a class="btn btn-primary" href="${link}">${d.requiredDone ? "Continue your interview" : "Start your interview"} &rarr;</a><a class="btn btn-ghost" href="${preview}">Preview</a>`;
     }
     return hero(title, lede, primary, ctxFrom(d)) + `
@@ -490,10 +490,10 @@ function initMyInterview() {
           `<a class="btn btn-primary" href="${escapeAttr(data.url)}">Read your interview &rarr;</a>`, ctxFrom(data)));
       } else if (data.state === "applied") {
         const recommended = data.source === "recommended";
-        show(hero(recommended ? "Someone recommended you." : "You applied — your application is pending review.",
+        show(hero(recommended ? "Someone recommended you." : "You applied - your application is pending review.",
           recommended
-            ? "A member of the community suggested you for the series. We'll be in touch by email or LinkedIn if it looks like a fit &mdash; your personal interview will appear here as soon as you're invited."
-            : `Thank you for applying${data.appliedAt ? ` on ${escapeHTML(fmtDate(data.appliedAt))}` : ""}. We read every application ourselves and will be in touch by email or LinkedIn if it looks like a fit &mdash; your personal interview will appear here as soon as you're invited.`,
+            ? "A member of the community suggested you for the series. We'll be in touch by email or LinkedIn if it looks like a fit - your personal interview will appear here as soon as you're invited."
+            : `Thank you for applying${data.appliedAt ? ` on ${escapeHTML(fmtDate(data.appliedAt))}` : ""}. We read every application ourselves and will be in touch by email or LinkedIn if it looks like a fit - your personal interview will appear here as soon as you're invited.`,
           `<a class="bracket-link" href="questions.html">[ See what the interview covers ]</a> <a class="bracket-link" href="process.html">[ The process ]</a>`,
           { hasRecord: true, source: data.source }));
       } else if (data.state === "signed-out") {
@@ -502,7 +502,7 @@ function initMyInterview() {
           `<a class="btn btn-primary" href="signup.html">Sign up with LinkedIn</a>`) + pitch);
       } else {
         show(hero("You haven't been interviewed yet.",
-          "ProductMoat is an interview series with product people around the world. If you'd like to be featured, apply &mdash; if it's a fit, your personal interview page will appear right here.",
+          "ProductMoat is an interview series with product people around the world. If you'd like to be featured, apply - if it's a fit, your personal interview page will appear right here.",
           cta, { hasRecord: false }) + pitch);
       }
     })
@@ -510,9 +510,9 @@ function initMyInterview() {
 }
 
 // ---------- Account page (account.html) ----------
-// "My profile" destination from the nav dropdown. Not a rich profile editor —
+// "My profile" destination from the nav dropdown. Not a rich profile editor -
 // there's no database behind member accounts, just whatever LinkedIn handed
-// back at sign-in — so this simply confirms who you're signed in as.
+// back at sign-in - so this simply confirms who you're signed in as.
 
 // Focus areas a member can pick (any number). Same list as the Apply form's dropdown.
 const MEMBER_FOCUS_OPTIONS = [
@@ -559,7 +559,7 @@ function initAccountDetails(el, d, networkJoined) {
     <form class="account-form" id="account-form" novalidate>
       <div class="fieldset-head">
         <h2>Your details</h2>
-        <p>Private to you. They save time on Apply and Put yourself on the map, and you can update them whenever things change — no interview page needed.</p>
+        <p>Private to you. They save time on Apply and Put yourself on the map, and you can update them whenever things change - no interview page needed.</p>
       </div>
       <div class="form-grid">
         ${field("mp-name", 'Full name <span class="req">*</span>', d.name, 'maxlength="200" autocomplete="name" required')}
@@ -636,7 +636,7 @@ function initAccountDetails(el, d, networkJoined) {
       status.textContent = "Saved ✓";
     } catch (err) {
       status.classList.add("is-error");
-      status.textContent = "Couldn't save just now — please try again.";
+      status.textContent = "Couldn't save just now - please try again.";
     } finally {
       btn.removeAttribute("aria-disabled");
     }
@@ -658,7 +658,7 @@ function renderAccountNetwork(box, joined) {
       const resp = await fetch("/api/member-network", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ join: false }) });
       if (!resp.ok) throw new Error("failed");
       renderAccountNetwork(box, false);
-    } catch (err) { leave.textContent = "Couldn't leave — try again"; }
+    } catch (err) { leave.textContent = "Couldn't leave - try again"; }
   });
 }
 
@@ -686,7 +686,7 @@ function accountSignedOutHTML() {
     <div class="eyebrow">My profile</div>
     <h1>You're not signed in.</h1>
     <p class="about-lede">
-      ProductMoat doesn't have a standalone sign-in — verifying with LinkedIn on the
+      ProductMoat doesn't have a standalone sign-in - verifying with LinkedIn on the
       <a class="bracket-link" href="apply.html">Apply</a>,
       <a class="bracket-link" href="recommend.html">Recommend</a>, or
       <a class="bracket-link" href="join-map.html">Put yourself on the map</a>
@@ -695,7 +695,7 @@ function accountSignedOutHTML() {
   `;
 }
 
-// ---------- My map (my-map.html) — the Map tab ----------
+// ---------- My map (my-map.html) - the Map tab ----------
 // Their "Put yourself on the map" pins (with review status) and, once published, the pin their
 // interview puts them on.
 
@@ -809,7 +809,7 @@ function initHome() {
 
 // ---------- Interview (person.html) ----------
 // The fixed 24-question PM interview (INTERVIEW_SECTIONS in people-data.js) filled in from
-// p.interview.answers. Questions 1–5 (name/role/company/location/years) come from the
+// p.interview.answers. Questions 1-5 (name/role/company/location/years) come from the
 // profile fields; a skipped (missing/empty) answer is hidden, and a section with nothing
 // answered isn't shown. p.interview.custom holds person-specific extras, shown last.
 
@@ -981,7 +981,7 @@ async function initQuestions() {
           <h2>Add your own questions</h2>
           <p>
             Something you'd rather be asked than answer the standard way? Add up to
-            ${CUSTOM_QUESTION_LIMIT} custom questions of your own — write the question and
+            ${CUSTOM_QUESTION_LIMIT} custom questions of your own - write the question and
             your answer. Need a nudge? Here are some that have worked well:
           </p>
           <div class="qsection-meta">Up to ${CUSTOM_QUESTION_LIMIT} &middot; optional</div>
@@ -1011,7 +1011,7 @@ function initPerson() {
 // Renders the full interview page for `p` into `root`. Also used by the backoffice preview
 // (backoffice/preview.html) so the preview is byte-for-byte what gets published.
 function renderPersonPage(root, p, opts = {}) {
-  if (!opts.preview) document.title = `${p.name} — ProductMoat`;
+  if (!opts.preview) document.title = `${p.name} - ProductMoat`;
 
   const hasCoords = typeof p.lat === "number" && typeof p.lng === "number";
 
@@ -1064,7 +1064,7 @@ function renderPersonPage(root, p, opts = {}) {
         <div class="foreword-inner">
           <div class="label-mono">Foreword</div>
           <p>${escapeHTML(p.foreword)}</p>
-          <div class="foreword-byline">&mdash; Martin Knapic, ProductMoat</div>
+          <div class="foreword-byline">- Martin Knapic, ProductMoat</div>
         </div>
       </div>
     </section>` : ""}
@@ -1102,7 +1102,7 @@ function miniMapStyleURL() {
     : "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 }
 
-// Flat, non-interactive mercator preview — the original mini-map. Kept as a fallback;
+// Flat, non-interactive mercator preview - the original mini-map. Kept as a fallback;
 // swap the initMiniGlobe(p) call above for initMiniMap(p) to bring it back.
 function initMiniMap(p) {
   const el = document.getElementById("mini-map");
@@ -1124,7 +1124,7 @@ function initMiniMap(p) {
   });
 }
 
-// Mini globe — same globe projection, basemap, and sky treatment as the main map
+// Mini globe - same globe projection, basemap, and sky treatment as the main map
 // (map.html / app.js), but read-only: no drag/scroll/click, just a settle-in spin that
 // mirrors the flyTo you'd see landing on this person from the main map. Click-through to
 // the real map is handled by the <a> wrapper in the markup, not the map itself.
@@ -1219,7 +1219,7 @@ async function submitJSON(url, payload, btn, idleLabel, onConflict) {
     if (!resp.ok) throw new Error(String(resp.status));
     return true;
   } catch (e) {
-    err.textContent = "Something went wrong sending that — please try again in a moment.";
+    err.textContent = "Something went wrong sending that - please try again in a moment.";
     err.hidden = false;
     btn.removeAttribute("aria-disabled");
     btn.textContent = idleLabel;
@@ -1256,7 +1256,7 @@ function initApply() {
     const file = photoInput.files[0];
     if (!file) {
       photoPreview.innerHTML = "＋";
-      photoFilename.textContent = "No file selected — falls back to initials.";
+      photoFilename.textContent = "No file selected - falls back to initials.";
       return;
     }
     photoFilename.textContent = file.name;
@@ -1305,7 +1305,7 @@ function initApply() {
 }
 
 // ---------- LinkedIn verification gate (apply.html) ----------
-// The Client ID is public by design — LinkedIn OAuth apps embed it in frontend
+// The Client ID is public by design - LinkedIn OAuth apps embed it in frontend
 // code, only the Client Secret is sensitive (it lives in Vercel env vars and is
 // used exclusively by the /api/linkedin-callback function). Replace this with
 // your app's Client ID from https://www.linkedin.com/developers/apps.
@@ -1318,7 +1318,7 @@ const LINKEDIN_CLIENT_ID = "778t1x9svtemxo";
 // without, and the close button / Esc / clicking outside cancels (the visitor stays on the
 // page). The choice is then carried across the LinkedIn round trip exactly as before: the
 // caller's startSignIn() copies the box into sessionStorage (li_newsletter / su_newsletter /
-// iv_newsletter) — the same place the one-time OAuth nonce lives, so the two survive together —
+// iv_newsletter) - the same place the one-time OAuth nonce lives, so the two survive together -
 // and the page applies it via /api/member-signup once LinkedIn sends the visitor back.
 function withNewsletterPrompt(box, go) {
   if (!box || box.checked) return go();
@@ -1343,7 +1343,7 @@ function openNewsletterPrompt() {
         <button type="button" class="nl-close" aria-label="Close and go back">&times;</button>
         <div class="eyebrow">Before you continue</div>
         <h2 id="nl-title">You haven't subscribed to the newsletter.</h2>
-        <p class="nl-lede" id="nl-lede">Once a week we send you stories from product people around the world &mdash; and the occasional deal we think you'll like. Here's what you'd get:</p>
+        <p class="nl-lede" id="nl-lede">Once a week we send you stories from product people around the world - and the occasional deal we think you'll like. Here's what you'd get:</p>
         <ul class="nl-benefits">
           <li><strong>Every new interview</strong> in your inbox, so you hear how product leaders think, what they've shipped and how AI is changing the craft.</li>
           <li><strong>Deals and perks</strong> we line up for product people, sent your way when there's something worth your time.</li>
@@ -1411,7 +1411,7 @@ async function applyNewsletterChoice(page) {
 // ---------- Already signed in? ----------
 // A LinkedIn member session (pm_session) is set by every successful LinkedIn sign-in and lasts
 // 30 days. On pages that gate on LinkedIn (Apply, Recommend, Put yourself on the map, Sign up)
-// a visitor who already has one shouldn't be asked to sign in again — the page shows who
+// a visitor who already has one shouldn't be asked to sign in again - the page shows who
 // they're signed in as and unlocks. The server still re-checks the session on every submit.
 
 async function fetchMemberProfile() {
@@ -1466,11 +1466,11 @@ function wireSessionNewsletter(gate, page) {
         body: JSON.stringify({ newsletter: true, source: page })
       });
       if (!resp.ok) throw new Error("subscribe failed");
-      label.textContent = "You're subscribed to the newsletter — every issue has an unsubscribe link.";
+      label.textContent = "You're subscribed to the newsletter - every issue has an unsubscribe link.";
     } catch (err) {
       box.checked = false;
       box.disabled = false;
-      label.textContent = "Couldn't subscribe just now — please try again.";
+      label.textContent = "Couldn't subscribe just now - please try again.";
     }
   });
 }
@@ -1479,7 +1479,7 @@ function wireSessionNewsletter(gate, page) {
 // the submit button, which gets an aria-disabled treatment instead) until the
 // visitor verifies via LinkedIn OAuth. `page` is embedded in the OAuth
 // `state` param so /api/linkedin-callback knows which page to redirect back
-// to — keep it in sync with ALLOWED_PAGES in that file. `onVerified(profile)`
+// to - keep it in sync with ALLOWED_PAGES in that file. `onVerified(profile)`
 // lets each page fill in its own page-specific fields once verified.
 function initLinkedInGate({ page, formId, submitBtnId, onLocked, onVerified }) {
   const form = document.getElementById(formId);
@@ -1603,7 +1603,7 @@ function initApplyLinkedInGate() {
       });
       if (profile.picture) {
         document.getElementById("photo-preview").innerHTML = `<img src="${profile.picture}" alt="">`;
-        document.getElementById("photo-filename").textContent = "Using your LinkedIn photo — choose a file to replace it.";
+        document.getElementById("photo-filename").textContent = "Using your LinkedIn photo - choose a file to replace it.";
       }
     }
   });
@@ -1623,7 +1623,7 @@ function initRecommendLinkedInGate() {
 
 // ---------- Recommend page ----------
 // Sent to /api/recommend, which adds the recommended person to the backoffice candidate list
-// (source: recommended). Gated behind initRecommendLinkedInGate() — yourName/yourEmail
+// (source: recommended). Gated behind initRecommendLinkedInGate() - yourName/yourEmail
 // arrive pre-filled (and read-only) from the verified profile.
 
 function initRecommend() {
@@ -1662,7 +1662,7 @@ function initRecommend() {
 // Two states, never both at once. Signed out, the page is just the sign-up call to action
 // ("Sign up with LinkedIn"); the OAuth round trip lands back on this same page. Signed in,
 // the page is only the pin request: a pin on the mini map plus city, country, role and
-// company — all mandatory. Name, email and photo come from the LinkedIn session, so they're
+// company - all mandatory. Name, email and photo come from the LinkedIn session, so they're
 // never asked for. See api/join-map.js for where the submission lands (it re-checks that
 // every field is present).
 
@@ -1779,7 +1779,7 @@ function initJoinMap() {
 
   function setPicked(lngLat) {
     picked = { lat: lngLat.lat, lng: lngLat.lng };
-    hint.textContent = `Pin set at ${picked.lat.toFixed(3)}, ${picked.lng.toFixed(3)} — drag it to adjust.`;
+    hint.textContent = `Pin set at ${picked.lat.toFixed(3)}, ${picked.lng.toFixed(3)} - drag it to adjust.`;
     if (marker) {
       marker.setLngLat(lngLat);
     } else {
@@ -1832,7 +1832,7 @@ function initJoinMap() {
       document.getElementById("jm-success").hidden = false;
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
-      submitError.textContent = "Something went wrong submitting your pin — try again.";
+      submitError.textContent = "Something went wrong submitting your pin - try again.";
       submitError.hidden = false;
       submitBtn.removeAttribute("aria-disabled");
       submitBtn.textContent = "Add me to the map";
@@ -1907,7 +1907,7 @@ function initJoinMap() {
 // 52 weeks, grouped into 4 quarters of 13 weeks each, months labeled within
 // each quarter. Weeks are Monday-start, running from the Monday on/before
 // Jan 1 of the target year. Only interviews already published (publishedDate
-// <= today) are ever shown — future weeks only ever render as "open".
+// <= today) are ever shown - future weeks only ever render as "open".
 
 const CAL_MONTH_NAMES = ["January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"];
@@ -1949,23 +1949,23 @@ function calWeekStatus(week, today, interview) {
 function calRenderCell(week, today, interview) {
   const isCurrent = today >= week.start && today <= week.end;
   const status = calWeekStatus(week, today, interview);
-  const range = `${calFormatShort(week.start)} – ${calFormatShort(week.end)}`;
+  const range = `${calFormatShort(week.start)} - ${calFormatShort(week.end)}`;
 
   let bodyHTML;
   if (interview) {
     bodyHTML = `
-      <a class="cal-card" href="${interviewURL(interview)}" title="${escapeHTML(interview.name)} — ${escapeHTML(interview.role)}">
+      <a class="cal-card" href="${interviewURL(interview)}" title="${escapeHTML(interview.name)} - ${escapeHTML(interview.role)}">
         ${avatarHTML(interview, "avatar cal-card-avatar")}
         <span class="cal-card-name">${escapeHTML(interview.name)}</span>
       </a>`;
   } else if (status === "gap") {
-    bodyHTML = `<div class="cal-empty"><span class="cal-empty-label">&mdash;</span></div>`;
+    bodyHTML = `<div class="cal-empty"><span class="cal-empty-label">-</span></div>`;
   } else {
     bodyHTML = `<div class="cal-empty"><span class="cal-empty-label">Open</span></div>`;
   }
 
   // Only an "open" week (current or future, nothing published for it yet) is
-  // actually available to apply for or recommend someone into — a published
+  // actually available to apply for or recommend someone into - a published
   // week is already taken, and a past "gap" week can't be filled retroactively.
   const hoverHTML = status === "open"
     ? `<div class="cal-hover">
@@ -2009,7 +2009,7 @@ function calRenderQuarter(quarterWeeks, quarterNum, today, weekInterviews) {
     <section class="cal-quarter">
       <div class="cal-quarter-label">
         <span class="cal-quarter-num">Q${quarterNum}</span>
-        <span class="cal-quarter-range">${firstMonth} &ndash; ${lastMonth} ${year}</span>
+        <span class="cal-quarter-range">${firstMonth} - ${lastMonth} ${year}</span>
       </div>
       <div class="cal-table-wrap">
         <table class="cal-table">

@@ -1,15 +1,15 @@
-/* ProductMoat — above-the-fold hero graphics.
+/* ProductMoat - above-the-fold hero graphics.
  *
  * Five interchangeable concepts, all drawn from the site's own vocabulary: the open square frame
  * and orange → magenta → violet → blue gradient of the logo, hairline rules, square "pixels",
  * mono labels. Pick one with ?fx=spotlight|moat|globe|print|faces (?fx=off hides it); add ?lab to get a
  * small switcher for comparing them.
  *
- *   spotlight — the latest interview: portrait in a logo-style frame, frames radiating out, links to the article
- *   moat   — fly-through tunnel of open logo frames converging on the logo
- *   globe  — dot-matrix globe: every interviewee is a pin, linked by travelling arcs (drag, click)
- *   print  — WebGL riso/halftone field in the logo gradient, reacts to the cursor
- *   faces  — tilted 3D wall of interviewee portraits, duotoned in the logo gradient
+ *   spotlight - the latest interview: portrait in a logo-style frame, frames radiating out, links to the article
+ *   moat   - fly-through tunnel of open logo frames converging on the logo
+ *   globe  - dot-matrix globe: every interviewee is a pin, linked by travelling arcs (drag, click)
+ *   print  - WebGL riso/halftone field in the logo gradient, reacts to the cursor
+ *   faces  - tilted 3D wall of interviewee portraits, duotoned in the logo gradient
  *
  * Everything pauses when the hero is off-screen or the tab is hidden, and holds a single still
  * frame under prefers-reduced-motion. Colours follow the light/dark theme.
@@ -142,7 +142,7 @@
   }
 
   /* ------------------------------------------------------------------------------------------
-   * 01  MOAT — fly through a tunnel of open logo frames
+   * 01  MOAT - fly through a tunnel of open logo frames
    * ---------------------------------------------------------------------------------------- */
   function moat(host, hero, opts) {
     opts = opts || {};
@@ -244,7 +244,7 @@
   }
 
   /* ------------------------------------------------------------------------------------------
-   * 02  GLOBE — dot-matrix Earth; interviewees are pins, linked by travelling arcs
+   * 02  GLOBE - dot-matrix Earth; interviewees are pins, linked by travelling arcs
    * ---------------------------------------------------------------------------------------- */
   function globe(host, hero) {
     const people = interviews().filter(p => isFinite(p.lat) && isFinite(p.lng));
@@ -508,7 +508,7 @@
   }
 
   /* ------------------------------------------------------------------------------------------
-   * 03  PRINT — WebGL halftone field in the logo gradient
+   * 03  PRINT - WebGL halftone field in the logo gradient
    * ---------------------------------------------------------------------------------------- */
   const PRINT_VS = "attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}";
   const PRINT_FS = `
@@ -610,7 +610,7 @@ void main(){
   }
 
   /* ------------------------------------------------------------------------------------------
-   * 04  FACES — tilted 3D wall of interviewee portraits, duotoned in the logo gradient
+   * 04  FACES - tilted 3D wall of interviewee portraits, duotoned in the logo gradient
    * ---------------------------------------------------------------------------------------- */
   function faces(host, hero) {
     const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
@@ -639,7 +639,7 @@ void main(){
 
 
   /* ------------------------------------------------------------------------------------------
-   * 05  SPOTLIGHT — the latest interview: portrait in a logo-style frame, frames radiating out
+   * 05  SPOTLIGHT - the latest interview: portrait in a logo-style frame, frames radiating out
    * ---------------------------------------------------------------------------------------- */
   function spotlight(host, hero) {
     const slot = document.getElementById("hero-spot");

@@ -1,4 +1,4 @@
-// ProductMoat Backoffice — the candidate pipeline
+// ProductMoat Backoffice - the candidate pipeline
 //
 //   candidates.html      list of everyone who applied, was recommended, or was added by hand
 //   candidate.html?id=   one person: profile, invitation, their questionnaire, answers, lock
@@ -68,7 +68,7 @@ function boArticleLink(c) {
 
 const boPill = status => `<span class="bo-pill bo-pill-${boEscapeHTML(status)}">${boEscapeHTML(BO_STATUS_LABELS[status] || status)}</span>`;
 const boQuestionnaireLink = c => `${location.origin}/interview.html?t=${c.id}`;
-const boWhen = iso => (iso ? new Date(iso).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "—");
+const boWhen = iso => (iso ? new Date(iso).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "-");
 const boCandName = c => c.profile.name || "(name not known yet)";
 const boToast = (text) => {
   let el = document.getElementById("bo-toast");
@@ -100,7 +100,7 @@ function boContactTooltip() {
     const row = (label, value) => `
       <div class="bo-rec-line">
         <span class="bo-rec-label">${label}</span>
-        <span class="bo-rec-value">${value ? boEscapeHTML(value) : "—"}</span>
+        <span class="bo-rec-value">${value ? boEscapeHTML(value) : "-"}</span>
         ${value ? `<button type="button" class="bo-rec-copy" data-copy-text="${boEscapeHTML(value)}" aria-label="Copy ${label.toLowerCase()}" title="Copy ${label.toLowerCase()}">${BO_COPY_SVG}</button>` : ""}
       </div>`;
     return `
@@ -174,24 +174,24 @@ async function initBackofficeCandidates() {
       <tr class="bo-row-link" data-open="${boEscapeHTML(c.id)}">
         <td class="bo-cell-photo">${boCandAvatar(c.profile)}</td>
         <td class="bo-cell-strong">${boEscapeHTML(boCandName(c))}<br><span class="bo-cell-dim">${boEscapeHTML(c.profile.email || "")}</span></td>
-        <td>${boEscapeHTML(c.profile.role) || "—"}<br><span class="bo-cell-dim">${boEscapeHTML(c.profile.company)}</span></td>
-        <td>${boEscapeHTML(c.profile.location) || "—"}</td>
-        <td class="bo-cell-rec">${c.profile.linkedin ? `<a class="bo-rec bo-li" data-tip-cand="${boEscapeHTML(c.id)}" href="${boEscapeHTML(c.profile.linkedin)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${boEscapeHTML(boCandName(c))}'s LinkedIn profile — hover for name and email">${BO_LINKEDIN_SVG}</a>` : `<span class="bo-cell-dim">—</span>`}</td>
+        <td>${boEscapeHTML(c.profile.role) || "-"}<br><span class="bo-cell-dim">${boEscapeHTML(c.profile.company)}</span></td>
+        <td>${boEscapeHTML(c.profile.location) || "-"}</td>
+        <td class="bo-cell-rec">${c.profile.linkedin ? `<a class="bo-rec bo-li" data-tip-cand="${boEscapeHTML(c.id)}" href="${boEscapeHTML(c.profile.linkedin)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${boEscapeHTML(boCandName(c))}'s LinkedIn profile - hover for name and email">${BO_LINKEDIN_SVG}</a>` : `<span class="bo-cell-dim">-</span>`}</td>
         <td><span class="bo-badge bo-badge-src">${boEscapeHTML(BO_SOURCE_LABELS[c.source] || c.source)}</span></td>
-        <td class="bo-cell-rec">${c.recommendation ? `<a class="bo-rec" data-tip-rec="${boEscapeHTML(c.id)}" href="${boEscapeHTML(boRecommenderLinkedIn(c.recommendation).url)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${boEscapeHTML(c.recommendation.recommenderName || "the recommender")}'s LinkedIn — hover for name and email">${BO_LINKEDIN_SVG}</a>` : `<span class="bo-cell-dim">—</span>`}</td>
+        <td class="bo-cell-rec">${c.recommendation ? `<a class="bo-rec" data-tip-rec="${boEscapeHTML(c.id)}" href="${boEscapeHTML(boRecommenderLinkedIn(c.recommendation).url)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${boEscapeHTML(c.recommendation.recommenderName || "the recommender")}'s LinkedIn - hover for name and email">${BO_LINKEDIN_SVG}</a>` : `<span class="bo-cell-dim">-</span>`}</td>
         <td>${boPill(c.status)}</td>
         <td class="bo-cell-url">${(() => {
           const a = boArticleLink(c);
-          if (!a) return `<span class="bo-cell-dim">—</span>`;
+          if (!a) return `<span class="bo-cell-dim">-</span>`;
           return `<a class="bo-url" href="${boEscapeHTML(a.url)}" target="_blank" rel="noopener noreferrer" title="${boEscapeHTML(a.url)}"><span class="bo-url-kind bo-url-${boEscapeHTML(a.kind.toLowerCase() === "published" ? "live" : a.kind.toLowerCase())}">${boEscapeHTML(a.kind)}</span><span aria-hidden="true">↗</span></a>`;
         })()}</td>
         <td class="bo-cell-url">${(() => {
           const l = boCandLink(c);
-          if (!l) return `<span class="bo-cell-dim">—</span>`;
+          if (!l) return `<span class="bo-cell-dim">-</span>`;
           if (!l.url) return `<span class="bo-cell-dim">${boEscapeHTML(l.text)}</span>`;
           return `<a class="bo-url" href="${boEscapeHTML(l.url)}" target="_blank" rel="noopener noreferrer" title="${boEscapeHTML(l.url)}"><span class="bo-url-kind bo-url-${boEscapeHTML(l.kind.toLowerCase())}">${boEscapeHTML(l.kind)}</span><span class="bo-url-text">${boEscapeHTML(l.text)}</span><span aria-hidden="true">↗</span></a>`;
         })()}</td>
-        <td>${c.invitation ? `${boEscapeHTML(c.invitation.channel === "linkedin" ? "LinkedIn" : "Email")} · ${boEscapeHTML(new Date(c.invitation.sentAt).toLocaleDateString())}` : "—"}</td>
+        <td>${c.invitation ? `${boEscapeHTML(c.invitation.channel === "linkedin" ? "LinkedIn" : "Email")} · ${boEscapeHTML(new Date(c.invitation.sentAt).toLocaleDateString())}` : "-"}</td>
         <td>${boEscapeHTML(boWhen(c.updatedAt))}</td>
         <td><a class="bracket-link" href="candidate.html?id=${encodeURIComponent(c.id)}">[ Open ]</a></td>
       </tr>`).join("");
@@ -206,15 +206,15 @@ async function initBackofficeCandidates() {
     const c = state.all.find(x => x.id === (btn.dataset.tipCand || btn.dataset.tipRec));
     if (!c) return null;
     if (btn.dataset.tipCand) {
-      return { title: "Candidate", name: c.profile.name, email: c.profile.email, notes: c.profile.email ? [] : ["No email saved yet — add one on their page."] };
+      return { title: "Candidate", name: c.profile.name, email: c.profile.email, notes: c.profile.email ? [] : ["No email saved yet - add one on their page."] };
     }
     const rec = c.recommendation;
     if (!rec) return null;
     return {
       title: "Recommended by", name: rec.recommenderName, email: rec.recommenderEmail,
       notes: [
-        boRecommenderLinkedIn(rec).exact ? "Click the icon to open their LinkedIn profile." : "No profile link was saved — the icon opens a LinkedIn search for their name.",
-        ...(rec.stayAnonymous ? ["Asked to stay anonymous — the invitation doesn't name them."] : [])
+        boRecommenderLinkedIn(rec).exact ? "Click the icon to open their LinkedIn profile." : "No profile link was saved - the icon opens a LinkedIn search for their name.",
+        ...(rec.stayAnonymous ? ["Asked to stay anonymous - the invitation doesn't name them."] : [])
       ]
     };
   };
@@ -243,7 +243,7 @@ async function initBackofficeCandidates() {
     } catch (err) {
       boToast(err.message === "missing_name" ? "A name is required."
         : err.message === "storage_failed" ? "Couldn't save: storage isn't reachable (is Vercel Blob connected to this project?)."
-        : "Couldn't add that person — please try again.");
+        : "Couldn't add that person - please try again.");
     }
   });
 
@@ -261,19 +261,19 @@ function boInviteMessage(c, channel, link, estimated) {
   const first = (c.profile.name || "").split(/\s+/)[0] || "there";
   const est = estimated ? new Date(`${estimated}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "";
   const rec = c.recommendation || {};
-  const how = `It's a set of questions about your path into product, how you think, and how AI is changing the craft. Only a handful are required and the rest are optional; you can also add up to three questions of your own. Each answer has its own Save button, and what you've saved is waiting for you whenever you come back. When you're happy with them, press the button at the bottom of the page — we'll then prepare a preview together, and nothing goes public until you've had the final say.`;
+  const how = `It's a set of questions about your path into product, how you think, and how AI is changing the craft. Only a handful are required and the rest are optional; you can also add up to three questions of your own. Each answer has its own Save button, and what you've saved is waiting for you whenever you come back. When you're happy with them, press the button at the bottom of the page - we'll then prepare a preview together, and nothing goes public until you've had the final say.`;
   // The page is private: opening it means signing in with LinkedIn (which also creates their private profile).
   const signupLine = c.source === "recommended" || !c.profile.email
-    ? `\n\nThe page is private, so you'll be asked to sign in with LinkedIn first — one click, and you land right back on it.`
-    : `\n\nThe page is private, so you'll be asked to sign in with LinkedIn first — please use the account that goes with ${c.profile.email}.`;
+    ? `\n\nThe page is private, so you'll be asked to sign in with LinkedIn first - one click, and you land right back on it.`
+    : `\n\nThe page is private, so you'll be asked to sign in with LinkedIn first - please use the account that goes with ${c.profile.email}.`;
   const estLine = est ? `\n\nWe're aiming to publish around ${est}.` : "";
 
   let opening;
   if (c.source === "applied") {
-    opening = `Thank you for applying to be featured on ProductMoat — we read every application ourselves, and we'd love to interview you.`;
+    opening = `Thank you for applying to be featured on ProductMoat - we read every application ourselves, and we'd love to interview you.`;
   } else if (c.source === "recommended") {
     const who = rec.stayAnonymous || !rec.recommenderName ? "Someone in the ProductMoat community" : rec.recommenderName;
-    opening = `${who} recommended you for ProductMoat, an interview series about how product people think and work in the age of AI — and we'd love to feature you.`;
+    opening = `${who} recommended you for ProductMoat, an interview series about how product people think and work in the age of AI - and we'd love to feature you.`;
   } else {
     opening = `I'm Martin, and I run ProductMoat, an interview series about how product people think and work in the age of AI. I'd love to feature you.`;
   }
@@ -281,12 +281,12 @@ function boInviteMessage(c, channel, link, estimated) {
   if (channel === "linkedin") {
     return {
       subject: "",
-      body: `Hi ${first},\n\n${opening}\n\nHere's your personal, private interview page: ${link}\n\n${how}${signupLine}${estLine}\n\nIf it's not for you, no problem at all — just let me know.\n\nMartin`
+      body: `Hi ${first},\n\n${opening}\n\nHere's your personal, private interview page: ${link}\n\n${how}${signupLine}${estLine}\n\nIf it's not for you, no problem at all - just let me know.\n\nMartin`
     };
   }
   return {
     subject: "Your ProductMoat interview",
-    body: `Hi ${first},\n\n${opening}\n\nHere's your personal, private interview page — only you (and I) can open it:\n${link}\n\n${how}${signupLine}${estLine}\n\nIf it's not for you, no problem at all — just reply and let me know.\n\nWarm regards,\nMartin`
+    body: `Hi ${first},\n\n${opening}\n\nHere's your personal, private interview page - only you (and I) can open it:\n${link}\n\n${how}${signupLine}${estLine}\n\nIf it's not for you, no problem at all - just reply and let me know.\n\nWarm regards,\nMartin`
   };
 }
 
@@ -317,7 +317,7 @@ async function initBackofficeCandidate() {
       if (okMsg) boToast(okMsg);
       return data;
     } catch (err) {
-      boToast(({ slug_taken: "That URL is already taken.", lock_first: "Lock it first.", unpublish_first: "Unpublish first." })[err.message] || "That didn't work — try again.");
+      boToast(({ slug_taken: "That URL is already taken.", lock_first: "Lock it first.", unpublish_first: "Unpublish first." })[err.message] || "That didn't work - try again.");
       return null;
     }
   }
@@ -361,8 +361,8 @@ async function initBackofficeCandidate() {
       ${c.source === "recommended" && c.recommendation ? `
       <section class="bo-card" ${tab("profile")}>
         <h3>Recommendation</h3>
-        <p><strong>Why:</strong> ${boEscapeHTML(c.recommendation.reason) || "—"}</p>
-        <p class="bo-cell-dim">Recommended by ${boEscapeHTML(c.recommendation.recommenderName || "unknown")}${c.recommendation.recommenderEmail ? ` (${boEscapeHTML(c.recommendation.recommenderEmail)})` : ""} <a class="bracket-link" href="${boEscapeHTML(boRecommenderLinkedIn(c.recommendation).url)}" target="_blank" rel="noopener noreferrer">[ LinkedIn${boRecommenderLinkedIn(c.recommendation).exact ? "" : " search"} ]</a>${c.recommendation.stayAnonymous ? " — asked to stay anonymous, so the invitation doesn't name them" : ""}.</p>
+        <p><strong>Why:</strong> ${boEscapeHTML(c.recommendation.reason) || "-"}</p>
+        <p class="bo-cell-dim">Recommended by ${boEscapeHTML(c.recommendation.recommenderName || "unknown")}${c.recommendation.recommenderEmail ? ` (${boEscapeHTML(c.recommendation.recommenderEmail)})` : ""} <a class="bracket-link" href="${boEscapeHTML(boRecommenderLinkedIn(c.recommendation).url)}" target="_blank" rel="noopener noreferrer">[ LinkedIn${boRecommenderLinkedIn(c.recommendation).exact ? "" : " search"} ]</a>${c.recommendation.stayAnonymous ? " - asked to stay anonymous, so the invitation doesn't name them" : ""}.</p>
       </section>` : ""}
 
       <section class="bo-card" ${tab("profile")}>
@@ -385,7 +385,7 @@ async function initBackofficeCandidate() {
       <section class="bo-card" ${tab("invitation")}>
         <h3>Invitation</h3>
         ${!invited ? `
-          <p class="bo-section-note">Creating the invitation makes their private questionnaire page (a copy of the standard questions, which you can still edit). You then send them the link yourself — by email or LinkedIn.</p>
+          <p class="bo-section-note">Creating the invitation makes their private questionnaire page (a copy of the standard questions, which you can still edit). You then send them the link yourself - by email or LinkedIn.</p>
           <div class="bo-inline">
             <label class="bo-lbl">Send via
               <select class="bo-input" id="bo-inv-channel"><option value="email"${msgChannel === "email" ? " selected" : ""}>Email</option><option value="linkedin"${msgChannel === "linkedin" ? " selected" : ""}>LinkedIn message</option></select>
@@ -393,13 +393,13 @@ async function initBackofficeCandidate() {
             <label class="bo-lbl">Estimated publish date<input class="bo-input" type="date" id="bo-inv-est"></label>
             <button class="btn btn-primary" id="bo-inv-create" ${c.declined ? "disabled" : ""}>Create questionnaire &amp; mark as invited</button>
           </div>` : `
-          <p class="bo-section-note">Invited by ${boEscapeHTML(c.invitation.channel === "linkedin" ? "LinkedIn" : "email")} on ${boEscapeHTML(boWhen(c.invitation.sentAt))}. The message below is a starting point for the manual send — edit it freely.</p>
+          <p class="bo-section-note">Invited by ${boEscapeHTML(c.invitation.channel === "linkedin" ? "LinkedIn" : "email")} on ${boEscapeHTML(boWhen(c.invitation.sentAt))}. The message below is a starting point for the manual send - edit it freely.</p>
           <div class="bo-linkrow">
             <input class="bo-input" id="bo-q-link" readonly value="${boEscapeHTML(link)}">
             <button class="btn btn-ghost" id="bo-copy-link">Copy link</button>
             <button class="btn btn-ghost" id="bo-revoke">${c.linkRevoked ? "Restore link" : "Revoke link"}</button>
           </div>
-          ${c.linkRevoked ? `<p class="bo-warn">This link is revoked — the person can't open it.</p>` : ""}
+          ${c.linkRevoked ? `<p class="bo-warn">This link is revoked - the person can't open it.</p>` : ""}
           <div class="bo-inline">
             <label class="bo-lbl">Message for
               <select class="bo-input" id="bo-msg-channel"><option value="email"${msgChannel === "email" ? " selected" : ""}>Email</option><option value="linkedin"${msgChannel === "linkedin" ? " selected" : ""}>LinkedIn message</option></select>
@@ -418,7 +418,7 @@ async function initBackofficeCandidate() {
       ${invited ? `
       <section class="bo-card" ${tab("questions")}>
         <h3>Their questions</h3>
-        <p class="bo-section-note">This person's own copy of the questionnaire. Edit, add or remove questions any time — before or while they're answering. Answers stay attached to a question as long as it isn't removed.</p>
+        <p class="bo-section-note">This person's own copy of the questionnaire. Edit, add or remove questions any time - before or while they're answering. Answers stay attached to a question as long as it isn't removed.</p>
         <div id="bo-qed-mount"></div>
         <div class="bo-savebar">
           <button class="btn btn-primary" id="bo-qed-save">Save their questions</button>
@@ -437,7 +437,7 @@ async function initBackofficeCandidate() {
       <section class="bo-card" ${tab("signoff")}>
         <h3>Sign-off, lock &amp; preview</h3>
         <p class="bo-section-note">
-          ${c.approval && c.approval.approved ? `Marked final by ${c.approval.by === "admin" ? "you" : "the person"} on ${boEscapeHTML(boWhen(c.approval.at))}.` : "Not marked as final yet — they do that on their page, or you can do it for them."}
+          ${c.approval && c.approval.approved ? `Marked final by ${c.approval.by === "admin" ? "you" : "the person"} on ${boEscapeHTML(boWhen(c.approval.at))}.` : "Not marked as final yet - they do that on their page, or you can do it for them."}
           ${c.locked ? " Locked: they can no longer edit." : ""}
         </p>
         <div class="bo-inline">
@@ -505,7 +505,7 @@ async function initBackofficeCandidate() {
       act({ action: "update", profile, notes: String(f.get("notes") || "") }, "Profile saved");
     });
 
-    on("#bo-inv-create", () => act({ action: "invite", channel: root.querySelector("#bo-inv-channel").value, estimatedPublishDate: root.querySelector("#bo-inv-est").value || null }, "Questionnaire created — now send them the link"));
+    on("#bo-inv-create", () => act({ action: "invite", channel: root.querySelector("#bo-inv-channel").value, estimatedPublishDate: root.querySelector("#bo-inv-est").value || null }, "Questionnaire created - now send them the link"));
     on("#bo-copy-link", async () => { await navigator.clipboard.writeText(boQuestionnaireLink(c)); boToast("Link copied"); });
     on("#bo-revoke", () => act({ action: "revokeLink", revoked: !c.linkRevoked }, c.linkRevoked ? "Link restored" : "Link revoked"));
 
@@ -592,7 +592,7 @@ async function initBackofficePreview() {
       if (data.deleted) { location.href = "candidates.html"; return null; }
       c = data.candidate; render(); if (msg) boToast(msg); return data;
     } catch (err) {
-      boToast(({ slug_taken: "That URL is already taken.", lock_first: "Lock the interview first.", missing_schedule: "Pick a schedule date/time first." })[err.message] || "That didn't work — try again.");
+      boToast(({ slug_taken: "That URL is already taken.", lock_first: "Lock the interview first.", missing_schedule: "Pick a schedule date/time first." })[err.message] || "That didn't work - try again.");
       return null;
     }
   }
@@ -600,12 +600,12 @@ async function initBackofficePreview() {
   function render() {
     const pub = c.publish, p = c.preview, live = c.status === "published", scheduled = c.status === "scheduled";
     const est = (c.invitation && c.invitation.estimatedPublishDate) || "";
-    document.title = `Preview — ${c.profile.name} — ProductMoat`;
+    document.title = `Preview - ${c.profile.name} - ProductMoat`;
     bar.innerHTML = `
       <div class="wrap pv-inner">
         <div class="pv-top">
           <div>
-            <span class="pv-tag">${live ? "LIVE" : scheduled ? "SCHEDULED" : "PREVIEW — NOT PUBLIC"}</span>
+            <span class="pv-tag">${live ? "LIVE" : scheduled ? "SCHEDULED" : "PREVIEW - NOT PUBLIC"}</span>
             ${boPill(c.status)}
             <span class="pv-url">${boEscapeHTML(location.origin)}<strong>/interview/${boEscapeHTML(p.category)}/${boEscapeHTML(p.slug)}</strong></span>
             ${live ? `<a class="bracket-link" href="${boEscapeHTML(p.url)}" target="_blank" rel="noopener">[ View live ]</a>` : ""}
@@ -644,7 +644,7 @@ async function initBackofficePreview() {
               <input class="bo-input" id="pv-photo" value="${boEscapeHTML(c.profile.photo || "")}"></label>
           </div>
           <div class="pv-field pv-wide">
-            <label class="bo-lbl">Foreword <span class="pv-help">Your editorial intro (optional — the section is hidden if empty)</span>
+            <label class="bo-lbl">Foreword <span class="pv-help">Your editorial intro (optional - the section is hidden if empty)</span>
               <textarea class="bo-input" id="pv-foreword" rows="3">${boEscapeHTML(pub.foreword)}</textarea></label>
           </div>
         </div>
@@ -694,8 +694,8 @@ async function initBackofficePreview() {
       if (!(await saveFields())) return;
       await act({ action: "publish", mode: "now" }, "Published");
     });
-    on("#pv-unschedule", () => act({ action: "unpublish" }, "Schedule cancelled — back in preview mode"));
-    on("#pv-unpublish", () => { if (window.confirm("Take this interview offline and return it to preview? It stays locked, so you can review, edit the details, or reschedule it.")) act({ action: "unpublish" }, "Unpublished — back in preview mode"); });
+    on("#pv-unschedule", () => act({ action: "unpublish" }, "Schedule cancelled - back in preview mode"));
+    on("#pv-unpublish", () => { if (window.confirm("Take this interview offline and return it to preview? It stays locked, so you can review, edit the details, or reschedule it.")) act({ action: "unpublish" }, "Unpublished - back in preview mode"); });
     on("#pv-delete", () => { if (window.confirm(`Delete ${c.profile.name}'s interview and candidate record permanently? This can't be undone.`)) act({ action: "delete" }); });
   }
 

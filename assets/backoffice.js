@@ -1,8 +1,8 @@
-// ProductMoat Backoffice — login gate + shared table helpers, profiles and map submissions
+// ProductMoat Backoffice - login gate + shared table helpers, profiles and map submissions
 // (the candidate pipeline lives in backoffice-candidates.js)
 //
 // Login is real LinkedIn OAuth (same app as the public Apply form's verification
-// gate), checked server-side against an allow-list — see api/backoffice-callback.js.
+// gate), checked server-side against an allow-list - see api/backoffice-callback.js.
 // The session itself is an HttpOnly signed cookie; middleware.js enforces access to
 // the dashboard pages at the edge, before they're ever served, so this file's own
 // checks are for display/UX (who's logged in, wiring sign-out) rather than the
@@ -87,7 +87,7 @@ function initBackofficeLogin() {
     history.replaceState(null, "", window.location.pathname);
     error.textContent = bo === "unauthorized"
       ? "This LinkedIn account isn't authorized for backoffice access."
-      : "LinkedIn sign-in didn't go through — try again.";
+      : "LinkedIn sign-in didn't go through - try again.";
     error.hidden = false;
   }
 
@@ -111,7 +111,7 @@ function boFocusLabel(tag) {
     fintech: "Fintech", platform: "Platform & Infra", marketplace: "Marketplace",
     health: "Healthtech", leadership: "Product Leadership", other: "Other"
   };
-  return labels[tag] || tag || "—";
+  return labels[tag] || tag || "-";
 }
 
 function boStatusSelect(id, currentStatus, options) {
@@ -151,7 +151,7 @@ function boPaginationControlsHTML(tableKey, page, totalPages, total, pageSize) {
     </div>
     <div class="bo-page-nav">
       <button type="button" class="bo-page-btn" data-page-nav="${tableKey}" data-dir="prev"${page <= 1 ? " disabled" : ""}>&larr; Prev</button>
-      <span class="bo-page-info">${start}&ndash;${end} of ${total}</span>
+      <span class="bo-page-info">${start}-${end} of ${total}</span>
       <button type="button" class="bo-page-btn" data-page-nav="${tableKey}" data-dir="next"${page >= totalPages ? " disabled" : ""}>Next &rarr;</button>
     </div>
   `;
@@ -225,7 +225,7 @@ function boWireRowActions(rerender) {
 }
 
 // ---------- Profiles page ----------
-// Reads the real, published dataset (assets/people-data.js) — not demo data, so no
+// Reads the real, published dataset (assets/people-data.js) - not demo data, so no
 // DEMO badge, status, or remove/clear actions here. Add/edit/remove a profile by
 // editing that file directly.
 
@@ -255,10 +255,10 @@ function boRenderProfiles() {
       <td>${boEscapeHTML(p.role)}<br><span class="bo-cell-dim">${boEscapeHTML(p.company)}</span></td>
       <td>${boEscapeHTML(p.location)}</td>
       <td>${boEscapeHTML(boFocusLabel(p.focusTag))}</td>
-      <td>${p.yearsExperience != null ? `${boEscapeHTML(p.yearsExperience)} yrs` : "—"}</td>
+      <td>${p.yearsExperience != null ? `${boEscapeHTML(p.yearsExperience)} yrs` : "-"}</td>
       <td>${questionCount}</td>
       <td>${boEscapeHTML(p.publishedDate)}</td>
-      <td>${p.links && p.links.linkedin ? `<a class="bracket-link" href="${boEscapeHTML(p.links.linkedin)}" target="_blank" rel="noopener">[ Profile ]</a>` : "—"}</td>
+      <td>${p.links && p.links.linkedin ? `<a class="bracket-link" href="${boEscapeHTML(p.links.linkedin)}" target="_blank" rel="noopener">[ Profile ]</a>` : "-"}</td>
       <td><a class="bracket-link" href="${boEscapeHTML(`/interview/${p.focusTag === "design" ? "productux" : "productmanagement"}/${encodeURIComponent(p.slug)}`)}" target="_blank" rel="noopener">[ View ]</a></td>
     </tr>
   `;
@@ -273,7 +273,7 @@ async function initBackofficeProfiles() {
 
 // ---------- Map submissions page ----------
 // Unlike Applications/Recommendations (dummy client-side data with localStorage
-// overrides), this is real data — read and written via api/map-submissions.js,
+// overrides), this is real data - read and written via api/map-submissions.js,
 // backed by Vercel Blob. Approving here is what makes a pin show up on the
 // public globe (api/map-people.js only returns status:"approved" records).
 
@@ -307,8 +307,8 @@ function boRenderMapSubmissions() {
       <td>${boMapAvatarHTML(s)}</td>
       <td class="bo-cell-strong">${boEscapeHTML(s.name)}</td>
       <td>${boEscapeHTML(s.email)}</td>
-      <td>${boEscapeHTML(s.role) || "—"}<br><span class="bo-cell-dim">${boEscapeHTML(s.company)}</span></td>
-      <td>${boEscapeHTML([s.city, s.country].filter(Boolean).join(", ")) || "—"}<br><span class="bo-cell-dim">${s.lat.toFixed(2)}, ${s.lng.toFixed(2)}</span></td>
+      <td>${boEscapeHTML(s.role) || "-"}<br><span class="bo-cell-dim">${boEscapeHTML(s.company)}</span></td>
+      <td>${boEscapeHTML([s.city, s.country].filter(Boolean).join(", ")) || "-"}<br><span class="bo-cell-dim">${s.lat.toFixed(2)}, ${s.lng.toFixed(2)}</span></td>
       <td>${boEscapeHTML(new Date(s.submittedAt).toLocaleDateString())}</td>
       <td>${boMapStatusBadge(s.status)}</td>
       <td class="bo-col-actions">${boMapActions(s)}</td>
@@ -336,7 +336,7 @@ async function boSetMapSubmissionStatus(id, status) {
     submission.status = status;
   } catch (err) {
     console.error("Failed to update map submission status:", err);
-    window.alert("Couldn't update that pin — please try again.");
+    window.alert("Couldn't update that pin - please try again.");
   }
   boRenderMapSubmissions();
 }
@@ -362,7 +362,7 @@ function boOpenMapEditor(id) {
   dlg.setAttribute("aria-label", `Edit ${s.name}'s pin`);
   dlg.innerHTML = `
     <div class="bo-modal-card">
-      <h3>Edit pin — ${boEscapeHTML(s.name)}</h3>
+      <h3>Edit pin - ${boEscapeHTML(s.name)}</h3>
       <p class="bo-section-note">Drag the pin, or click the map, to move it.</p>
       <div class="bo-editor-map" id="bo-editor-map"></div>
       <p class="bo-cell-dim" id="bo-editor-coords"></p>
@@ -411,7 +411,7 @@ function boOpenMapEditor(id) {
       boRenderMapSubmissions();
     } catch (err) {
       console.error("Failed to save pin:", err);
-      status.textContent = "Couldn't save — please try again.";
+      status.textContent = "Couldn't save - please try again.";
     }
   });
 }

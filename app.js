@@ -1,4 +1,4 @@
-/* ProductMoat — interactive globe of product managers */
+/* ProductMoat - interactive globe of product managers */
 
 // ---------- Geocoding ----------
 
@@ -27,7 +27,7 @@ function jitter(index, coords) {
 }
 
 // ---------- Avatars ----------
-// Flat ink-on-paper medallions (see .person-avatar / .sp-avatar-initials in style.css) —
+// Flat ink-on-paper medallions (see .person-avatar / .sp-avatar-initials in style.css) -
 // no per-person color, consistent with the rest of the site's monochrome system.
 
 function initials(name) {
@@ -76,7 +76,7 @@ function interviewToPersonShape(p) {
 
 // ---------- Merge in approved "Put yourself on the map" submissions ----------
 // Community pins (join-map.html -> api/join-map.js) only reach the globe after
-// a backoffice reviewer approves them — api/map-people.js only ever returns
+// a backoffice reviewer approves them - api/map-people.js only ever returns
 // status:"approved" records. Fails open to [] so the globe still renders the
 // static dataset if this fetch is slow, blocked, or Blob storage isn't set up.
 
@@ -94,7 +94,7 @@ async function fetchCommunityPeople() {
 // ---------- Data → GeoJSON ----------
 // Populated by initGlobe() once the community people fetch resolves; declared
 // here (rather than inside initGlobe) so the functions below that close over
-// them — setupMapLayers, syncMarkers, showSidePanel, etc. — can reference the
+// them - setupMapLayers, syncMarkers, showSidePanel, etc. - can reference the
 // current values whenever they actually run (all of which is after initGlobe
 // has populated them).
 
@@ -111,7 +111,7 @@ function buildFeatures() {
   ALL_PEOPLE.forEach((person, i) => {
     const base = resolveCoords(person);
     if (!base) {
-      console.warn(`No coordinates found for ${person.name} — skipped.`);
+      console.warn(`No coordinates found for ${person.name} - skipped.`);
       return;
     }
     if (person.country) countries.add(person.country.trim().toLowerCase());
@@ -154,7 +154,7 @@ let map; // created in initGlobe(), once the community-people fetch resolves
 
 const activeMarkers = new Map(); // person index → maplibregl.Marker
 
-// ---------- Layer setup — runs on every style.load ----------
+// ---------- Layer setup - runs on every style.load ----------
 
 async function handleClusterClick(e) {
   const feature = map.queryRenderedFeatures(e.point, { layers: ["clusters"] })[0];
@@ -253,7 +253,7 @@ function setupMapLayers() {
   map.on("mouseenter", "clusters", handleClusterEnter);
   map.on("mouseleave", "clusters", handleClusterLeave);
 
-  // Map movement listeners — add once only.
+  // Map movement listeners - add once only.
   if (!mapListenersAdded) {
     map.on("move", syncMarkers);
     map.on("moveend", syncMarkers);
@@ -317,7 +317,7 @@ function closeSidePanel() {
 // Deliberately uses querySourceFeatures (reads the loaded tile cache) rather than
 // queryRenderedFeatures (reads the WebGL render buffer): in globe projection,
 // queryRenderedFeatures reliably returns zero results for viewport/bbox-style queries
-// (point queries, like the cluster click handler's, are unaffected) — see MapLibre's
+// (point queries, like the cluster click handler's, are unaffected) - see MapLibre's
 // globe projection limitations. querySourceFeatures isn't scoped to the current
 // viewport or reliably screen-accurate at low globe zoom, so results are just deduped
 // by index; the dataset is small enough that mounting a marker per unclustered person

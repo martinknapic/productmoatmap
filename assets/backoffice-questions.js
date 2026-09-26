@@ -1,4 +1,4 @@
-// ProductMoat Backoffice — question editor
+// ProductMoat Backoffice - question editor
 //
 // Used twice: backoffice/questions.html edits the standard question bank (what new invitations
 // start from), and backoffice/candidate.html edits one person's own copy of it. Same UI both
