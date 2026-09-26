@@ -52,8 +52,9 @@
 }
 .hero-cta .btn:first-child { border-right: none; }
 
-.hero-side .label-mono { margin-bottom: 12px; }
-.hero-side p {
+.hero-about { margin-top: 40px; }
+.hero-about .label-mono { margin-bottom: 12px; }
+.hero-about p {
   font-size: 17px;
   line-height: 1.65;
   color: var(--ink-body);
@@ -66,7 +67,6 @@
   width: 100%;
   max-width: 480px;
   height: 320px;
-  margin-top: 24px;
   border: 0;
   background: transparent;
 }

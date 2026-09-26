@@ -79,38 +79,38 @@ ul { list-style: none; }
   gap: 12px;
 }
 
-/* ProductMoat logo: orange frame (logo-frame.svg) with the ink-coloured square drawn on top,
+/* ProductMoat logo: gradient frame (logo-frame.png) with the ink-coloured square drawn on top,
    and the wordmark as an ink-coloured mask (logo-word.svg), so both follow the light/dark theme. */
 .logo-mark {
   position: relative;
-  width: 30px;
-  height: 30px;
-  background: url("logo-frame.svg") no-repeat center / contain;
+  width: 32px;
+  aspect-ratio: 161 / 163;
+  background: url("logo-frame.png") no-repeat center / 100% 100%;
   flex-shrink: 0;
 }
 .logo-mark::after {
   content: "";
   position: absolute;
-  left: 21.875%;
-  top: 21.875%;
-  width: 56.25%;
-  height: 56.25%;
+  left: 23.6%;
+  top: 23.9%;
+  width: 52.8%;
+  height: 52.1%;
   background: var(--ink);
 }
 
 .logo-word {
-  width: 130.5px;
-  height: 18px;
+  width: 140.5px;
+  aspect-ratio: 707 / 76;
   background: var(--ink);
-  -webkit-mask: url("logo-word.svg") no-repeat center / contain;
-  mask: url("logo-word.svg") no-repeat center / contain;
+  -webkit-mask: url("logo-word.svg") no-repeat center / 100% 100%;
+  mask: url("logo-word.svg") no-repeat center / 100% 100%;
   flex-shrink: 0;
 }
 
 @media (max-width: 480px) {
   .logo { gap: 9px; }
-  .logo-mark { width: 26px; height: 26px; }
-  .logo-word { width: 108.75px; height: 15px; }
+  .logo-mark { width: 28px; }
+  .logo-word { width: 123px; }
 }
 
 .nav-links {
