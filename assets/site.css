@@ -20,6 +20,9 @@
 
 .hero-side {
   padding: 0 0 56px 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* signup embed sits at the vertical middle of the hero */
 }
 
 .eyebrow {
@@ -58,18 +61,22 @@
   font-size: 17px;
   line-height: 1.65;
   color: var(--ink-body);
-  max-width: 34ch;
+  max-width: none;
 }
 
-/* Substack signup embed (the compact one: a card with just the email field) */
+/* Substack signup embed. Transparent, so it shows the page background. color-scheme: light keeps
+   the browser from giving the frame an opaque backing when the site is in dark mode; there the
+   embed's dark text is flipped to light instead. */
 .hero-subscribe {
   display: block;
   width: 100%;
   max-width: 480px;
   height: 150px;
-  border: 1px solid #eee;
-  background: #fff;
+  border: 0;
+  background: transparent;
+  color-scheme: light;
 }
+body:not(.light) .hero-subscribe { filter: invert(1) hue-rotate(180deg); }
 
 .stats-row {
   display: flex;
@@ -1257,7 +1264,6 @@ footer {
   .hero-inner { grid-template-columns: 1fr; }
   .hero-main { border-right: none; padding-right: 0; padding-bottom: 32px; }
   .hero-side { padding-left: 0; border-top: 1px solid var(--line-soft); padding-top: 32px; }
-  .hero-subscribe { height: 170px; } /* the fine print wraps onto a third line when narrow */
   .featured-card { grid-template-columns: 1fr; }
   .featured-visual { min-height: 180px; border-right: none; border-bottom: 1px solid var(--line); }
   .featured-visual .avatar-big { width: 62px; height: 62px; font-size: 22px; }
