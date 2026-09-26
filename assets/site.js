@@ -765,46 +765,6 @@ const FOCUS_LABELS = {
 
 let activeFilter = "all";
 
-function renderStats() {
-  const el = document.getElementById("stats-row");
-  if (!el) return;
-  const countries = new Set(INTERVIEWS.map(p => p.location.split(",").pop().trim())).size;
-  el.innerHTML = `
-    <div><div class="stat-num">${INTERVIEWS.length}</div><div class="stat-label">Conversations published</div></div>
-    <div><div class="stat-num">${countries}</div><div class="stat-label">Countries represented</div></div>
-    <div><div class="stat-num">Weekly</div><div class="stat-label">New interview cadence</div></div>
-  `;
-}
-
-function renderFeatured() {
-  const el = document.getElementById("featured-slot");
-  if (!el) return;
-  const ordered = [...INTERVIEWS].sort((a, b) => b.publishedDate.localeCompare(a.publishedDate));
-  const p = ordered[0];
-  const visualHTML = p.photo
-    ? `<div class="featured-visual has-photo">
-         <span class="featured-photo-badge">01</span>
-         <div class="featured-photo-wrap"><img class="featured-photo" src="${p.photo}" alt="${escapeHTML(p.name)}"></div>
-       </div>`
-    : `<div class="featured-visual">
-         <span class="index-mark">01</span>
-         <div class="avatar-big">${initials(p.name)}</div>
-       </div>`;
-
-  el.innerHTML = `
-    <a class="featured-card" href="${interviewURL(p)}">
-      ${visualHTML}
-      <div class="featured-body">
-        <span class="tag">Latest conversation</span>
-        <h3>${escapeHTML(p.name)}</h3>
-        <div class="featured-role">${escapeHTML(p.role)} at ${escapeHTML(p.company)} &middot; ${escapeHTML(p.location)}</div>
-        <p class="featured-quote">&ldquo;${escapeHTML(p.pullQuote)}&rdquo;</p>
-        <span class="featured-cta">Read the interview <span>&rarr;</span></span>
-      </div>
-    </a>
-  `;
-}
-
 function renderChips() {
   const el = document.getElementById("chip-row");
   if (!el) return;
@@ -843,8 +803,6 @@ function renderGrid() {
 }
 
 function initHome() {
-  renderStats();
-  renderFeatured();
   renderChips();
   renderGrid();
 }

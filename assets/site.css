@@ -18,13 +18,6 @@
   border-right: 1px solid var(--line-soft);
 }
 
-.hero-side {
-  padding: 0 0 56px 32px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center; /* signup embed sits at the vertical middle of the hero */
-}
-
 .eyebrow {
   display: flex;
   align-items: center;
@@ -64,31 +57,6 @@
   max-width: none;
 }
 
-/* Substack signup embed. Transparent, so it shows the page background. color-scheme: light keeps
-   the browser from giving the frame an opaque backing when the site is in dark mode; there the
-   embed's dark text is flipped to light instead. */
-.hero-subscribe {
-  display: block;
-  width: 100%;
-  max-width: 480px;
-  height: 150px;
-  border: 0;
-  background: transparent;
-  color-scheme: light;
-}
-body:not(.light) .hero-subscribe { filter: invert(1) hue-rotate(180deg); }
-
-.stats-row {
-  display: flex;
-  flex-wrap: wrap;
-}
-
-.stats-row > div {
-  padding: 22px 32px;
-  border-right: 1px solid var(--line-soft);
-}
-.stats-row > div:last-child { border-right: none; }
-
 .stat-num {
   font-size: 26px;
   font-weight: 700;
@@ -126,130 +94,6 @@ body:not(.light) .hero-subscribe { filter: invert(1) hue-rotate(180deg); }
   font-size: 15.5px;
   max-width: 40ch;
 }
-
-/* ---------- Featured card ---------- */
-
-.featured-card {
-  display: grid;
-  grid-template-columns: 1fr 1.15fr;
-  border: 1px solid var(--line);
-}
-
-.featured-visual {
-  position: relative;
-  min-height: 320px;
-  background: var(--paper-alt);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 28px;
-  border-right: 1px solid var(--line);
-  overflow: hidden;
-}
-
-.featured-visual .index-mark {
-  position: absolute;
-  top: -0.15em;
-  right: 10px;
-  font-size: clamp(120px, 14vw, 200px);
-  font-weight: 700;
-  line-height: 1;
-  color: transparent;
-  -webkit-text-stroke: 1px var(--line-soft);
-  user-select: none;
-}
-
-.featured-visual .avatar-big {
-  width: 76px;
-  height: 76px;
-  font-size: 26px;
-  position: relative;
-  z-index: 1;
-}
-
-.featured-visual.has-photo { padding: 0; }
-
-.featured-photo-wrap {
-  position: absolute;
-  inset: 0;
-}
-
-.featured-photo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: top center;
-}
-
-.featured-photo-badge {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  z-index: 1;
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  padding: 5px 11px;
-}
-
-.featured-body {
-  padding: 40px 40px 40px 36px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.tag {
-  display: inline-flex;
-  align-self: flex-start;
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--ink-dim);
-  border: 1px solid var(--line-soft);
-  padding: 4px 10px;
-  margin-bottom: 20px;
-}
-
-.featured-body h3 {
-  font-size: clamp(22px, 2.2vw, 30px);
-  font-weight: 700;
-  line-height: 1.15;
-}
-
-.featured-role {
-  margin-top: 10px;
-  color: var(--ink-body);
-  font-size: 16px;
-}
-
-.featured-quote {
-  margin-top: 24px;
-  font-size: 19px;
-  line-height: 1.5;
-  border-left: 2px solid var(--accent);
-  padding-left: 18px;
-}
-
-.featured-cta {
-  margin-top: 26px;
-  font-family: var(--font-mono);
-  font-size: 13.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.featured-cta span { transition: transform 0.15s ease; }
-.featured-card:hover .featured-cta span { transform: translateX(4px); }
-.featured-card:hover { border-color: var(--accent); }
 
 /* ---------- Filter chips ---------- */
 
@@ -1263,12 +1107,6 @@ footer {
 @media (max-width: 760px) {
   .hero-inner { grid-template-columns: 1fr; }
   .hero-main { border-right: none; padding-right: 0; padding-bottom: 32px; }
-  .hero-side { padding-left: 0; border-top: 1px solid var(--line-soft); padding-top: 32px; }
-  .featured-card { grid-template-columns: 1fr; }
-  .featured-visual { min-height: 180px; border-right: none; border-bottom: 1px solid var(--line); }
-  .featured-visual .avatar-big { width: 62px; height: 62px; font-size: 22px; }
-  .featured-visual .index-mark { font-size: 90px; }
-  .featured-body { padding: 28px; }
   .wrap { padding: 0 20px; }
   /* .wrap's shorthand padding above would zero this section's vertical padding */
   .recommend-callout-inner { padding: 24px 20px; }
@@ -1294,16 +1132,6 @@ footer {
     justify-content: center;
     white-space: nowrap;
   }
-  /* stay a single compact 3-up row on phones so the interviews start sooner */
-  .stats-row { flex-wrap: nowrap; }
-  .stats-row > div {
-    flex: 1 1 0;
-    min-width: 0;
-    padding: 14px 10px;
-    border-right: 1px solid var(--line-soft);
-  }
-  .stats-row > div:first-child { padding-left: 0; }
-  .stats-row > div:last-child { padding-right: 0; border-right: none; }
   .stat-num { font-size: 20px; }
   .stat-label { margin-top: 2px; font-size: 9.5px; letter-spacing: 0.03em; line-height: 1.35; }
   .meta-item { border-right: none; margin-right: 0; padding-right: 0; width: 50%; }

@@ -25,6 +25,26 @@ corners — a Swiss/editorial system (system Helvetica/Arial + a single red acce
 specifically to avoid the generic "AI-generated site" look. Load `assets/swiss.css` before
 any page-specific stylesheet.
 
+## Hero graphics (`assets/hero-fx.js` + `assets/hero-fx.css`)
+
+The homepage hero has an animated graphic behind the headline. Five interchangeable concepts,
+all built from the logo's own vocabulary (open square frame, orange → magenta → violet → blue
+gradient, hairlines, square pixels, mono labels):
+
+| `?fx=` | Concept |
+|--------|---------|
+| `spotlight` (default) | Showcases the newest interview (latest `publishedDate` in `INTERVIEWS`): its portrait in a frame modelled on the logo's open bracket, duotoned in the gradient (colour on hover), tilting with the cursor, with frames radiating out behind it, a spinning "Read the interview" badge, the pull quote, and a link to the article. Falls back to initials if there's no `photo`. |
+| `globe` | Dot-matrix globe; every interviewee (from `INTERVIEWS`, via `lat`/`lng`) is a pin linked by travelling arcs. Drag to rotate, hover a pin for the name card, click to open the interview. Land mask baked into `assets/hero-land.js`. |
+| `moat` | Fly-through tunnel of open logo frames converging on the logo; reacts to the cursor. |
+| `print` | WebGL riso/halftone field in the logo gradient; the cursor swells the dots. `?shape=dot` for round dots. |
+| `faces` | Tilted 3D wall of interviewee portraits (`photo`), duotoned in the gradient, colour on hover. |
+
+`?fx=off` hides it; add `?lab` (e.g. `/?lab&fx=print`) for an on-page switcher to compare them.
+To change the default, edit `DEFAULT_FX` at the top of `hero-fx.js`; to remove the effect
+entirely, delete the `#hero-fx` div and the two `hero-fx.*` includes in `index.html`.
+Everything follows the light/dark theme, pauses when off-screen or the tab is hidden, holds a
+single still frame under `prefers-reduced-motion`, and becomes a band above the copy on phones.
+
 ## Updating interview content
 
 Edit `assets/people-data.js`. Each entry is one interviewee — see the comment at the top

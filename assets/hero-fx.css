@@ -1,0 +1,291 @@
+/* ProductMoat — hero graphics layer (see hero-fx.js). Tokens come from swiss.css. */
+
+/* The stage is the hero: headline on the left, the graphic behind/beside it. */
+.hero { padding: 0; }
+
+.hero-stage {
+  position: relative;
+  overflow: hidden;
+  padding: 64px 0 0;
+}
+
+.hero-fx {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+.hero-fx[hidden] { display: none; }
+.hero-fx canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+.hero-stage .hero-inner {
+  position: relative;
+  z-index: 1;
+  /* fill the fold: viewport - nav - stats row, within sane limits */
+  min-height: clamp(440px, calc(100svh - 90px - 64px), 780px);
+  pointer-events: none; /* let the graphics receive drags/clicks in the gaps */
+}
+.hero-stage .hero-main > *,
+.hero-stage .hero-side > * { pointer-events: auto; }
+
+.hero-stage.fx-spotlight .hero-main,
+.hero-stage.fx-moat .hero-main,
+.hero-stage.fx-globe .hero-main,
+.hero-stage.fx-print .hero-main,
+.hero-stage.fx-faces .hero-main { border-right: none; }
+
+.hero-stage .hero-main { display: flex; flex-direction: column; justify-content: center; padding-bottom: 56px; }
+
+/* --- per-concept edge treatment --- */
+.hero-stage.fx-spotlight .hero-fx { -webkit-mask-image: linear-gradient(90deg, transparent 0, transparent 40%, #000 62%); mask-image: linear-gradient(90deg, transparent 0, transparent 40%, #000 62%); }
+.hero-stage.fx-moat .hero-fx,
+.hero-stage.fx-print .hero-fx {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, transparent 26%, #000 58%);
+  mask-image: linear-gradient(90deg, transparent 0, transparent 26%, #000 58%);
+}
+
+/* --- 04 faces: tilted portrait wall --- */
+.faces-scene {
+  --rx: 52deg;
+  --rz: -30deg;
+  position: absolute;
+  top: -24%;
+  left: 42%;
+  right: -22%;
+  height: 150%;
+  perspective: 1500px;
+  perspective-origin: 50% 40%;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, transparent 2%, #000 30%), linear-gradient(0deg, transparent 0, #000 24%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent 0, transparent 2%, #000 30%), linear-gradient(0deg, transparent 0, #000 24%);
+  mask-composite: intersect;
+}
+.faces-plane {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  gap: 22px;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--rx)) rotateZ(var(--rz));
+  transition: transform 0.4s ease-out;
+  pointer-events: auto;
+}
+.faces-col { flex: 0 0 168px; height: 100%; overflow: visible; margin-top: var(--off); }
+.faces-track {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  animation: faces-scroll var(--dur) linear infinite;
+  animation-direction: var(--dir);
+}
+.faces-plane:hover .faces-track { animation-play-state: paused; }
+@keyframes faces-scroll { to { transform: translateY(-50%); } }
+
+.face {
+  position: relative;
+  display: block;
+  flex: 0 0 auto;
+  aspect-ratio: 4 / 5;
+  border: 1px solid var(--line);
+  background: var(--paper-alt);
+  overflow: hidden;
+  isolation: isolate;
+}
+.face img { width: 100%; height: 100%; object-fit: cover; object-position: top center; filter: grayscale(1) contrast(1.08); }
+.face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #f95e25 0%, #ec0680 32%, #b329d7 58%, #4252ed 82%, #109df7 100%);
+  mix-blend-mode: color;
+  opacity: 0.92;
+  transition: opacity 0.35s ease;
+}
+.face:hover::after { opacity: 0; }
+.face-idx {
+  position: absolute; top: 8px; left: 8px; z-index: 2;
+  font: 700 11px/1 var(--font-mono); letter-spacing: 0.06em; color: #fff;
+  padding: 4px 6px; background: rgba(0, 0, 0, 0.55);
+}
+.face-cap {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
+  display: flex; flex-direction: column; gap: 2px; padding: 8px 10px;
+  font-family: var(--font-mono); font-size: 11px; line-height: 1.25;
+  background: color-mix(in srgb, var(--paper) 88%, transparent); color: var(--ink);
+  border-top: 1px solid var(--line);
+}
+.face-cap b { font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
+.face-cap i { font-style: normal; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+
+
+/* --- 05 spotlight: the latest interview --- */
+.hero-stage .hero-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0 48px 32px;
+}
+.spot { --rx: 0deg; --ry: 0deg; --px: 0; --py: 0; --gx: 50%; --gy: 30%; --spot-h: clamp(290px, calc(100svh - 90px - 64px - 48px - 150px), 480px); --t: 16px; --pad: 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 30px; }
+
+.spot-stage { position: relative; height: var(--spot-h); aspect-ratio: 4 / 5; margin: var(--t); perspective: 1100px; }
+
+.spot-card {
+  position: absolute; inset: 0; display: block;
+  padding: var(--pad); background: var(--paper);
+  transform-style: preserve-3d;
+  transform: rotateX(var(--rx)) rotateY(var(--ry));
+  transition: transform 0.35s cubic-bezier(.2, .7, .2, 1);
+  animation: spot-in 1.1s cubic-bezier(.16, .84, .24, 1) both;
+  box-shadow: 0 24px 60px -20px color-mix(in srgb, var(--ink) 40%, transparent);
+}
+.spot-card:hover { transition-duration: 0.12s; }
+
+/* the logo's open bracket, drawn around the portrait */
+.spot-frame {
+  position: absolute; inset: calc(var(--t) * -1); pointer-events: none;
+  background: linear-gradient(135deg, #f95e25 0%, #ec0680 28%, #b329d7 52%, #4252ed 78%, #109df7 100%);
+  clip-path: polygon(0 72%, 0 100%, 100% 100%, 100% 0, 0 0, 0 41%, var(--t) 41%, var(--t) var(--t), calc(100% - var(--t)) var(--t), calc(100% - var(--t)) calc(100% - var(--t)), var(--t) calc(100% - var(--t)), var(--t) 72%);
+  transform: translateZ(-1px);
+  animation: spot-frame 1.2s 0.15s cubic-bezier(.16, .84, .24, 1) both;
+}
+
+.spot-photo { position: absolute; inset: var(--pad); overflow: hidden; background: var(--paper-alt); }
+.spot-photo img {
+  width: 100%; height: 100%; object-fit: cover; object-position: top center;
+  transform: translate(calc(var(--px) * -10px), calc(var(--py) * -8px)) scale(1.08);
+  transition: transform 0.35s cubic-bezier(.2, .7, .2, 1);
+  animation: spot-photo 1.6s cubic-bezier(.16, .84, .24, 1) both;
+}
+.spot-initials { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; font: 700 96px/1 var(--font-sans); color: var(--ink); }
+.spot-tone, .spot-glare { position: absolute; inset: var(--pad); pointer-events: none; }
+.spot-tone {
+  background: linear-gradient(135deg, #f95e25 0%, #ec0680 32%, #b329d7 58%, #4252ed 82%, #109df7 100%);
+  mix-blend-mode: color; opacity: 0.88; transition: opacity 0.5s ease;
+}
+.spot-card:hover .spot-tone { opacity: 0; }
+.spot-glare { background: radial-gradient(circle at var(--gx) var(--gy), rgba(255, 255, 255, 0.5), transparent 46%); mix-blend-mode: soft-light; }
+
+.spot-chip {
+  position: absolute; z-index: 2; top: calc(var(--pad) + 12px); left: calc(var(--pad) + 12px);
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px;
+  font: 700 10.5px/1 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase;
+  color: #fff; background: rgba(10, 10, 10, 0.62); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  transform: translateZ(40px); animation: spot-up 0.8s 0.9s cubic-bezier(.16, .84, .24, 1) both;
+}
+.spot-chip i { width: 7px; height: 7px; background: #ff5b3f; animation: spot-blink 1.6s steps(2) infinite; }
+
+.spot-cap {
+  position: absolute; z-index: 2; left: var(--pad); right: var(--pad); bottom: var(--pad);
+  display: flex; flex-direction: column; gap: 3px; padding: 16px 16px 14px;
+  color: var(--ink); font-family: var(--font-mono); font-size: 11px; line-height: 1.3; letter-spacing: 0.02em;
+  background: color-mix(in srgb, var(--paper) 90%, transparent); border-top: 1px solid var(--line);
+  transform: translateZ(28px); animation: spot-up 0.9s 1s cubic-bezier(.16, .84, .24, 1) both;
+}
+.spot-cap b { font: 700 clamp(19px, 1.7vw, 24px)/1.05 var(--font-sans); letter-spacing: -0.01em; margin-bottom: 4px; }
+.spot-cap i { font-style: normal; color: var(--ink-body); text-transform: uppercase; }
+.spot-cap em { font-style: normal; color: var(--ink-dim); text-transform: uppercase; }
+
+/* spinning "read the interview" badge, seated in the frame's gap like the logo's opening */
+.spot-badge {
+  position: absolute; z-index: 5; left: calc(var(--t) * -1 - 46px); top: 56.5%; width: 104px; height: 104px; margin-top: -52px;
+  display: flex; align-items: center; justify-content: center; border-radius: 50%;
+  background: var(--ink); color: var(--paper);
+  animation: spot-pop 0.9s 1.25s cubic-bezier(.3, 1.5, .5, 1) both;
+  transition: transform 0.3s cubic-bezier(.3, 1.6, .5, 1), background 0.2s ease;
+}
+.spot-badge svg { position: absolute; inset: 0; width: 100%; height: 100%; animation: spot-spin 16s linear infinite; }
+.spot-badge text { fill: currentColor; font: 700 9.5px var(--font-mono); letter-spacing: 0.05em; }
+.spot-arrow { font: 400 30px/1 var(--font-sans); transition: transform 0.3s ease; }
+.spot-badge:hover { background: var(--accent); color: #fff; transform: scale(1.1) rotate(-6deg); }
+.spot-badge:hover .spot-arrow { transform: translateX(4px); }
+
+.spot-quote {
+  display: block; max-width: 400px; padding-left: 14px; border-left: 2px solid var(--accent);
+  font-size: 15px; line-height: 1.5; color: var(--ink-body);
+  animation: spot-up 0.9s 1.35s cubic-bezier(.16, .84, .24, 1) both;
+}
+.spot-quote em { display: block; margin-top: 8px; font: 700 12px/1 var(--font-mono); font-style: normal; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink); border-bottom: 1px solid transparent; width: max-content; transition: color 0.15s ease; }
+.spot-quote:hover em { color: var(--accent); }
+
+@keyframes spot-in { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(-60px); } }
+@keyframes spot-frame { from { opacity: 0; transform: translateZ(-1px) scale(0.9); } to { opacity: 1; transform: translateZ(-1px) scale(1); } }
+@keyframes spot-photo { from { transform: scale(1.35); } }
+@keyframes spot-up { from { opacity: 0; transform: translateY(18px); } }
+@keyframes spot-pop { from { opacity: 0; transform: scale(0.3) rotate(-90deg); } }
+@keyframes spot-spin { to { transform: rotate(360deg); } }
+@keyframes spot-blink { 50% { opacity: 0.25; } }
+
+/* --- lab switcher (?lab) --- */
+.fx-lab {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  font: 600 11.5px/1 var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.fx-lab span { padding: 10px 12px; color: var(--ink-dim); border-right: 1px solid var(--line); }
+.fx-lab button { padding: 10px 12px; border-right: 1px solid var(--line-soft); color: var(--ink-body); }
+.fx-lab button:last-child { border-right: none; }
+.fx-lab button:hover { background: var(--paper-alt); }
+.fx-lab button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+
+/* --- small screens: graphics become a band above the copy --- */
+@media (max-width: 760px) {
+  .hero-stage { padding-top: 0; }
+  .hero-fx { position: relative; inset: auto; height: 280px; overflow: hidden; border-bottom: 1px solid var(--line-soft); }
+  .hero-stage .hero-inner { min-height: 0; padding-top: 36px; }
+  .hero-stage .hero-side { padding: 8px 0 44px; }
+  .hero-stage:not(.fx-spotlight) .hero-side:empty { display: none; }
+  .hero-stage .hero-main { padding-bottom: 32px; }
+  .hero-stage.fx-moat .hero-fx,
+  .hero-stage.fx-print .hero-fx { -webkit-mask-image: none; mask-image: none; }
+  .faces-scene {
+    top: -40%; left: -12%; right: -30%; height: 190%;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 22%); mask-image: linear-gradient(90deg, transparent 0, #000 22%);
+    -webkit-mask-composite: source-over; mask-composite: add;
+  }
+  .faces-col { flex-basis: 132px; }
+  .fx-lab { left: 8px; right: 8px; bottom: 8px; font-size: 10px; box-shadow: 3px 3px 0 var(--ink); }
+  .fx-lab span { display: none; }
+  .fx-lab button { flex: 1 1 0; padding: 9px 4px; }
+}
+
+/* spotlight on phones: portrait first, headline right under it; the rings sit behind the whole stage */
+@media (max-width: 760px) {
+  .hero-stage.fx-spotlight .hero-fx {
+    position: absolute; inset: 0; height: auto; border-bottom: 0;
+    -webkit-mask-image: linear-gradient(0deg, transparent 0, transparent 40%, #000 66%); mask-image: linear-gradient(0deg, transparent 0, transparent 40%, #000 66%);
+  }
+  .hero-stage.fx-spotlight { padding-top: 40px; }
+  .hero-stage.fx-spotlight .hero-inner { padding-top: 0; }
+  .hero-stage.fx-spotlight .hero-side { order: -1; padding: 8px 0 36px; }
+  .spot { --spot-h: min(340px, calc((100vw - 72px) * 1.25)); --t: 12px; --pad: 8px; gap: 22px; }
+  .spot-cap { padding: 10px 12px; }
+  .spot-cap em { display: none; }
+  .spot-cap b { font-size: 18px; margin-bottom: 2px; }
+  .spot-chip { font-size: 9.5px; padding: 5px 8px; }
+  .spot-badge { left: auto; right: -30px; top: auto; bottom: 26%; width: 84px; height: 84px; margin-top: 0; }
+  .spot-quote { max-width: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .faces-track, .spot-badge svg, .spot-chip i { animation: none; }
+  .spot-card, .spot-frame, .spot-photo img, .spot-chip, .spot-cap, .spot-badge, .spot-quote { animation: none; }
+}
