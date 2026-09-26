@@ -11,6 +11,7 @@ const routes = {
   "recommend": require("./_lib/routes/recommend"),
   "candidates": require("./_lib/routes/candidates"),
   "interview": require("./_lib/routes/interview"),
+  "interview-photo": require("./_lib/routes/interview-photo"),
   "my-interview": require("./_lib/routes/my-interview"),
   "published": require("./_lib/routes/published"),
   "question-bank": require("./_lib/routes/question-bank"),

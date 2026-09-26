@@ -45,6 +45,34 @@ entirely, delete the `#hero-fx` div and the two `hero-fx.*` includes in `index.h
 Everything follows the light/dark theme, pauses when off-screen or the tab is hidden, holds a
 single still frame under `prefers-reduced-motion`, and becomes a band above the copy on phones.
 
+## Featured photo on interviews
+
+Two different photos per person. The **small round profile picture** comes from LinkedIn
+(`profile.photo`, filled in at sign-in). The **featured photo** is uploaded by the person on
+their questionnaire (`interview.html`) and shown in the published interview directly above the
+"Your story" answer (question `q6`; if that question is removed from the bank, above the first
+answer).
+
+- **Questionnaire:** an upload placeholder sits in exactly that spot, above the story question.
+  Drag a file in or click; JPG, PNG or WebP. The browser resizes it (never upscales) to at most
+  1600 px wide and re-encodes it as JPEG (which also applies camera rotation and drops location
+  metadata), then it saves immediately, with Replace and Remove. Anything under 320 x 200 px is
+  refused. A photo narrower than the 760 px text column is kept at its own size, not stretched,
+  and the person is told so. Uploading clears an "I'm happy with this version" approval like any
+  other edit. When the interview is locked or published and there is no photo, the placeholder
+  is not shown.
+- **Published page and preview:** the photo is rendered only if there is one (`featuredPhoto` in
+  the public interview data): full text width, capped at its real pixel width. There is never an
+  empty placeholder there.
+- **Storage:** `api/_lib/common.js` (`savePhoto`, `readPhoto`, `deletePhoto`): a private blob
+  `interview-photos/<id>` plus a small `<id>.json` saying which candidate it belongs to. The
+  `<id>` is random and new on every upload, so the personal questionnaire link token never
+  appears in a public URL. `/api/interview-photo?id=` (`api/_lib/routes/interview-photo.js`,
+  reached through the `api/site.js` dispatcher so the function count doesn't grow) serves it:
+  anyone once the interview is live (cached for an hour in browsers, 5 minutes at the CDN), only
+  the owner and admins before that. Replacing or removing a photo deletes the old blobs, as does
+  deleting the candidate. Uploads are validated server-side too (type, magic bytes, 3 MB).
+
 ## Newsletter prompt on sign-up
 
 Every "Sign up / Sign in with LinkedIn" button (signup, apply, recommend, put yourself on the

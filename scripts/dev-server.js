@@ -26,8 +26,12 @@ const persist = () => {
 };
 
 const blobMock = {
-  async put(p, body) { store.set(p, String(body)); persist(); return { pathname: p }; },
-  async get(p) { return store.has(p) ? { stream: new Response(store.get(p)).body } : null; },
+  async put(p, body) { store.set(p, Buffer.isBuffer(body) ? "b64:" + body.toString("base64") : String(body)); persist(); return { pathname: p }; },
+  async get(p) {
+    if (!store.has(p)) return null;
+    const v = store.get(p);
+    return { stream: new Response(v.startsWith("b64:") ? Buffer.from(v.slice(4), "base64") : v).body }; // binary blobs (photos) are kept as base64
+  },
   async list({ prefix }) { return { blobs: [...store.keys()].filter(k => k.startsWith(prefix)).map(pathname => ({ pathname })) }; },
   async del(p) { store.delete(p); persist(); }
 };
@@ -79,7 +83,7 @@ http.createServer(async (req, res) => {
     }
     const file = path.join(ROOT, `${apiPath}.js`);
     if (!file.startsWith(path.join(ROOT, "api")) || path.basename(file).startsWith("_") || !fs.existsSync(file)) { res.writeHead(404); return res.end("{}"); }
-    let raw = ""; for await (const chunk of req) raw += chunk;
+    let raw = ""; for await (const chunk of req) raw += chunk; // (photo uploads arrive as base64 JSON, a few MB at most)
     let body; try { body = raw ? JSON.parse(raw) : undefined; } catch (err) { body = undefined; }
     const r = { method: req.method, headers: req.headers, query: Object.fromEntries(url.searchParams), body };
     const out = {

@@ -8,6 +8,46 @@
 
 const IV_MAX_ANSWER = 2000;
 
+// Featured photo (shown above the "your story" question). Resized in the browser, never upscaled.
+const IV_PHOTO_MAX_W = 1600;        // wider originals are scaled down to this
+const IV_PHOTO_MIN_W = 320;         // below this a photo isn't usable at all
+const IV_PHOTO_MIN_H = 200;
+const IV_PHOTO_FULL_W = 760;        // width of the text column on the published page: narrower photos are shown at their own size
+const IV_PHOTO_GOOD_W = 1200;       // sharp on large / high-density screens
+
+function ivLoadImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject({ code: "unreadable" }); };
+    img.src = url;
+  });
+}
+
+// File -> { dataUrl, width, height, originalWidth }. Scales down (never up) to IV_PHOTO_MAX_W and
+// re-encodes as JPEG, which also applies the camera's rotation and drops location metadata.
+async function ivPreparePhoto(file) {
+  if (!/^image\/(jpeg|png|webp)$/.test(file.type)) throw { code: "type" };
+  const img = await ivLoadImage(file);
+  const ow = img.naturalWidth, oh = img.naturalHeight;
+  if (ow < IV_PHOTO_MIN_W || oh < IV_PHOTO_MIN_H) throw { code: "small", width: ow };
+  const scale = Math.min(1, IV_PHOTO_MAX_W / ow);
+  const width = Math.round(ow * scale), height = Math.round(oh * scale);
+  const canvas = document.createElement("canvas");
+  canvas.width = width; canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, width, height); // transparent PNGs go on white
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(img, 0, 0, width, height);
+  let dataUrl = "";
+  for (const q of [0.88, 0.78, 0.66, 0.54]) { // keep it comfortably under the 3 MB the server accepts
+    dataUrl = canvas.toDataURL("image/jpeg", q);
+    if (dataUrl.length < 3.6e6) break;
+  }
+  return { dataUrl, width, height, originalWidth: ow };
+}
+
 const IV_FOCUS_OPTIONS = [
   ["ai", "AI & ML"], ["b2b", "B2B SaaS"], ["design", "Product design / UX"], ["growth", "Consumer & Growth"],
   ["fintech", "Fintech"], ["platform", "Platform & Infra"], ["marketplace", "Marketplace"], ["health", "Healthtech"],
@@ -37,7 +77,7 @@ function initInterview() {
   if (!token) return renderInvalid(root);
 
   const state = {
-    profile: {}, questionnaire: null, answers: {}, custom: [], customLimit: 3,
+    profile: {}, questionnaire: null, answers: {}, custom: [], customLimit: 3, featuredPhoto: null, photoNote: "",
     locked: false, approval: { approved: false }, status: "invited", estimatedPublishDate: null, published: null,
     registered: false, member: null, registerError: false,
     validated: false, // set once they try to finish with required answers missing -> show what's missing in red
@@ -75,6 +115,7 @@ function initInterview() {
     state.answers = data.answers || {};
     state.custom = data.custom || [];
     state.customLimit = data.customLimit || 3;
+    state.featuredPhoto = data.featuredPhoto || null;
     state.locked = !!data.locked;
     state.approval = data.approval || { approved: false };
     state.status = data.status;
@@ -310,9 +351,152 @@ function initInterview() {
             <div class="qsection-meta" data-section-meta="${escapeAttr(section.id)}"></div>
           </div>
         </div>
-        <div class="iv-list">${section.questions.map(renderQuestion).join("")}</div>
+        <div class="iv-list">${section.questions.map(q => (q.id === photoAnchorId() ? renderPhotoBlock() : "") + renderQuestion(q)).join("")}</div>
       </div>
     `;
+  }
+
+  // ---------- featured photo ----------
+  // The person's own photo, shown in the published interview directly above the "your story"
+  // question (q6). Here it sits in exactly that spot: an upload placeholder until there's a photo,
+  // then the photo at the width it will have in the text. Never shown as an empty placeholder to
+  // anyone who can't upload (locked / published), and the published page and preview don't render
+  // a placeholder at all. It saves the moment it's uploaded - there's no Save button for it.
+
+  function photoAnchorId() {
+    const qs = allQuestions();
+    return (qs.find(q => q.id === "q6") || qs[0] || {}).id;
+  }
+
+  function photoNoteText(f) {
+    if (state.photoNote) return state.photoNote;
+    if (f.width < IV_PHOTO_FULL_W) return `This photo is ${f.width} px wide, narrower than the text, so it will be shown at its own size rather than stretched. Use one at least ${IV_PHOTO_GOOD_W} px wide to fill the width.`;
+    if (f.width < IV_PHOTO_GOOD_W) return `Shown at the full width of the text. It is ${f.width} px wide; ${IV_PHOTO_GOOD_W} px or more looks sharpest on large screens.`;
+    return `${f.width} \u00d7 ${f.height} px. Shown at the full width of the text.`;
+  }
+
+  function photoSlotInner() {
+    const f = state.featuredPhoto;
+    const ro = readOnly();
+    const head = `<div class="iv-photo-head"><span class="ivq-num">Photo</span><h3>Your featured photo</h3><span class="q-badge q-badge-opt">Optional</span></div>`;
+    if (f) {
+      const small = f.width < IV_PHOTO_FULL_W;
+      return `${head}
+        <figure class="iv-photo-fig"><img src="${escapeAttr(f.url)}" alt="Your featured photo" width="${f.width}" height="${f.height}" style="max-width:${f.width}px"></figure>
+        <p class="iv-photo-note${small ? " is-warn" : ""}">${escapeHTML(photoNoteText(f))}</p>
+        ${ro ? "" : `<div class="iv-photo-actions">
+          <button type="button" class="btn btn-ghost" data-photo-pick>Replace photo</button>
+          <button type="button" class="bo-row-remove" data-photo-remove>[ Remove ]</button>
+          <span class="ivq-status" data-photo-status role="status"></span>
+        </div>`}`;
+    }
+    return `${head}
+      <p class="ivq-hint">This is where your photo will appear in the published interview: at the top of your story, at the full width of the text. Your small round profile picture comes from LinkedIn and is separate.</p>
+      <div class="iv-photo-drop" data-photo-drop tabindex="0" role="button" aria-label="Add a photo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm1 2v8.6l3.3-3.3a1 1 0 0 1 1.4 0l2.8 2.8 2.3-2.3a1 1 0 0 1 1.4 0L19 14.6V7H5zm11 1.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/></svg>
+        <strong>Add a photo</strong>
+        <span>Drag one here, or click to choose a file</span>
+        <span class="iv-photo-fine">JPG, PNG or WebP, at least ${IV_PHOTO_GOOD_W} px wide looks best. Larger images are resized for you.</span>
+      </div>
+      <span class="ivq-status" data-photo-status role="status"></span>`;
+  }
+
+  function renderPhotoBlock() {
+    if (readOnly() && !state.featuredPhoto) return ""; // nothing to upload and nothing to show
+    return `<div class="iv-photo" data-photo-slot>${photoSlotInner()}<input type="file" accept="image/jpeg,image/png,image/webp" hidden data-photo-input></div>`;
+  }
+
+  function refreshPhotoSlot(statusText) {
+    const slot = document.querySelector("[data-photo-slot]");
+    if (!slot) return;
+    const input = slot.querySelector("[data-photo-input]");
+    slot.innerHTML = photoSlotInner();
+    slot.appendChild(input);
+    if (statusText) setPhotoStatus(statusText);
+  }
+
+  function setPhotoStatus(text, isError) {
+    const el = document.querySelector("[data-photo-status]");
+    if (!el) return;
+    el.textContent = text || "";
+    el.classList.toggle("is-unsaved", !!isError);
+  }
+
+  const PHOTO_ERRORS = {
+    type: "Please choose a JPG, PNG or WebP image.",
+    unreadable: "That file couldn't be read as an image. Try another one.",
+    small: `That image is too small to use. It needs to be at least ${IV_PHOTO_MIN_W} px wide.`
+  };
+
+  async function uploadPhoto(file) {
+    if (!file || readOnly() || state.saving) return;
+    state.saving = true;
+    setPhotoStatus("Preparing your photo...");
+    try {
+      const img = await ivPreparePhoto(file);
+      setPhotoStatus("Uploading...");
+      const data = await post(JSON.stringify({ t: token, photo: { dataUrl: img.dataUrl, width: img.width, height: img.height } }));
+      state.featuredPhoto = data.featuredPhoto || null;
+      state.approval = data.approval || { approved: false };
+      state.photoNote = img.originalWidth > IV_PHOTO_MAX_W ? `Resized from ${img.originalWidth} px to ${img.width} px wide so it loads quickly. Shown at the full width of the text.` : "";
+      refreshPhotoSlot("Saved");
+      refreshAll();
+    } catch (err) {
+      const known = err && PHOTO_ERRORS[err.code];
+      const serverCode = err && err.data && err.data.error;
+      setPhotoStatus(known || (serverCode === "photo_too_small" ? PHOTO_ERRORS.small : err && err.status === 423 ? "This interview is locked, so the photo can't be changed." : "Couldn't upload just now. Please try again."), true);
+    } finally {
+      state.saving = false;
+    }
+  }
+
+  async function removePhoto() {
+    if (state.saving || readOnly() || !window.confirm("Remove this photo?")) return;
+    state.saving = true;
+    try {
+      const data = await post(JSON.stringify({ t: token, photo: null }));
+      state.featuredPhoto = null; state.photoNote = "";
+      state.approval = data.approval || { approved: false };
+      refreshPhotoSlot();
+      refreshAll();
+    } catch (err) {
+      setPhotoStatus("Couldn't remove it just now. Please try again.", true);
+    } finally {
+      state.saving = false;
+    }
+  }
+
+  function wirePhoto() {
+    root.addEventListener("click", (e) => {
+      if (e.target.closest("[data-photo-remove]")) { removePhoto(); return; }
+      if (e.target.closest("[data-photo-pick], [data-photo-drop]")) {
+        const input = document.querySelector("[data-photo-input]");
+        if (input && !readOnly()) input.click();
+      }
+    });
+    root.addEventListener("keydown", (e) => {
+      if ((e.key === "Enter" || e.key === " ") && e.target.matches("[data-photo-drop]")) { e.preventDefault(); e.target.click(); }
+    });
+    root.addEventListener("change", (e) => {
+      if (!e.target.matches("[data-photo-input]")) return;
+      const file = e.target.files && e.target.files[0];
+      e.target.value = "";
+      uploadPhoto(file);
+    });
+    root.addEventListener("dragover", (e) => {
+      const zone = e.target.closest("[data-photo-drop]");
+      if (zone && !readOnly()) { e.preventDefault(); zone.classList.add("is-over"); }
+    });
+    root.addEventListener("dragleave", (e) => {
+      const zone = e.target.closest("[data-photo-drop]");
+      if (zone) zone.classList.remove("is-over");
+    });
+    root.addEventListener("drop", (e) => {
+      const zone = e.target.closest("[data-photo-drop]");
+      if (!zone) return;
+      e.preventDefault(); zone.classList.remove("is-over");
+      uploadPhoto(e.dataTransfer.files && e.dataTransfer.files[0]);
+    });
   }
 
   let qCounter = 0;
@@ -418,6 +602,7 @@ function initInterview() {
 
   function wire() {
     renderCustomRows();
+    wirePhoto();
 
     root.addEventListener("click", (e) => {
       const saveBtn = e.target.closest("[data-save]");

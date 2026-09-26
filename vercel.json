@@ -28,6 +28,10 @@
       "destination": "/api/site?op=interview"
     },
     {
+      "source": "/api/interview-photo",
+      "destination": "/api/site?op=interview-photo"
+    },
+    {
       "source": "/api/my-interview",
       "destination": "/api/site?op=my-interview"
     },

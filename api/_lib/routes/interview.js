@@ -17,6 +17,8 @@
 // GET  ?t=<token>                          -> profile, questionnaire, answers, status
 // POST { t, profile?, answers?, custom? }  -> save (blocked while locked)
 // POST { t, approve: true|false }          -> the person signals "I'm happy with this version"
+// POST { t, photo: { dataUrl, width, height } | null }
+//                                          -> set / remove the featured photo (resized in the browser)
 //
 // Editing after approving clears the approval (a changed version needs a fresh yes).
 
@@ -50,8 +52,9 @@ function view(c) {
       name: c.profile.name, role: c.profile.role, company: c.profile.company, location: c.profile.location,
       yearsExperience: c.profile.yearsExperience, focusTag: c.profile.focusTag, linkedin: c.profile.linkedin,
       website: c.profile.website, twitter: c.profile.twitter, snippet: c.profile.snippet, pullQuote: c.profile.pullQuote,
-      photo: c.profile.photo
+      photo: c.profile.photo // the small LinkedIn picture; the featured photo is separate (featuredPhoto)
     },
+    featuredPhoto: C.photoView(c),
     questionnaire: c.questionnaire,
     answers: c.answers || {},
     custom: c.custom || [],
@@ -144,6 +147,28 @@ module.exports = async (req, res) => {
         c.approval = { approved: false, by: null, at: null };
       }
       await C.saveCandidate(c);
+      return res.status(200).json({ ok: true, ...view(c) });
+    }
+
+    // Featured photo: the person's own upload, shown above their story. Saved straight away (there's
+    // no Save button for it). A new upload replaces the old one; { photo: null } removes it.
+    if ("photo" in body) {
+      const old = c.featuredPhoto && c.featuredPhoto.id;
+      if (body.photo === null) {
+        c.featuredPhoto = null;
+      } else {
+        const img = C.parsePhotoDataUrl(body.photo && body.photo.dataUrl);
+        if (!img) return res.status(400).json({ error: "invalid_photo" });
+        const num = v => Math.max(1, Math.min(8000, Math.round(Number(v)) || 0));
+        const width = num(body.photo.width), height = num(body.photo.height);
+        if (width < 320 || height < 200) return res.status(400).json({ error: "photo_too_small" });
+        const id = await C.savePhoto(c.id, { ...img, width, height });
+        c.featuredPhoto = { id, width, height, type: img.type, size: img.buffer.length, at: new Date().toISOString() };
+      }
+      c.answersUpdatedAt = new Date().toISOString();
+      if (c.approval && c.approval.approved) c.approval = { approved: false, by: null, at: null };
+      await C.saveCandidate(c);
+      if (old && (!c.featuredPhoto || c.featuredPhoto.id !== old)) await C.deletePhoto(old);
       return res.status(200).json({ ok: true, ...view(c) });
     }
 

@@ -325,3 +325,39 @@ select.ivq-input { appearance: auto; }
 .mi-progress { max-width: 620px; }
 .mi-progress .iv-progress-text { justify-content: flex-start; gap: 6px 28px; }
 .mi-est { margin-top: 14px; color: var(--ink-body); font-size: 15px; }
+
+
+/* ----- featured photo slot (sits above the "your story" question) ----- */
+.iv-photo { padding: 24px 0 28px; border-bottom: 1px solid var(--line-soft); }
+.iv-photo-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.iv-photo-head .ivq-num { min-width: 52px; }
+.iv-photo-head h3 { font-weight: 700; font-size: 17px; line-height: 1.4; }
+.iv-photo > :not(.iv-photo-head):not(input) { margin-left: 66px; }
+
+.iv-photo-drop {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 38px 20px; text-align: center; cursor: pointer;
+  border: 2px dashed var(--line); background: var(--paper-alt);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.iv-photo-drop svg { width: 34px; height: 34px; fill: var(--ink-dim); margin-bottom: 4px; }
+.iv-photo-drop strong { font-size: 16px; }
+.iv-photo-drop span { color: var(--ink-body); font-size: 14.5px; }
+.iv-photo-drop .iv-photo-fine { color: var(--ink-dim); font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.02em; margin-top: 4px; }
+.iv-photo-drop:hover, .iv-photo-drop:focus-visible, .iv-photo-drop.is-over {
+  outline: none; border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, var(--paper-alt));
+}
+.iv-photo-drop:hover svg, .iv-photo-drop.is-over svg { fill: var(--accent); }
+
+.iv-photo-fig { margin-bottom: 0; }
+.iv-photo-fig img { display: block; width: 100%; height: auto; border: 1px solid var(--line-soft); }
+.iv-photo-note { margin-top: 12px; color: var(--ink-body); font-size: 14px; line-height: 1.55; }
+.iv-photo-note.is-warn { color: var(--accent); }
+.iv-photo-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; margin-top: 14px; }
+.iv-photo > .ivq-status { display: block; margin-top: 10px; }
+
+@media (max-width: 640px) {
+  .iv-photo > :not(.iv-photo-head):not(input) { margin-left: 0; }
+  .iv-photo-drop { padding: 28px 16px; }
+}

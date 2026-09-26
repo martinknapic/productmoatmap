@@ -823,6 +823,12 @@ function interviewFacts(p) {
   ].filter(([, v]) => v);
 }
 
+// Fits the text width, but is never stretched beyond its own pixel size (max-width = real width).
+function renderFeaturedPhoto(photo, name) {
+  const w = Number(photo.width) || 0, h = Number(photo.height) || 0;
+  return `<figure class="qa-photo"><img src="${escapeHTML(photo.url)}" alt="Photo of ${escapeHTML(name)}"${w && h ? ` width="${w}" height="${h}" style="max-width:${w}px"` : ""} loading="lazy" decoding="async"></figure>`;
+}
+
 function renderQA(num, question, answer) {
   return `
     <div class="qa-item">
@@ -861,6 +867,11 @@ function renderInterview(p) {
   const visible = sections.filter(s => s.items.length);
   if (!visible.length && facts.length) visible.push({ title: "Identity & Background", items: [] });
 
+  // The person's own featured photo sits directly above the "your story" question (q6, else the
+  // first answer). Only rendered when there is one: no placeholder here or in the preview.
+  const photo = p.featuredPhoto && p.featuredPhoto.url ? p.featuredPhoto : null;
+  const anchor = photo ? (visible.flatMap(s => s.items).find(q => q.id === "q6") || visible.flatMap(s => s.items)[0] || null) : null;
+
   visible.forEach((section, i) => {
     html.push(`
       <div class="qna-section">
@@ -869,12 +880,13 @@ function renderInterview(p) {
           <dl class="qa-facts">
             ${facts.map(([k, v]) => `<div><dt>${escapeHTML(k)}</dt><dd>${escapeHTML(v)}</dd></div>`).join("")}
           </dl>` : ""}
+        ${photo && !anchor && i === 0 ? renderFeaturedPhoto(photo, p.name) : ""}
         ${section.items.map(q => {
           count += 1;
           const label = fixedNumbers
             ? `Q${q.id.slice(1).padStart(2, "0")} / ${INTERVIEW_TOTAL_QUESTIONS}`
             : `${String(count).padStart(2, "0")} / ${String(total).padStart(2, "0")}`;
-          return renderQA(label, q.text, q.answer);
+          return (q === anchor ? renderFeaturedPhoto(photo, p.name) : "") + renderQA(label, q.text, q.answer);
         }).join("")}
       </div>
     `);

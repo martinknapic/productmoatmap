@@ -184,6 +184,7 @@ module.exports = async (req, res) => {
 
       case "delete": {
         await C.deleteCandidate(c.id);
+        if (c.featuredPhoto && c.featuredPhoto.id) await C.deletePhoto(c.featuredPhoto.id); // and their uploaded photo
         return res.status(200).json({ ok: true, deleted: true });
       }
     }

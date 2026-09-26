@@ -81,6 +81,63 @@ function writeJSON(pathname, value) {
   });
 }
 
+// ---------- Featured photo (uploaded by the person, shown above their story) ----------
+// Distinct from profile.photo, the small round picture that comes from LinkedIn. The upload is
+// resized in the browser and stored as a private blob (interview-photos/<id>) with a tiny meta
+// blob (interview-photos/<id>.json) that says which candidate it belongs to; api/_lib/routes/
+// interview-photo.js serves it: publicly once the interview is live, otherwise only to its owner
+// and admins. The id is random and changes on every upload, so a replaced photo never shows a stale
+// copy and the candidate's personal link token never appears in a public URL.
+
+const PHOTO_PREFIX = "interview-photos/";
+const PHOTO_ID_RE = /^[a-f0-9]{32}$/;
+const PHOTO_TYPES = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+const PHOTO_MAX_BYTES = 3 * 1024 * 1024;
+
+// Does the data start with the magic bytes of the type it claims to be?
+function photoMagicOk(type, buf) {
+  if (type === "image/jpeg") return buf.length > 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff;
+  if (type === "image/png") return buf.length > 8 && buf.slice(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  if (type === "image/webp") return buf.length > 12 && buf.slice(0, 4).toString("latin1") === "RIFF" && buf.slice(8, 12).toString("latin1") === "WEBP";
+  return false;
+}
+
+// "data:image/jpeg;base64,...." -> { type, buffer }, or null if it isn't an acceptable image.
+function parsePhotoDataUrl(dataUrl) {
+  const m = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]+={0,2})$/.exec(typeof dataUrl === "string" ? dataUrl : "");
+  if (!m) return null;
+  const buffer = Buffer.from(m[2], "base64");
+  if (!buffer.length || buffer.length > PHOTO_MAX_BYTES || !photoMagicOk(m[1], buffer)) return null;
+  return { type: m[1], buffer };
+}
+
+async function savePhoto(candidateId, { type, buffer, width, height }) {
+  const id = crypto.randomBytes(16).toString("hex");
+  await put(`${PHOTO_PREFIX}${id}`, buffer, { access: "private", addRandomSuffix: false, allowOverwrite: false, contentType: type });
+  await writeJSON(`${PHOTO_PREFIX}${id}.json`, { candidateId, type, width, height, at: new Date().toISOString() });
+  return id;
+}
+
+async function readPhoto(id) {
+  if (!PHOTO_ID_RE.test(id || "")) return null;
+  const meta = await readJSON(`${PHOTO_PREFIX}${id}.json`);
+  if (!meta) return null;
+  const result = await get(`${PHOTO_PREFIX}${id}`, { access: "private" });
+  if (!result || !result.stream) return null;
+  return { meta, buffer: Buffer.from(await new Response(result.stream).arrayBuffer()) };
+}
+
+function deletePhoto(id) {
+  if (!PHOTO_ID_RE.test(id || "")) return Promise.resolve();
+  return Promise.all([del(`${PHOTO_PREFIX}${id}`), del(`${PHOTO_PREFIX}${id}.json`)]).catch(() => {});
+}
+
+// What the pages get: where to load it from and its real size (used to avoid stretching small photos).
+function photoView(c) {
+  const f = c && c.featuredPhoto;
+  return f && f.id ? { url: `/api/interview-photo?id=${f.id}`, width: f.width, height: f.height } : null;
+}
+
 const CANDIDATE_PREFIX = "candidates/";
 const QUESTION_BANK_PATH = "config/question-bank.json";
 
@@ -440,6 +497,7 @@ function toPublicInterview(c) {
     focusTag: p.focusTag,
     yearsExperience: p.yearsExperience,
     photo: p.photo || null,
+    featuredPhoto: photoView(c),
     links: { linkedin: p.linkedin, website: p.website, twitter: p.twitter },
     snippet: p.snippet,
     pullQuote: p.pullQuote,
@@ -470,5 +528,6 @@ module.exports = {
   readJSON, writeJSON, readCandidate, saveCandidate, listCandidates, findCandidatesByEmail, deleteCandidate, MAP_PREFIX, findMapPresence, mapPinId, dedupeMapPins,
   upsertMember, readMember, saveMemberDetails, setNetworkOptIn, isNetworkMember, cleanMemberDetails, FOCUS_TAGS, readBank, defaultBank, cleanSections, QUESTION_BANK_PATH,
   requiredProgress, deriveStatus, isLive, blankCandidate, cleanProfile, ID_RE, newId,
-  slugify, CATEGORIES, defaultCategory, toPublicInterview, takenSlugs, FOCUS_LABELS
+  slugify, CATEGORIES, defaultCategory, toPublicInterview, takenSlugs, FOCUS_LABELS,
+  parsePhotoDataUrl, savePhoto, readPhoto, deletePhoto, photoView
 };

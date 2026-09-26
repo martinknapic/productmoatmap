@@ -487,6 +487,12 @@ footer {
 }
 .qa-facts + .qa-item { border-top: 1px solid var(--line-soft); padding-top: 32px; }
 
+/* The person's own photo, directly above the "your story" answer. Fits the text width but is never
+   stretched past its own pixel width (the inline max-width). Only rendered when there is one. */
+.qa-photo { margin: 0; padding: 32px 0 0; border-top: 1px solid var(--line-soft); }
+.qa-photo img { display: block; width: 100%; height: auto; border: 1px solid var(--line-soft); }
+.qa-photo + .qa-item { border-top: none; padding-top: 28px; }
+
 .qa-item {
   padding: 32px 0;
   border-top: 1px solid var(--line-soft);
