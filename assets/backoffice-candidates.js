@@ -259,7 +259,7 @@ function boInviteMessage(c, channel, link, estimated) {
   const first = (c.profile.name || "").split(/\s+/)[0] || "there";
   const est = estimated ? new Date(`${estimated}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "";
   const rec = c.recommendation || {};
-  const how = `It's a set of questions about your path into product, how you think, and how AI is changing the craft. Only a handful are required and the rest are optional; you can also add up to three questions of your own. Your answers save automatically, so come back any time. When you're happy with them, press the button at the bottom of the page — we'll then prepare a preview together, and nothing goes public until you've had the final say.`;
+  const how = `It's a set of questions about your path into product, how you think, and how AI is changing the craft. Only a handful are required and the rest are optional; you can also add up to three questions of your own. Each answer has its own Save button, and what you've saved is waiting for you whenever you come back. When you're happy with them, press the button at the bottom of the page — we'll then prepare a preview together, and nothing goes public until you've had the final say.`;
   // The page is private: opening it means signing in with LinkedIn (which also creates their private profile).
   const signupLine = c.source === "recommended" || !c.profile.email
     ? `\n\nThe page is private, so you'll be asked to sign in with LinkedIn first — one click, and you land right back on it.`

@@ -413,7 +413,7 @@ function initMyInterview() {
         <div class="benefit-item">
           <div class="benefit-index">02</div>
           <h3>You stay in control</h3>
-          <p>Only a handful of questions are required. Answers save as you type, you can add your own questions, and nothing goes public until you say you're happy with it.</p>
+          <p>Only a handful of questions are required. You save each answer when you're ready, you can add your own questions, and nothing goes public until you say you're happy with it.</p>
         </div>
         <div class="benefit-item">
           <div class="benefit-index">03</div>
@@ -462,7 +462,7 @@ function initMyInterview() {
       primary = `<a class="btn btn-primary" href="${preview}">Preview my interview</a><a class="btn btn-ghost" href="${link}">Open my answers</a>`;
     } else {
       title = "Your interview is open.";
-      lede = "You've been invited. Answer at your pace — everything saves automatically, and only the required questions are needed.";
+      lede = "You've been invited. Answer at your pace — press Save under each answer to keep it, and only the required questions are needed.";
       primary = `<a class="btn btn-primary" href="${link}">${d.requiredDone ? "Continue your interview" : "Start your interview"} &rarr;</a><a class="btn btn-ghost" href="${preview}">Preview</a>`;
     }
     return hero(title, lede, primary, ctxFrom(d)) + `
@@ -485,7 +485,6 @@ function initMyInterview() {
   fetch("/api/my-interview", { credentials: "same-origin" })
     .then(resp => (resp.status === 401 ? { state: "signed-out" } : resp.ok ? resp.json() : Promise.reject(resp.status)))
     .then(data => {
-      if (data.state !== "signed-out") showMemberTabs("articles");
       if (data.state === "invited") {
         show(interviewPanel(data));
       } else if (data.state === "published") {

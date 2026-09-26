@@ -2,11 +2,11 @@
 //
 // The admin invites someone from the backoffice; that creates this questionnaire (a copy of
 // the standard questions the admin can still edit). The page loads it from /api/interview,
-// autosaves every change, and lets the person say "I'm happy with this version". Once the
-// admin locks it, it becomes read-only while the article is prepared.
+// saves only when the person presses a Save button (under each answer, under "Your details" and
+// under their own questions), and lets them say "I'm happy with this version". Once the admin
+// locks it, it becomes read-only while the article is prepared.
 
 const IV_MAX_ANSWER = 2000;
-const IV_SAVE_DELAY_MS = 1200;
 
 const IV_FOCUS_OPTIONS = [
   ["ai", "AI & ML"], ["b2b", "B2B SaaS"], ["design", "Product design / UX"], ["growth", "Consumer & Growth"],
@@ -41,7 +41,8 @@ function initInterview() {
     locked: false, approval: { approved: false }, status: "invited", estimatedPublishDate: null, published: null,
     registered: false, member: null, registerError: false,
     validated: false, // set once they try to finish with required answers missing -> show what's missing in red
-    dirty: false, saving: false, saveTimer: null
+    saved: { profile: {}, answers: {}, custom: [] }, // what the server has; the fields above are the working copy
+    saving: false
   };
 
   // The questionnaire is private: only the person it was created for (signed in with LinkedIn) and
@@ -82,6 +83,7 @@ function initInterview() {
     state.registered = !!data.registered;
     state.source = data.source;
     state.asAdmin = !!data.asAdmin;
+    state.saved = { profile: { ...state.profile }, answers: { ...state.answers }, custom: state.custom.map(c => ({ q: c.q, a: c.a })) };
   }
 
   const readOnly = () => state.locked || !!state.published;
@@ -112,8 +114,8 @@ function initInterview() {
             <div class="eyebrow">Your interview</div>
             <h1>Hi ${escapeHTML(first)} — let's hear your story.</h1>
             <p class="about-lede">
-              This page is yours alone. Open a question to answer it — your answers save automatically,
-              so you can leave and come back to the same link any time. Only the
+              This page is yours alone. Open a question to answer it — press <strong>Save</strong> under an answer
+              to keep it, then leave and come back to the same link any time. Only the
               <span class="q-badge q-badge-req">Required</span> questions are needed; skip any
               <span class="q-badge q-badge-opt">Optional</span> ones. The wording may be adjusted as we
               go, and when you're happy, tell us with the button at the bottom.
@@ -290,6 +292,10 @@ function initInterview() {
             return `<div class="iv-field${f.area ? " is-wide" : ""}"><label class="iv-label" for="${id}">${escapeHTML(f.label)}${f.required ? ' <span class="req">*</span>' : ""}</label>${input}</div>`;
           }).join("")}
         </div>
+        <div class="iv-savebar">
+          <button type="button" class="btn btn-primary" data-save="details">Save details</button>
+          <span class="ivq-status" data-status="details" role="status"></span>
+        </div>
       </div>
     `;
   }
@@ -330,7 +336,11 @@ function initInterview() {
             <textarea class="ivq-input" data-answer="${escapeAttr(q.id)}" rows="6" maxlength="${IV_MAX_ANSWER}" placeholder="Write your answer here…">${escapeHTML(value)}</textarea>
             <div class="ivq-foot">
               <span class="ivq-count" data-count="${escapeAttr(q.id)}">${value.length} / ${IV_MAX_ANSWER}</span>
-              <button type="button" class="ivq-next" data-next="${escapeAttr(q.id)}">Next question &rarr;</button>
+              <span class="ivq-foot-actions">
+                <span class="ivq-status" data-status="${escapeAttr(q.id)}" role="status"></span>
+                <button type="button" class="btn btn-primary ivq-save" data-save="${escapeAttr(q.id)}">Save answer</button>
+                <button type="button" class="ivq-next" data-next="${escapeAttr(q.id)}">Next question &rarr;</button>
+              </span>
             </div>
           </div>
         </div>
@@ -350,6 +360,10 @@ function initInterview() {
           </div>
         </div>
         <div class="iv-custom" id="iv-custom"></div>
+        <div class="iv-savebar">
+          <button type="button" class="btn btn-primary" data-save="custom">Save my questions</button>
+          <span class="ivq-status" data-status="custom" role="status"></span>
+        </div>
         <div class="iv-custom-actions">
           <button type="button" class="btn btn-ghost" id="iv-add-custom">+ Add a question</button>
           <div class="iv-ideas">
@@ -377,6 +391,7 @@ function initInterview() {
     document.getElementById("iv-add-custom").hidden = state.custom.length >= state.customLimit;
     document.getElementById("iv-custom-meta").textContent = `${state.custom.length} of ${state.customLimit} added`;
     applyReadOnly();
+    refreshSaveStates();
   }
 
   // ---------- accordion + inputs ----------
@@ -400,6 +415,7 @@ function initInterview() {
   function applyReadOnly() {
     const ro = readOnly();
     root.querySelectorAll(".ivq-input").forEach(el => { el.disabled = ro; });
+    refreshSaveStates();
     root.querySelectorAll("#iv-add-custom, .iv-idea, [data-remove-custom]").forEach(el => { el.disabled = ro; });
   }
 
@@ -407,6 +423,8 @@ function initInterview() {
     renderCustomRows();
 
     root.addEventListener("click", (e) => {
+      const saveBtn = e.target.closest("[data-save]");
+      if (saveBtn) { save(saveBtn.dataset.save); return; }
       if (e.target.closest(".js-approve")) { tryApprove(); return; }
       if (e.target.closest(".js-reopen")) { setApproval(false); return; }
       if (e.target.closest(".js-preview")) { openPreview(); return; }
@@ -428,6 +446,7 @@ function initInterview() {
       if (next) {
         const qs = allQuestions();
         const idx = qs.findIndex(q => q.id === next.dataset.next);
+        if (isDirty(next.dataset.next)) setToast("That answer isn't saved yet — press Save answer to keep it.", true, true);
         setOpen(next.closest(".ivq"), false);
         if (qs[idx + 1]) openQuestion(qs[idx + 1].id);
         else document.getElementById("iv-submit").scrollIntoView({ behavior: "smooth", block: "center" });
@@ -447,14 +466,12 @@ function initInterview() {
         state.custom.push({ q: idea.dataset.idea, a: "" });
         renderCustomRows();
         document.getElementById(`iv-ca-${state.custom.length - 1}`).focus();
-        queueSave();
         return;
       }
       const remove = e.target.closest("[data-remove-custom]");
       if (remove) {
         state.custom.splice(Number(remove.dataset.removeCustom), 1);
         renderCustomRows();
-        queueSave();
       }
     });
 
@@ -465,7 +482,6 @@ function initInterview() {
         state.answers[t.dataset.answer] = t.value;
         const counter = document.querySelector(`[data-count="${CSS.escape(t.dataset.answer)}"]`);
         if (counter) counter.textContent = `${t.value.length} / ${IV_MAX_ANSWER}`;
-        t.closest(".ivq").classList.toggle("is-done", t.value.trim() !== "");
       } else if (t.dataset.profile) {
         state.profile[t.dataset.profile] = t.type === "number" ? (t.value === "" ? "" : Number(t.value)) : t.value;
       } else if (t.dataset.customQ !== undefined) {
@@ -475,15 +491,11 @@ function initInterview() {
       } else {
         return;
       }
-      if (state.approval.approved) { state.approval = { approved: false }; }
-      refreshAll();
-      queueSave();
+      refreshAll(); // also refreshes the Save buttons (nothing is written until one is pressed)
     });
 
     root.addEventListener("change", (e) => { if (e.target.tagName === "SELECT") e.target.dispatchEvent(new Event("input", { bubbles: true })); });
-    root.addEventListener("focusout", () => { if (state.dirty) saveNow(); });
-    document.addEventListener("visibilitychange", () => { if (document.hidden && state.dirty) saveNow(); });
-    window.addEventListener("beforeunload", (e) => { if (state.dirty) { e.preventDefault(); e.returnValue = ""; } });
+    window.addEventListener("beforeunload", (e) => { if (isDirty()) { e.preventDefault(); e.returnValue = ""; } });
 
     const firstOpen = missingRequired().find(q => !q.fromProfile);
     if (firstOpen) openQuestion(firstOpen.id, { focus: false, scroll: false });
@@ -616,6 +628,7 @@ function initInterview() {
   }
 
   function tryApprove() {
+    if (isDirty()) { setToast("You have unsaved changes — press Save first, then mark this version as final.", true, true); return; }
     const stillMissing = missingRequired();
     if (stillMissing.length) {
       // disabled: show exactly what's missing, in red, and take them to the first one
@@ -628,23 +641,47 @@ function initInterview() {
     setApproval(true);
   }
 
-  // Save anything pending, then show the private preview page.
-  async function openPreview() {
-    if (state.dirty) await saveNow();
+  // The preview shows what has been saved; warn if there's something that hasn't.
+  function openPreview() {
+    if (isDirty() && !window.confirm("You have changes that aren't saved yet. The preview only shows what you've saved. Open it anyway?")) return;
     window.location.href = `interview-preview.html?t=${encodeURIComponent(token)}`;
   }
 
   // ---------- saving ----------
+  // Nothing is written until the person presses a Save button. Each button saves just its own part
+  // (one answer / the details block / their own questions) on top of what's already saved.
 
-  function payload() {
-    return JSON.stringify({ t: token, profile: state.profile, answers: state.answers, custom: state.custom });
+  const norm = v => String(v == null ? "" : v).trim();
+  const completeCustom = list => list.map(c => ({ q: norm(c.q), a: norm(c.a) })).filter(c => c.q && c.a);
+
+  // which = "details" | "custom" | a question id; no argument = is anything unsaved?
+  function isDirty(which) {
+    const answerIds = () => Object.keys({ ...state.answers, ...state.saved.answers });
+    if (which === undefined) return isDirty("details") || isDirty("custom") || answerIds().some(id => isDirty(id));
+    if (which === "details") return IV_PROFILE_FIELDS.some(f => norm(state.profile[f.key]) !== norm(state.saved.profile[f.key]));
+    if (which === "custom") return JSON.stringify(completeCustom(state.custom)) !== JSON.stringify(completeCustom(state.saved.custom));
+    return norm(state.answers[which]) !== norm(state.saved.answers[which]);
   }
 
-  function queueSave() {
-    state.dirty = true;
-    setToast("Saving…");
-    clearTimeout(state.saveTimer);
-    state.saveTimer = setTimeout(saveNow, IV_SAVE_DELAY_MS);
+  // Enables each Save button only while its part has changes, and says what state it's in.
+  function refreshSaveStates() {
+    const ro = readOnly();
+    root.querySelectorAll("[data-save]").forEach(btn => {
+      const key = btn.dataset.save;
+      const dirty = isDirty(key);
+      btn.disabled = ro || !dirty || state.saving;
+      const status = root.querySelector(`[data-status="${CSS.escape(key)}"]`);
+      if (!status) return;
+      status.classList.toggle("is-unsaved", dirty && !ro);
+      if (dirty && !ro) status.textContent = "Unsaved changes";
+      else if (status.dataset.justSaved === "1") status.textContent = status.dataset.savedAt;
+      else status.textContent = "";
+    });
+  }
+
+  function markSaved(key, when) {
+    const status = root.querySelector(`[data-status="${CSS.escape(key)}"]`);
+    if (status) { status.dataset.justSaved = "1"; status.dataset.savedAt = `Saved ${when}`; }
   }
 
   async function post(body) {
@@ -656,28 +693,48 @@ function initInterview() {
     return data;
   }
 
-  async function saveNow() {
-    clearTimeout(state.saveTimer);
-    if (state.saving) { state.saveTimer = setTimeout(saveNow, 400); return; }
+  async function save(key) {
+    if (state.saving || readOnly() || !isDirty(key)) return;
+    let body;
+    if (key === "details") {
+      body = { t: token, profile: state.profile };
+    } else if (key === "custom") {
+      body = { t: token, custom: completeCustom(state.custom) };
+    } else {
+      const answers = { ...state.saved.answers };
+      if (norm(state.answers[key])) answers[key] = state.answers[key]; else delete answers[key];
+      body = { t: token, answers };
+    }
     state.saving = true;
-    state.dirty = false;
+    refreshSaveStates();
+    setToast("Saving…");
     try {
-      const data = await post(payload());
+      const data = await post(JSON.stringify(body));
+      // what the server now holds (it may tidy values), and any change to the sign-off
+      if (key === "details") state.saved.profile = { ...data.profile };
+      else if (key === "custom") state.saved.custom = (data.custom || []).map(c => ({ q: c.q, a: c.a }));
+      else state.saved.answers = { ...data.answers };
       state.status = data.status;
       state.approval = data.approval;
-      refreshBanner(); refreshSubmit();
-      setToast(`Saved ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`, true);
+      const when = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      root.querySelectorAll("[data-status]").forEach(el => { el.dataset.justSaved = ""; });
+      markSaved(key, when);
+      refreshBanner(); refreshSubmit(); refreshProgress();
+      const qEl = key !== "details" && key !== "custom" ? root.querySelector(`.ivq[data-q="${CSS.escape(key)}"]`) : null;
+      if (qEl) qEl.classList.toggle("is-done", norm(state.saved.answers[key]) !== "");
+      setToast(`Saved ${when}`, true);
     } catch (err) {
       if (err.status === 423) { apply(err.data); render(); setToast("This interview has been locked.", true, true); }
-      else { state.dirty = true; setToast("Couldn't save — check your connection. We'll retry.", false, true); state.saveTimer = setTimeout(saveNow, 5000); }
+      else setToast("Couldn't save — check your connection and press Save again.", false, true);
     } finally {
       state.saving = false;
+      refreshSaveStates();
     }
   }
 
   async function setApproval(approve) {
     if (approve && missingRequired().length) return;
-    if (state.dirty) await saveNow();
+    if (approve && isDirty()) return;
     try {
       const data = await post(JSON.stringify({ t: token, approve }));
       state.approval = data.approval;
