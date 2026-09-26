@@ -361,3 +361,6 @@ select.ivq-input { appearance: auto; }
   .iv-photo > :not(.iv-photo-head):not(input) { margin-left: 0; }
   .iv-photo-drop { padding: 28px 16px; }
 }
+
+.iv-photo-failed { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 22px; border: 1px solid var(--line); background: var(--paper-alt); }
+.iv-photo-failed span { color: var(--ink-body); font-size: 14.5px; }

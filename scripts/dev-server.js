@@ -91,7 +91,9 @@ http.createServer(async (req, res) => {
       status(c) { res.statusCode = c; return out; },
       json(o) { res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify(o)); },
       send(s) { res.end(s); },
-      end() { res.end(); }
+      set statusCode(c) { res.statusCode = c; },
+      get statusCode() { return res.statusCode; },
+      end(body) { res.end(body); }
     };
     try { await require(file)(r, out); } catch (err) { console.error(err); res.statusCode = 500; res.end("{}"); }
     return;

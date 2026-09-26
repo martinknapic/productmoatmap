@@ -15,15 +15,16 @@ module.exports = async (req, res) => {
 
   try {
     const photo = await C.readPhoto(id);
-    const c = photo && (await C.readCandidate(photo.meta.candidateId).catch(() => null));
-    if (!photo || !c || !c.featuredPhoto || c.featuredPhoto.id !== id) return res.status(404).json({ error: "not_found" });
+    if (!photo) { console.error("[interview-photo] no stored photo for id", id); return res.status(404).json({ error: "not_found" }); }
+    const c = await C.readCandidate(photo.meta.candidateId).catch(() => null);
+    if (!c || !c.featuredPhoto || c.featuredPhoto.id !== id) { console.error("[interview-photo] photo no longer current for id", id); return res.status(404).json({ error: "not_found" }); }
 
     const live = C.isLive(c);
     if (!live) {
       const session = C.memberSession(req);
       const email = session ? norm(session.email) : "";
       const owner = !!email && [c.verified && c.verified.email, c.profile && c.profile.email].some(e => norm(e) === email);
-      if (!C.isAdminRequest(req) && !owner) return res.status(404).json({ error: "not_found" });
+      if (!C.isAdminRequest(req) && !owner) { console.error("[interview-photo] not live and requester is neither owner nor admin"); return res.status(404).json({ error: "not_found" }); }
     }
 
     res.setHeader("Content-Type", photo.meta.type);
@@ -31,7 +32,9 @@ module.exports = async (req, res) => {
     // Cached for a while (a photo never changes under its id), but not "forever": if the person removes
     // it, it stops being served from browsers within the hour and from the CDN within minutes.
     res.setHeader("Cache-Control", live ? "public, max-age=3600, s-maxage=300" : "private, no-store");
-    return res.status(200).send(photo.buffer);
+    res.setHeader("Content-Length", String(photo.buffer.length));
+    res.statusCode = 200;
+    return res.end(photo.buffer);
   } catch (err) {
     console.error("[interview-photo] failed:", (err && err.stack) || err);
     return res.status(500).json({ error: "storage_failed" });

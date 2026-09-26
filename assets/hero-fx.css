@@ -262,15 +262,15 @@
   .fx-lab button { flex: 1 1 0; padding: 9px 4px; }
 }
 
-/* spotlight on phones: portrait first, headline right under it; the rings sit behind the whole stage */
+/* spotlight on phones: the page title comes first (above the fold), then the featured interview; the rings sit behind the whole stage and fade in towards the portrait */
 @media (max-width: 760px) {
   .hero-stage.fx-spotlight .hero-fx {
     position: absolute; inset: 0; height: auto; border-bottom: 0;
-    -webkit-mask-image: linear-gradient(0deg, transparent 0, transparent 40%, #000 66%); mask-image: linear-gradient(0deg, transparent 0, transparent 40%, #000 66%);
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, transparent 40%, #000 66%); mask-image: linear-gradient(180deg, transparent 0, transparent 40%, #000 66%);
   }
   .hero-stage.fx-spotlight { padding-top: 40px; }
   .hero-stage.fx-spotlight .hero-inner { padding-top: 0; }
-  .hero-stage.fx-spotlight .hero-side { order: -1; padding: 8px 0 36px; }
+  .hero-stage.fx-spotlight .hero-side { padding: 12px 0 44px; }
   .spot { --spot-h: min(340px, calc((100vw - 72px) * 1.25)); --t: 12px; --pad: 8px; gap: 22px; }
   .spot-cap { padding: 10px 12px; }
   .spot-cap em { display: none; }

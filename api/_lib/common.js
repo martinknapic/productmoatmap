@@ -83,8 +83,8 @@ function writeJSON(pathname, value) {
 
 // ---------- Featured photo (uploaded by the person, shown above their story) ----------
 // Distinct from profile.photo, the small round picture that comes from LinkedIn. The upload is
-// resized in the browser and stored as a private blob (interview-photos/<id>) with a tiny meta
-// blob (interview-photos/<id>.json) that says which candidate it belongs to; api/_lib/routes/
+// resized in the browser and stored as a private JSON blob (interview-photos/<id>.json: the image
+// as base64 plus which candidate it belongs to); api/_lib/routes/
 // interview-photo.js serves it: publicly once the interview is live, otherwise only to its owner
 // and admins. The id is random and changes on every upload, so a replaced photo never shows a stale
 // copy and the candidate's personal link token never appears in a public URL.
@@ -111,25 +111,26 @@ function parsePhotoDataUrl(dataUrl) {
   return { type: m[1], buffer };
 }
 
+// Stored as ONE private JSON blob (base64 inside), through the same writeJSON / readJSON path every
+// other record on this site uses, rather than as a separate binary blob. Photos are capped at 3 MB
+// (about 4 MB as base64), well within what that path handles.
 async function savePhoto(candidateId, { type, buffer, width, height }) {
   const id = crypto.randomBytes(16).toString("hex");
-  await put(`${PHOTO_PREFIX}${id}`, buffer, { access: "private", addRandomSuffix: false, allowOverwrite: false, contentType: type });
-  await writeJSON(`${PHOTO_PREFIX}${id}.json`, { candidateId, type, width, height, at: new Date().toISOString() });
+  await writeJSON(`${PHOTO_PREFIX}${id}.json`, { candidateId, type, width, height, data: buffer.toString("base64"), at: new Date().toISOString() });
   return id;
 }
 
 async function readPhoto(id) {
   if (!PHOTO_ID_RE.test(id || "")) return null;
-  const meta = await readJSON(`${PHOTO_PREFIX}${id}.json`);
-  if (!meta) return null;
-  const result = await get(`${PHOTO_PREFIX}${id}`, { access: "private" });
-  if (!result || !result.stream) return null;
-  return { meta, buffer: Buffer.from(await new Response(result.stream).arrayBuffer()) };
+  const rec = await readJSON(`${PHOTO_PREFIX}${id}.json`);
+  if (!rec || typeof rec.data !== "string") return null;
+  const { data, ...meta } = rec;
+  return { meta, buffer: Buffer.from(data, "base64") };
 }
 
 function deletePhoto(id) {
   if (!PHOTO_ID_RE.test(id || "")) return Promise.resolve();
-  return Promise.all([del(`${PHOTO_PREFIX}${id}`), del(`${PHOTO_PREFIX}${id}.json`)]).catch(() => {});
+  return del(`${PHOTO_PREFIX}${id}.json`).catch(() => {});
 }
 
 // What the pages get: where to load it from and its real size (used to avoid stretching small photos).

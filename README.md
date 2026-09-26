@@ -64,14 +64,18 @@ answer).
 - **Published page and preview:** the photo is rendered only if there is one (`featuredPhoto` in
   the public interview data): full text width, capped at its real pixel width. There is never an
   empty placeholder there.
-- **Storage:** `api/_lib/common.js` (`savePhoto`, `readPhoto`, `deletePhoto`): a private blob
-  `interview-photos/<id>` plus a small `<id>.json` saying which candidate it belongs to. The
-  `<id>` is random and new on every upload, so the personal questionnaire link token never
-  appears in a public URL. `/api/interview-photo?id=` (`api/_lib/routes/interview-photo.js`,
-  reached through the `api/site.js` dispatcher so the function count doesn't grow) serves it:
-  anyone once the interview is live (cached for an hour in browsers, 5 minutes at the CDN), only
-  the owner and admins before that. Replacing or removing a photo deletes the old blobs, as does
-  deleting the candidate. Uploads are validated server-side too (type, magic bytes, 3 MB).
+- **Storage:** `api/_lib/common.js` (`savePhoto`, `readPhoto`, `deletePhoto`): one private JSON
+  blob `interview-photos/<id>.json` holding the image as base64 plus which candidate it belongs
+  to (the same read/write path as every other record). The `<id>` is random and new on every
+  upload, so the personal questionnaire link token never appears in a public URL.
+  `/api/interview-photo?id=` (`api/_lib/routes/interview-photo.js`, reached through the
+  `api/site.js` dispatcher so the function count doesn't grow) serves it: anyone once the
+  interview is live (cached for an hour in browsers, 5 minutes at the CDN), only the owner and
+  admins before that. Replacing or removing a photo deletes the old blob, as does deleting the
+  candidate. Uploads are validated server-side too (type, magic bytes, 3 MB). Right after an
+  upload the questionnaire shows the browser's own copy and reads the saved one back from the
+  server, warning if that fails; a saved photo that can't be loaded shows a message with
+  "Try again" instead of a broken image, and the published page simply omits it.
 
 ## Newsletter prompt on sign-up
 

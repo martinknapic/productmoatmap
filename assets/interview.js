@@ -58,7 +58,7 @@ const IV_FOCUS_OPTIONS = [
 const IV_PROFILE_FIELDS = [
   { key: "name", label: "Full name", max: 200, required: true },
   { key: "role", label: "Current role", max: 200, required: true },
-  { key: "company", label: "Company", max: 200, required: true },
+  { key: "company", label: "Current company", max: 200, required: true },
   { key: "location", label: "Location (city, country)", max: 200, required: true },
   { key: "yearsExperience", label: "Years in product / design", max: 2, required: true, type: "number" },
   { key: "focusTag", label: "Focus area", select: true },
@@ -77,7 +77,7 @@ function initInterview() {
   if (!token) return renderInvalid(root);
 
   const state = {
-    profile: {}, questionnaire: null, answers: {}, custom: [], customLimit: 3, featuredPhoto: null, photoNote: "",
+    profile: {}, questionnaire: null, answers: {}, custom: [], customLimit: 3, featuredPhoto: null, photoNote: "", photoPreview: "",
     locked: false, approval: { approved: false }, status: "invited", estimatedPublishDate: null, published: null,
     registered: false, member: null, registerError: false,
     validated: false, // set once they try to finish with required answers missing -> show what's missing in red
@@ -382,7 +382,7 @@ function initInterview() {
     if (f) {
       const small = f.width < IV_PHOTO_FULL_W;
       return `${head}
-        <figure class="iv-photo-fig"><img src="${escapeAttr(f.url)}" alt="Your featured photo" width="${f.width}" height="${f.height}" style="max-width:${f.width}px"></figure>
+        <figure class="iv-photo-fig"><img src="${escapeAttr(state.photoPreview || f.url)}" data-photo-url="${escapeAttr(f.url)}" alt="Your featured photo" width="${f.width}" height="${f.height}" style="max-width:${f.width}px"></figure>
         <p class="iv-photo-note${small ? " is-warn" : ""}">${escapeHTML(photoNoteText(f))}</p>
         ${ro ? "" : `<div class="iv-photo-actions">
           <button type="button" class="btn btn-ghost" data-photo-pick>Replace photo</button>
@@ -437,10 +437,15 @@ function initInterview() {
       setPhotoStatus("Uploading...");
       const data = await post(JSON.stringify({ t: token, photo: { dataUrl: img.dataUrl, width: img.width, height: img.height } }));
       state.featuredPhoto = data.featuredPhoto || null;
+      state.photoPreview = img.dataUrl; // show what was just uploaded straight away, from the browser's own copy
       state.approval = data.approval || { approved: false };
       state.photoNote = img.originalWidth > IV_PHOTO_MAX_W ? `Resized from ${img.originalWidth} px to ${img.width} px wide so it loads quickly. Shown at the full width of the text.` : "";
       refreshPhotoSlot("Saved");
       refreshAll();
+      // Read it back from the server: if the saved copy can't be loaded, say so now instead of on the next visit.
+      fetch(state.featuredPhoto.url, { credentials: "same-origin", cache: "no-store" })
+        .then(r => { if (!r.ok) setPhotoStatus(`Uploaded, but the saved copy couldn't be loaded back (error ${r.status}). Please let us know.`, true); })
+        .catch(() => setPhotoStatus("Uploaded, but the saved copy couldn't be loaded back. Please let us know.", true));
     } catch (err) {
       const known = err && PHOTO_ERRORS[err.code];
       const serverCode = err && err.data && err.data.error;
@@ -455,7 +460,7 @@ function initInterview() {
     state.saving = true;
     try {
       const data = await post(JSON.stringify({ t: token, photo: null }));
-      state.featuredPhoto = null; state.photoNote = "";
+      state.featuredPhoto = null; state.photoNote = ""; state.photoPreview = "";
       state.approval = data.approval || { approved: false };
       refreshPhotoSlot();
       refreshAll();
@@ -466,9 +471,19 @@ function initInterview() {
     }
   }
 
+  // If the saved photo can't be loaded, say so and offer a retry instead of leaving a broken icon.
+  function photoLoadFailed(img) {
+    const fig = img.closest(".iv-photo-fig");
+    if (!fig || fig.classList.contains("is-failed")) return;
+    fig.classList.add("is-failed");
+    fig.innerHTML = `<div class="iv-photo-failed"><strong>Your photo was saved, but it couldn't be shown just now.</strong><span>Please try again. If it keeps happening, remove it and upload it once more.</span><button type="button" class="btn btn-ghost" data-photo-retry>Try again</button></div>`;
+  }
+
   function wirePhoto() {
+    root.addEventListener("error", (e) => { if (e.target.matches && e.target.matches(".iv-photo-fig img")) photoLoadFailed(e.target); }, true);
     root.addEventListener("click", (e) => {
       if (e.target.closest("[data-photo-remove]")) { removePhoto(); return; }
+      if (e.target.closest("[data-photo-retry]")) { state.photoPreview = ""; refreshPhotoSlot(); const im = document.querySelector(".iv-photo-fig img"); if (im && state.featuredPhoto) im.src = `${state.featuredPhoto.url}&r=${Date.now()}`; return; }
       if (e.target.closest("[data-photo-pick], [data-photo-drop]")) {
         const input = document.querySelector("[data-photo-input]");
         if (input && !readOnly()) input.click();

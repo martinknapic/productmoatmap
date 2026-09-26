@@ -564,7 +564,7 @@ function initAccountDetails(el, d, networkJoined) {
       <div class="form-grid">
         ${field("mp-name", 'Full name <span class="req">*</span>', d.name, 'maxlength="200" autocomplete="name" required')}
         ${field("mp-role", "Current role", d.role, 'maxlength="200" placeholder="e.g. Senior Product Manager"')}
-        ${field("mp-company", "Company", d.company, 'maxlength="200"')}
+        ${field("mp-company", "Current company", d.company, 'maxlength="200"')}
         ${field("mp-location", "Location", d.location, 'maxlength="200" placeholder="City, Country"')}
         <div class="form-field"><label for="mp-yearsExperience">Years in product</label><input type="number" id="mp-yearsExperience" name="yearsExperience" min="0" max="60" value="${val(d.yearsExperience)}"></div>
         <div class="form-field full">
@@ -817,7 +817,7 @@ function interviewFacts(p) {
   return [
     ["Name", p.name],
     ["Current role", p.role],
-    ["Company", p.company],
+    ["Current company", p.company],
     ["Location", p.location],
     ["Years in product", p.yearsExperience != null ? `${p.yearsExperience} years` : ""]
   ].filter(([, v]) => v);
@@ -826,7 +826,7 @@ function interviewFacts(p) {
 // Fits the text width, but is never stretched beyond its own pixel size (max-width = real width).
 function renderFeaturedPhoto(photo, name) {
   const w = Number(photo.width) || 0, h = Number(photo.height) || 0;
-  return `<figure class="qa-photo"><img src="${escapeHTML(photo.url)}" alt="Photo of ${escapeHTML(name)}"${w && h ? ` width="${w}" height="${h}" style="max-width:${w}px"` : ""} loading="lazy" decoding="async"></figure>`;
+  return `<figure class="qa-photo"><img src="${escapeHTML(photo.url)}" alt="Photo of ${escapeHTML(name)}"${w && h ? ` width="${w}" height="${h}" style="max-width:${w}px"` : ""} loading="lazy" decoding="async" onerror="this.closest('figure').remove()"></figure>`;
 }
 
 function renderQA(num, question, answer) {
