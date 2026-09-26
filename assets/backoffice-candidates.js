@@ -37,23 +37,24 @@ function boCandAvatar(profile, extraClass = "") {
   return `<div class="avatar bo-cand-avatar ${extraClass}"><span>${boEscapeHTML(boInitials(profile.name))}</span>${src ? `<img src="${boEscapeHTML(src)}" alt="" referrerpolicy="no-referrer" loading="lazy" onerror="this.remove()">` : ""}</div>`;
 }
 
-// The link that matters for where a candidate is in the pipeline, shown short in the list and
-// always opening in a new tab: their questionnaire while it's with them, the admin preview once
-// it's locked or scheduled, and the public article once it's live.
+// Questionnaire link (Link column): their private interview page while it's with them.
 function boCandLink(c) {
-  const origin = location.origin;
-  const short = (s, n = 8) => `${s.slice(0, n)}…`;
   if (["invited", "drafting", "ready"].includes(c.status)) {
     if (c.linkRevoked) return { kind: "Revoked", text: "link revoked", url: null };
-    return { kind: "Questionnaire", text: `interview?t=${short(c.id)}`, url: `${origin}/interview.html?t=${c.id}` };
+    return { kind: "Questionnaire", text: `interview?t=${c.id.slice(0, 8)}…`, url: `${location.origin}/interview.html?t=${c.id}` };
   }
+  return null;
+}
+
+// The article itself (Article column): "Preview" -> the admin preview page once it's locked (or
+// scheduled), "Published" -> the public URL once it's live.
+function boArticleLink(c) {
   if (c.status === "locked" || c.status === "scheduled") {
-    return { kind: c.status === "scheduled" ? "Scheduled" : "Preview", text: `preview?id=${short(c.id)}`, url: `${origin}/backoffice/preview.html?id=${c.id}` };
+    return { kind: c.status === "scheduled" ? "Scheduled" : "Preview", url: `${location.origin}/backoffice/preview.html?id=${c.id}` };
   }
   if (c.status === "published" && c.publish && c.publish.slug) {
     const category = c.publish.category || (c.profile.focusTag === "design" ? "productux" : "productmanagement");
-    const path = `/interview/${category}/${c.publish.slug}`;
-    return { kind: "Live", text: `${category}/${c.publish.slug}`, url: `${origin}${path}` };
+    return { kind: "Published", url: `${location.origin}/interview/${category}/${c.publish.slug}` };
   }
   return null;
 }
@@ -172,6 +173,11 @@ async function initBackofficeCandidates() {
         <td><span class="bo-badge bo-badge-src">${boEscapeHTML(BO_SOURCE_LABELS[c.source] || c.source)}</span></td>
         <td class="bo-cell-rec">${c.recommendation ? `<a class="bo-rec" data-tip-rec="${boEscapeHTML(c.id)}" href="${boEscapeHTML(boRecommenderLinkedIn(c.recommendation).url)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${boEscapeHTML(c.recommendation.recommenderName || "the recommender")}'s LinkedIn — hover for name and email">${BO_LINKEDIN_SVG}</a>` : `<span class="bo-cell-dim">—</span>`}</td>
         <td>${boPill(c.status)}</td>
+        <td class="bo-cell-url">${(() => {
+          const a = boArticleLink(c);
+          if (!a) return `<span class="bo-cell-dim">—</span>`;
+          return `<a class="bo-url" href="${boEscapeHTML(a.url)}" target="_blank" rel="noopener noreferrer" title="${boEscapeHTML(a.url)}"><span class="bo-url-kind bo-url-${boEscapeHTML(a.kind.toLowerCase() === "published" ? "live" : a.kind.toLowerCase())}">${boEscapeHTML(a.kind)}</span><span aria-hidden="true">↗</span></a>`;
+        })()}</td>
         <td class="bo-cell-url">${(() => {
           const l = boCandLink(c);
           if (!l) return `<span class="bo-cell-dim">—</span>`;
