@@ -9,7 +9,7 @@
 //
 // Who is submitting comes from the visitor's verified LinkedIn session cookie
 // (set by api/linkedin-callback.js), never from the request body — the form only
-// supplies the pin and its optional city / country / role / company. One pin per
+// supplies the pin and its city / country / role / company, all of which are required. One pin per
 // person: anyone already on the map (a pin that's pending, approved or removed, or a
 // published interview with a location), matched on the verified email or LinkedIn
 // ID, is refused with 409. A rejected pin doesn't count, so they can try again.
@@ -37,6 +37,9 @@ module.exports = async (req, res) => {
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
     return res.status(400).json({ error: "invalid_location" });
   }
+  // City, country, role and company are mandatory (the form enforces it too; this is the real check).
+  const missing = Object.entries({ city, country, role, company }).filter(([, v]) => !clip(v, 200)).map(([k]) => k);
+  if (missing.length) return res.status(400).json({ error: "missing_fields", fields: missing });
 
   try {
     const { pins, live, onMap } = await C.findMapPresence(session);

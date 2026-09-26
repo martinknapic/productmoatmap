@@ -618,7 +618,6 @@ void main(){
     if (!people.length) return moat(host, hero);
     const card = (p, i) => `<a class="face" href="${typeof interviewURL === "function" ? interviewURL(p) : "#"}" tabindex="-1">
         <img src="${esc(p.photo)}" alt="" loading="lazy" draggable="false">
-        <span class="face-idx">${String(i + 1).padStart(2, "0")}</span>
         <span class="face-cap"><b>${esc(p.name)}</b><i>${esc((p.location || "").split(",")[0])}</i></span></a>`;
     const COLS = 4, speeds = [64, 88, 72, 96];
     const cols = Array.from({ length: COLS }, (_, c) => {

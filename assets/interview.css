@@ -1,5 +1,5 @@
 /* Personal interview page (interview.html) — accordion of questions with focused inputs.
-   Reuses .qsection-index / .qsection-meta / .q-badge from site.css. */
+   Reuses .qsection-meta / .q-badge from site.css. */
 
 .iv-hero .about-lede { max-width: 62ch; padding-bottom: 28px; }
 

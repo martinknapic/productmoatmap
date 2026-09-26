@@ -236,7 +236,9 @@ function initSignup() {
   // Already signed in (e.g. via Apply)? Then no LinkedIn round trip: confirm to create the profile.
   let sessionProfile = null;
   signInBtn.addEventListener("click", () => {
-    if (sessionProfile) { errorEl.hidden = true; completeSignup(newsletterCheckbox.checked); } else { startSignIn(); }
+    withNewsletterPrompt(newsletterCheckbox, () => {
+      if (sessionProfile) { errorEl.hidden = true; completeSignup(newsletterCheckbox.checked); } else { startSignIn(); }
+    });
   });
   if (!new URLSearchParams(window.location.search).get("li")) {
     fetchMemberProfile().then(p => {
@@ -406,22 +408,18 @@ function initMyInterview() {
     <section class="benefits-section wrap">
       <div class="benefits-grid">
         <div class="benefit-item">
-          <div class="benefit-index">01</div>
           <h3>Your story, told properly</h3>
           <p>A structured conversation about your path, how you think, and how AI is changing the craft &mdash; in your own words, on your own private page.</p>
         </div>
         <div class="benefit-item">
-          <div class="benefit-index">02</div>
           <h3>You stay in control</h3>
           <p>Only a handful of questions are required. You save each answer when you're ready, you can add your own questions, and nothing goes public until you say you're happy with it.</p>
         </div>
         <div class="benefit-item">
-          <div class="benefit-index">03</div>
           <h3>A standing place in the series</h3>
           <p>Once published, your interview lives in the directory, on the map, and across our newsletter and social channels.</p>
         </div>
         <div class="benefit-item">
-          <div class="benefit-index">04</div>
           <h3>How it works</h3>
           <p>Apply &rarr; we review it ourselves &rarr; if it's a fit, you get an invitation with a personal link &rarr; you answer at your pace &rarr; we prepare a preview together. <a class="bracket-link" href="questions.html">[ See the questions ]</a> <a class="bracket-link" href="process.html">[ The process ]</a></p>
         </div>
@@ -954,7 +952,6 @@ async function initQuestions() {
     return `
       <div class="qsection">
         <div class="qsection-head">
-          <div class="qsection-index">${String(i + 1).padStart(2, "0")}</div>
           <div>
             <h2>${escapeHTML(section.title)}</h2>
             <p>${escapeHTML(section.blurb || "")}</p>
@@ -980,7 +977,6 @@ async function initQuestions() {
   extra.innerHTML = `
     <div class="qsection">
       <div class="qsection-head">
-        <div class="qsection-index">+</div>
         <div>
           <h2>Add your own questions</h2>
           <p>
@@ -1315,6 +1311,80 @@ function initApply() {
 // your app's Client ID from https://www.linkedin.com/developers/apps.
 const LINKEDIN_CLIENT_ID = "778t1x9svtemxo";
 
+// ---------- "Before you continue" newsletter prompt ----------
+// Every "Sign up / Sign in with LinkedIn" button goes through withNewsletterPrompt(). If the
+// newsletter box next to it is already ticked the sign-in just starts. If not, a modal makes
+// the case once more: "Subscribe me" ticks the box and continues, the quiet "Skip" continues
+// without, and the close button / Esc / clicking outside cancels (the visitor stays on the
+// page). The choice is then carried across the LinkedIn round trip exactly as before: the
+// caller's startSignIn() copies the box into sessionStorage (li_newsletter / su_newsletter /
+// iv_newsletter) — the same place the one-time OAuth nonce lives, so the two survive together —
+// and the page applies it via /api/member-signup once LinkedIn sends the visitor back.
+function withNewsletterPrompt(box, go) {
+  if (!box || box.checked) return go();
+  openNewsletterPrompt().then(choice => {
+    if (!choice) return; // cancelled
+    if (choice === "subscribe") {
+      box.checked = true;
+      box.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    go();
+  });
+}
+
+function openNewsletterPrompt() {
+  return new Promise(resolve => {
+    if (document.querySelector(".nl-overlay")) return resolve(null); // one at a time
+    const opener = document.activeElement;
+    const overlay = document.createElement("div");
+    overlay.className = "nl-overlay";
+    overlay.innerHTML = `
+      <div class="nl-modal" role="dialog" aria-modal="true" aria-labelledby="nl-title" aria-describedby="nl-lede">
+        <button type="button" class="nl-close" aria-label="Close and go back">&times;</button>
+        <div class="eyebrow">Before you continue</div>
+        <h2 id="nl-title">You haven't subscribed to the newsletter.</h2>
+        <p class="nl-lede" id="nl-lede">Once a week we send you stories from product people around the world &mdash; and the occasional deal we think you'll like. Here's what you'd get:</p>
+        <ul class="nl-benefits">
+          <li><strong>Every new interview</strong> in your inbox, so you hear how product leaders think, what they've shipped and how AI is changing the craft.</li>
+          <li><strong>Deals and perks</strong> we line up for product people, sent your way when there's something worth your time.</li>
+          <li><strong>First to know</strong> when we open something new, like calls to be featured or new ways to connect with the community.</li>
+          <li><strong>Free and easy to leave.</strong> One email a week at most, with an unsubscribe link in every issue.</li>
+        </ul>
+        <div class="nl-actions">
+          <button type="button" class="btn btn-primary" data-nl="subscribe">Subscribe me</button>
+          <button type="button" class="nl-skip" data-nl="skip">Skip, continue without subscribing</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    document.body.classList.add("nl-open");
+    const modal = overlay.querySelector(".nl-modal");
+    const primary = overlay.querySelector('[data-nl="subscribe"]');
+    primary.focus();
+
+    function close(result) {
+      document.removeEventListener("keydown", onKey, true);
+      overlay.remove();
+      document.body.classList.remove("nl-open");
+      if (opener && opener.focus) opener.focus();
+      resolve(result);
+    }
+    function onKey(e) {
+      if (e.key === "Escape") { e.preventDefault(); close(null); return; }
+      if (e.key !== "Tab") return;
+      const items = [...modal.querySelectorAll("button")];
+      const first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+    document.addEventListener("keydown", onKey, true);
+    overlay.addEventListener("click", e => {
+      if (e.target === overlay || e.target.closest(".nl-close")) return close(null);
+      const b = e.target.closest("[data-nl]");
+      if (b) close(b.dataset.nl);
+    });
+  });
+}
+
 // The newsletter checkbox (#li-newsletter) sits next to every LinkedIn sign-in
 // button that isn't signup.html (which has its own #su-newsletter). It's opt-in:
 // unchecked by default, and only if it was ticked before the redirect do we
@@ -1454,7 +1524,7 @@ function initLinkedInGate({ page, formId, submitBtnId, onLocked, onVerified }) {
     window.location.href = `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
   }
 
-  signInBtn.addEventListener("click", startSignIn);
+  signInBtn.addEventListener("click", () => withNewsletterPrompt(document.getElementById("li-newsletter"), startSignIn));
 
   async function completeSignIn() {
     try {
@@ -1589,12 +1659,12 @@ function initRecommend() {
 }
 
 // ---------- Put yourself on the map (join-map.html) ----------
-// Unlike initLinkedInGate() (used by apply/recommend, which locks the *form*
-// until LinkedIn verification), this page runs the gate in the opposite
-// order: the visitor must drop a pin on the mini map first, which is what
-// unlocks the "Sign in with LinkedIn" button. Verifying pulls their name,
-// email and photo from LinkedIn, and only then does the final submit button
-// unlock — see api/join-map.js for where that combined data actually lands.
+// Two states, never both at once. Signed out, the page is just the sign-up call to action
+// ("Sign up with LinkedIn"); the OAuth round trip lands back on this same page. Signed in,
+// the page is only the pin request: a pin on the mini map plus city, country, role and
+// company — all mandatory. Name, email and photo come from the LinkedIn session, so they're
+// never asked for. See api/join-map.js for where the submission lands (it re-checks that
+// every field is present).
 
 const JM_MAP_STYLES = {
   dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
@@ -1606,32 +1676,64 @@ function jmInitials(name) {
 }
 
 function initJoinMap() {
-  const mapEl = document.getElementById("jm-picker-map");
-  if (!mapEl || typeof maplibregl === "undefined") return;
+  const signupEl = document.getElementById("jm-signup");
+  const formEl = document.getElementById("jm-form");
+  if (!signupEl || !formEl || typeof maplibregl === "undefined") return;
 
   const hint = document.getElementById("jm-picker-hint");
-  const signinWrap = document.getElementById("jm-signin-wrap");
   const signinBtn = document.getElementById("li-signin-btn");
-  const gate = document.getElementById("li-gate");
   const errorEl = document.getElementById("li-error");
-  const preview = document.getElementById("jm-preview");
   const submitWrap = document.getElementById("jm-submit-wrap");
   const submitBtn = document.getElementById("jm-submit-btn");
   const submitError = document.getElementById("jm-submit-error");
+  const ledeOut = document.getElementById("jm-lede-out");
+  const ledeIn = document.getElementById("jm-lede-in");
+  const fields = ["jm-city", "jm-country", "jm-role", "jm-company"].map(id => document.getElementById(id));
 
   let picked = null; // { lat, lng }
-  let profile = null; // { name, email, picture }
+  let picker = null;
   let marker = null;
+  let submitting = false;
 
-  const theme = document.body.classList.contains("light") ? "light" : "dark";
-  const picker = new maplibregl.Map({
-    container: "jm-picker-map",
-    style: JM_MAP_STYLES[theme],
-    center: [8.2, 30],
-    zoom: 1.3,
-    attributionControl: { compact: true }
-  });
-  picker.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), "top-right");
+  // ----- which of the two views is showing -----
+  function showSignup(withError) {
+    formEl.hidden = true;
+    signupEl.hidden = false;
+    ledeOut.hidden = false;
+    ledeIn.hidden = true;
+    errorEl.hidden = !withError;
+  }
+
+  function showForm(p) {
+    signupEl.hidden = true;
+    formEl.hidden = false;
+    ledeOut.hidden = true;
+    ledeIn.hidden = false;
+    document.getElementById("jm-preview-avatar").innerHTML = p.picture
+      ? `<img src="${escapeHTML(p.picture)}" alt="">`
+      : `<div class="avatar">${escapeHTML(jmInitials(p.name))}</div>`;
+    document.getElementById("jm-preview-name").textContent = p.name || "";
+    document.getElementById("jm-preview-email").textContent = p.email || "";
+    ensurePicker();
+    prefillFromProfile();
+    guardAlreadyOnMap();
+    refreshLocks();
+  }
+
+  // The map is created only once its container is visible (MapLibre can't size a hidden one).
+  function ensurePicker() {
+    if (picker) { picker.resize(); return; }
+    const theme = document.body.classList.contains("light") ? "light" : "dark";
+    picker = new maplibregl.Map({
+      container: "jm-picker-map",
+      style: JM_MAP_STYLES[theme],
+      center: [8.2, 30],
+      zoom: 1.3,
+      attributionControl: { compact: true }
+    });
+    picker.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), "top-right");
+    picker.on("click", (e) => setPicked(e.lngLat));
+  }
 
   // City / country / role / company from My profile (location is saved as "City, Country")
   function prefillFromProfile() {
@@ -1642,13 +1744,15 @@ function initJoinMap() {
       fillIfEmpty("jm-country", parts.length > 1 ? parts[parts.length - 1] : "");
       fillIfEmpty("jm-role", d.role);
       fillIfEmpty("jm-company", d.company);
+      refreshLocks();
     });
   }
 
   // One pin per person: once we know who they are, check whether they're already on the map and,
   // if so, swap the form for a message (the server refuses a second pin regardless).
   function showAlreadyOnMap() {
-    document.querySelectorAll(".jm-step, .jm-preview, .form-submit-row, .hint-inline.jm-picker-hint").forEach(el => { el.hidden = true; });
+    formEl.hidden = true;
+    ledeIn.hidden = true;
     document.getElementById("jm-already").hidden = false;
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -1659,16 +1763,19 @@ function initJoinMap() {
       .catch(() => { /* the server still refuses a second pin */ });
   }
 
-  function setLockAttr(el, wrap, locked) {
-    if (locked) el.setAttribute("aria-disabled", "true");
-    else el.removeAttribute("aria-disabled");
-    wrap.classList.toggle("locked", locked);
+  // ----- the pin request: everything mandatory -----
+  function isComplete() {
+    return !!picked && fields.every(f => f.value.trim() !== "");
   }
 
   function refreshLocks() {
-    setLockAttr(signinBtn, signinWrap, !picked);
-    setLockAttr(submitBtn, submitWrap, !(picked && profile));
+    const locked = !isComplete();
+    if (locked) submitBtn.setAttribute("aria-disabled", "true");
+    else submitBtn.removeAttribute("aria-disabled");
+    submitWrap.classList.toggle("locked", locked);
+    if (!locked) submitError.hidden = true;
   }
+  fields.forEach(f => f.addEventListener("input", refreshLocks));
 
   function setPicked(lngLat) {
     picked = { lat: lngLat.lat, lng: lngLat.lng };
@@ -1682,54 +1789,23 @@ function initJoinMap() {
     refreshLocks();
   }
 
-  picker.on("click", (e) => setPicked(e.lngLat));
-  refreshLocks();
-
-  function startSignIn() {
-    if (signinBtn.getAttribute("aria-disabled") === "true" || !picked) return;
-    errorEl.hidden = true;
-    const nonce = crypto.randomUUID();
-    sessionStorage.setItem("li_oauth_state", nonce);
-    sessionStorage.setItem("jm_pin", JSON.stringify(picked));
-    rememberNewsletterChoice();
-    const redirectUri = `${window.location.origin}/api/linkedin-callback`;
-    const params = new URLSearchParams({
-      response_type: "code",
-      client_id: LINKEDIN_CLIENT_ID,
-      redirect_uri: redirectUri,
-      scope: "openid profile email",
-      state: `${nonce}:join-map`
-    });
-    window.location.href = `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
-  }
-  signinBtn.addEventListener("click", startSignIn);
-
-  async function completeSignIn() {
-    try {
-      const resp = await fetch("/api/linkedin-profile", { credentials: "same-origin" });
-      if (!resp.ok) throw new Error("not verified");
-      profile = await resp.json();
-      applyNewsletterChoice("join-map");
-
-      gate.innerHTML = `<div class="li-badge"><span class="li-badge-check">&check;</span> Verified as ${escapeHTML(profile.name || "LinkedIn member")} via LinkedIn</div>`;
-
-      document.getElementById("jm-preview-avatar").innerHTML = profile.picture
-        ? `<img src="${profile.picture}" alt="">`
-        : `<div class="avatar">${escapeHTML(jmInitials(profile.name))}</div>`;
-      document.getElementById("jm-preview-name").textContent = profile.name || "";
-      document.getElementById("jm-preview-email").textContent = profile.email || "";
-      preview.hidden = false;
-      prefillFromProfile();
-      guardAlreadyOnMap();
-
-      refreshLocks();
-    } catch (err) {
-      errorEl.hidden = false;
-    }
+  // Clicking the (dimmed) button explains what's missing instead of doing nothing.
+  function explainMissing() {
+    formEl.classList.add("was-validated");
+    const missing = [];
+    if (!picked) missing.push("a pin on the map");
+    fields.forEach(f => { if (f.value.trim() === "") missing.push(f.name); });
+    submitError.textContent = `Still needed: ${missing.join(", ")}.`;
+    submitError.hidden = false;
+    const target = !picked ? document.getElementById("jm-picker-map") : fields.find(f => f.value.trim() === "");
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (target && target.focus && picked) target.focus({ preventScroll: true });
   }
 
   async function submitPin() {
-    if (submitBtn.getAttribute("aria-disabled") === "true" || !picked || !profile) return;
+    if (submitting) return;
+    if (!isComplete()) return explainMissing();
+    submitting = true;
     submitError.hidden = true;
     submitBtn.setAttribute("aria-disabled", "true");
     submitBtn.textContent = "Adding you…";
@@ -1751,62 +1827,80 @@ function initJoinMap() {
       if (resp.status === 409) return showAlreadyOnMap();
       if (!resp.ok) throw new Error("submit failed");
 
-      document.querySelectorAll(".jm-step, .jm-preview, .form-submit-row").forEach(el => { el.hidden = true; });
+      formEl.hidden = true;
+      ledeIn.hidden = true;
       document.getElementById("jm-success").hidden = false;
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
+      submitError.textContent = "Something went wrong submitting your pin — try again.";
       submitError.hidden = false;
       submitBtn.removeAttribute("aria-disabled");
       submitBtn.textContent = "Add me to the map";
+    } finally {
+      submitting = false;
     }
   }
   submitBtn.addEventListener("click", submitPin);
 
-  // Resume after the LinkedIn OAuth redirect back to this page.
+  // ----- sign up (LinkedIn) and the return trip to this page -----
+  function startSignIn() {
+    errorEl.hidden = true;
+    const nonce = crypto.randomUUID();
+    sessionStorage.setItem("li_oauth_state", nonce);
+    rememberNewsletterChoice();
+    const redirectUri = `${window.location.origin}/api/linkedin-callback`;
+    const params = new URLSearchParams({
+      response_type: "code",
+      client_id: LINKEDIN_CLIENT_ID,
+      redirect_uri: redirectUri,
+      scope: "openid profile email",
+      state: `${nonce}:join-map`
+    });
+    window.location.href = `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
+  }
+  signinBtn.addEventListener("click", () => withNewsletterPrompt(document.getElementById("li-newsletter"), startSignIn));
+
+  // Back from LinkedIn: create the member profile (with the newsletter choice made before
+  // leaving), then show the pin request.
+  async function completeSignUp() {
+    try {
+      const resp = await fetch("/api/linkedin-profile", { credentials: "same-origin" });
+      if (!resp.ok) throw new Error("not verified");
+      const profile = await resp.json();
+
+      const wantsNewsletter = sessionStorage.getItem("li_newsletter") === "1";
+      sessionStorage.removeItem("li_newsletter");
+      await fetch("/api/member-signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ newsletter: wantsNewsletter, source: "join-map" })
+      }).catch(() => { /* the pin request itself still works without the profile record */ });
+
+      showForm(profile);
+    } catch (err) {
+      showSignup(true);
+    }
+  }
+
   const params = new URLSearchParams(window.location.search);
   const li = params.get("li");
   if (!li) {
-    // already signed in: skip the LinkedIn step
-    fetchMemberProfile().then(p => {
-      if (!p) return;
-      profile = p;
-      gate.innerHTML = sessionGateHTML(p);
-      wireSessionNewsletter(gate, "join-map");
-      document.getElementById("jm-preview-avatar").innerHTML = p.picture
-        ? `<img src="${p.picture}" alt="">`
-        : `<div class="avatar">${escapeHTML(jmInitials(p.name))}</div>`;
-      document.getElementById("jm-preview-name").textContent = p.name || "";
-      document.getElementById("jm-preview-email").textContent = p.email || "";
-      preview.hidden = false;
-      prefillFromProfile();
-      refreshLocks();
-      guardAlreadyOnMap();
-    });
+    // Signed in already (nav sign-up, apply, …)? Straight to the pin request. Otherwise the CTA.
+    fetchMemberProfile().then(p => (p ? showForm(p) : showSignup(false)));
     return;
   }
 
   const returnedState = params.get("state");
   history.replaceState(null, "", window.location.pathname);
-
-  const savedPin = sessionStorage.getItem("jm_pin");
-  sessionStorage.removeItem("jm_pin");
-  if (savedPin) {
-    try {
-      const parsed = JSON.parse(savedPin);
-      setPicked({ lat: parsed.lat, lng: parsed.lng });
-      picker.jumpTo({ center: [parsed.lng, parsed.lat], zoom: 3.5 });
-    } catch (err) { /* ignore malformed sessionStorage value */ }
-  }
-
   const expectedState = sessionStorage.getItem("li_oauth_state");
   sessionStorage.removeItem("li_oauth_state");
 
   if (li !== "ok" || !returnedState || returnedState !== expectedState) {
-    errorEl.hidden = false;
+    showSignup(true);
     return;
   }
-
-  completeSignIn();
+  completeSignUp();
 }
 
 // ---------- Calendar (calendar.html) ----------

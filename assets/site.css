@@ -31,6 +31,7 @@
 }
 
 .eyebrow .num { color: var(--accent); font-weight: 700; }
+.eyebrow-dot { width: 8px; height: 8px; background: var(--accent); flex-shrink: 0; }
 
 .hero h1 {
   font-family: var(--font-sans);
@@ -733,7 +734,8 @@ footer {
 
 #apply-form.was-validated .form-field input:invalid,
 #apply-form.was-validated .form-field select:invalid,
-#apply-form.was-validated .form-field textarea:invalid { border-color: var(--accent); }
+#apply-form.was-validated .form-field textarea:invalid,
+#jm-form.was-validated .form-field input:invalid { border-color: var(--accent); }
 
 .form-field select { appearance: auto; cursor: pointer; }
 
@@ -880,14 +882,6 @@ footer {
   display: flex;
   flex-direction: column;
   gap: 14px;
-}
-
-.benefit-index {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  letter-spacing: 0.05em;
-  color: var(--accent);
-  font-weight: 700;
 }
 
 .benefit-item h3 {
@@ -1163,6 +1157,12 @@ footer {
 
 .jm-location-grid { margin-top: 28px; }
 
+.jm-signup { max-width: 640px; padding: 40px 0 48px; }
+.jm-signup .signup-fineprint { margin-top: 0; }
+.jm-signup .li-gate { margin: 20px 0 0; }
+#jm-form { padding-top: 36px; }
+#jm-form .hint-inline.is-error { color: var(--accent); }
+
 .jm-preview {
   display: flex;
   align-items: center;
@@ -1330,14 +1330,6 @@ footer {
   padding-bottom: 20px;
   border-bottom: 1px solid var(--line);
 }
-.qsection-index {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--accent);
-  padding-top: 8px;
-  min-width: 26px;
-}
 .qsection-head h2 { font-weight: 700; font-size: clamp(22px, 2.6vw, 28px); line-height: 1.2; }
 .qsection-head p { margin-top: 8px; color: var(--ink-body); font-size: 16px; line-height: 1.6; max-width: 60ch; }
 .qsection-meta {
@@ -1490,3 +1482,47 @@ footer {
 .mm-status { flex-shrink: 0; padding: 5px 10px; border: 1px solid var(--line-soft); font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-body); }
 .mm-status.is-approved { background: var(--ink); border-color: var(--ink); color: var(--paper); }
 .mm-status.is-rejected { color: var(--accent); border-color: var(--accent); }
+
+
+/* ---------- "Before you continue" newsletter prompt (site.js: withNewsletterPrompt) ---------- */
+body.nl-open { overflow: hidden; }
+.nl-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  background: rgba(10, 10, 10, 0.6);
+  animation: nl-fade 0.2s ease both;
+}
+.nl-modal {
+  position: relative; width: 100%; max-width: 540px; max-height: calc(100vh - 40px); overflow-y: auto;
+  padding: 40px 40px 32px;
+  background: var(--paper); color: var(--ink);
+  border: 1px solid var(--line); box-shadow: 8px 8px 0 var(--ink);
+  animation: nl-rise 0.28s cubic-bezier(.2, .8, .2, 1) both;
+}
+.nl-modal .eyebrow { margin-bottom: 14px; }
+.nl-modal h2 { font-weight: 700; font-size: clamp(24px, 3.4vw, 30px); line-height: 1.12; letter-spacing: -0.01em; }
+.nl-lede { margin-top: 14px; color: var(--ink-body); font-size: 16px; line-height: 1.6; }
+.nl-benefits { margin: 22px 0 28px; display: flex; flex-direction: column; gap: 14px; }
+.nl-benefits li { position: relative; padding-left: 20px; color: var(--ink-body); font-size: 15px; line-height: 1.55; }
+.nl-benefits li::before { content: ""; position: absolute; left: 0; top: 9px; width: 7px; height: 7px; background: var(--accent); }
+.nl-benefits strong { color: var(--ink); }
+.nl-actions { display: flex; flex-direction: column; align-items: stretch; gap: 14px; }
+.nl-actions .btn { justify-content: center; }
+.nl-skip {
+  align-self: center; padding: 4px 2px; font-size: 13px; color: var(--ink-dim);
+  border-bottom: 1px solid transparent; transition: color 0.15s ease, border-color 0.15s ease;
+}
+.nl-skip:hover, .nl-skip:focus-visible { color: var(--ink-body); border-bottom-color: var(--line-soft); }
+.nl-close {
+  position: absolute; top: 12px; right: 12px; width: 34px; height: 34px;
+  font-size: 24px; line-height: 1; color: var(--ink-dim);
+  border: 1px solid transparent; transition: color 0.15s ease, border-color 0.15s ease;
+}
+.nl-close:hover, .nl-close:focus-visible { color: var(--ink); border-color: var(--line); }
+@keyframes nl-fade { from { opacity: 0; } }
+@keyframes nl-rise { from { opacity: 0; transform: translateY(14px); } }
+@media (max-width: 560px) {
+  .nl-overlay { align-items: flex-end; padding: 0; }
+  .nl-modal { max-width: none; max-height: 92vh; padding: 32px 22px 24px; box-shadow: none; border-width: 1px 0 0; }
+}
+@media (prefers-reduced-motion: reduce) { .nl-overlay, .nl-modal { animation: none; } }

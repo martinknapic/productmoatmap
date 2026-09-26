@@ -11,7 +11,7 @@ feature — an interactive 3D globe of product people, at `map.html`.
 | `index.html` | Homepage — hero, stats, featured interview, filterable directory grid |
 | `person.html?slug=...` | Individual interview page — career snapshot, links, pull quote, Q&A, prev/next |
 | `map.html` | The interactive globe (see below) |
-| `join-map.html` | "Put yourself on the map" — pin picker + LinkedIn verification, feeds the globe (see below) |
+| `join-map.html` | "Put yourself on the map" — sign-up call to action, then a pin request with mandatory details; feeds the globe (see below) |
 
 Both `index.html` and `person.html` are rendered client-side from `assets/people-data.js`
 by `assets/site.js`. No build step — plain static files.
@@ -44,6 +44,19 @@ To change the default, edit `DEFAULT_FX` at the top of `hero-fx.js`; to remove t
 entirely, delete the `#hero-fx` div and the two `hero-fx.*` includes in `index.html`.
 Everything follows the light/dark theme, pauses when off-screen or the tab is hidden, holds a
 single still frame under `prefers-reduced-motion`, and becomes a band above the copy on phones.
+
+## Newsletter prompt on sign-up
+
+Every "Sign up / Sign in with LinkedIn" button (signup, apply, recommend, put yourself on the
+map, a personal interview page) goes through `withNewsletterPrompt()` in `assets/site.js`.
+If the newsletter box next to the button is ticked, sign-in starts as normal. If not, a
+"Before you continue" modal lists what the newsletter offers: **Subscribe me** ticks the box
+and continues, a quiet **Skip** continues without, and the close button / Esc / clicking
+outside cancels (the visitor stays on the page). No cookie is involved: the box is copied
+into `sessionStorage` before the redirect (`su_newsletter`, `li_newsletter` or
+`iv_newsletter`, next to the OAuth nonce it already has to keep), and once LinkedIn sends the
+visitor back the page posts it to `/api/member-signup`, which stores it on the member record
+(`newsletter`, `source`). To add a new sign-in button, wrap its click handler the same way.
 
 ## Updating interview content
 
@@ -108,21 +121,24 @@ before the globe renders — this is how approved "Put yourself on the map" subm
 ## Put yourself on the map (`join-map.html`)
 
 A public self-serve flow for visitors to add their own pin to the globe, linked from a
-"Put yourself on the map" button on `map.html`'s sub-header. The gate runs in the
-*opposite* order from Apply/Recommend below: the visitor must drop a pin on a small
-MapLibre picker first — that's what unlocks the "Sign in with LinkedIn" button, not the
-other way round. Verifying pulls their name/email/photo from LinkedIn (same
-`/api/linkedin-profile` handoff as Apply/Recommend); only then does the final "Add me to
-the map" button unlock. Submitting posts everything to `api/join-map.js`, which stores it
-as a **pending** record in Vercel Blob — nothing is public yet. A reviewer approves or
-rejects it from `/backoffice/map-submissions.html`, and only approved records are served
-back to the globe by `api/map-people.js`.
+"Put yourself on the map" button on `map.html`'s sub-header. The page shows one of two
+things, never both. **Signed out:** only the "Sign up with LinkedIn" call to action (plus
+the private-profile note and the optional newsletter tick). LinkedIn returns to this same
+page, where the member profile is created (`/api/member-signup`, source `join-map`).
+**Signed in:** only the pin request — a pin on the MapLibre picker plus city, country, role
+and company, all mandatory (the button stays dimmed and, when clicked, lists what is still
+missing; `api/join-map.js` re-checks and answers 400 `missing_fields`). Name, email and
+photo come from the LinkedIn session, so they are never asked for. Submitting stores a
+**pending** record in Vercel Blob — nothing is public yet. A reviewer approves or rejects
+it from `/backoffice/map-submissions.html`, and only approved records are served back to
+the globe by `api/map-people.js`. Someone who already has a pin sees "You're already on the
+map" instead of the form.
 
 ### Files
 
 | File | Purpose |
 |------|---------|
-| `join-map.html` | Page markup — pin-picker map, location/role/company fields, `#li-gate`, profile preview, submit |
+| `join-map.html` | Page markup — `#jm-signup` (signed out) and `#jm-form` (signed in: pin-picker map, required city/country/role/company fields, profile preview, submit) |
 | `assets/site.js` | `initJoinMap()` — pin picker, the inverted LinkedIn gate, and the final submit call, all specific to this page (doesn't reuse `initLinkedInGate()`, since the lock direction is reversed) |
 | `assets/site.css` | `.jm-*` — picker map sizing, profile preview card |
 | `api/join-map.js` | Vercel Function — validates and writes a new **pending** submission to Vercel Blob (`map-submissions/<id>.json`) |

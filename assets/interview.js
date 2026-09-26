@@ -229,7 +229,7 @@ function initInterview() {
             </div>
           </div>
         </section>`;
-      document.getElementById("iv-signin-btn").addEventListener("click", startSignIn);
+      document.getElementById("iv-signin-btn").addEventListener("click", () => withNewsletterPrompt(document.getElementById("iv-reg-newsletter"), startSignIn));
       return;
     }
     rootEl.innerHTML = `
@@ -271,7 +271,6 @@ function initInterview() {
     return `
       <div class="iv-section" data-section="details">
         <div class="iv-section-head">
-          <div class="qsection-index">00</div>
           <div>
             <h2>Your details</h2>
             <p>How you'll be introduced. Check they're right — you can edit anything.</p>
@@ -305,7 +304,6 @@ function initInterview() {
     return `
       <div class="iv-section" data-section="${escapeAttr(section.id)}">
         <div class="iv-section-head">
-          <div class="qsection-index">${String(i + 1).padStart(2, "0")}</div>
           <div>
             <h2>${escapeHTML(section.title)}</h2>
             ${section.blurb ? `<p>${escapeHTML(section.blurb)}</p>` : ""}
@@ -352,7 +350,6 @@ function initInterview() {
     return `
       <div class="iv-section" data-section="custom">
         <div class="iv-section-head">
-          <div class="qsection-index">+</div>
           <div>
             <h2>Add your own questions</h2>
             <p>Optional. Write up to ${state.customLimit} questions you'd rather be asked, and answer them. They're shown at the end of your interview.</p>

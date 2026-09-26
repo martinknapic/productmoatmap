@@ -109,11 +109,6 @@
   transition: opacity 0.35s ease;
 }
 .face:hover::after { opacity: 0; }
-.face-idx {
-  position: absolute; top: 8px; left: 8px; z-index: 2;
-  font: 700 11px/1 var(--font-mono); letter-spacing: 0.06em; color: #fff;
-  padding: 4px 6px; background: rgba(0, 0, 0, 0.55);
-}
 .face-cap {
   position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
   display: flex; flex-direction: column; gap: 2px; padding: 8px 10px;
