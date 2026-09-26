@@ -384,6 +384,97 @@ function revealCurrentStep(listEl) {
 // only status ("You applied", "Your application is pending review"); the interview itself (continue,
 // preview, progress) appears once they've been invited.
 
+// ---------- Invitation confetti ----------
+// The first time an invited person lands on either of their two pages (My interview, or their
+// personal questionnaire), whichever comes first, colourful confetti fires across the whole page
+// for a few seconds. It is remembered per invitation in this browser (localStorage, shared by
+// both pages), so it happens once. Skipped under prefers-reduced-motion. Add ?confetti=1 to any
+// of those URLs to see it again.
+
+const CONFETTI_COLORS = ["#f95e25", "#ec0680", "#b329d7", "#4252ed", "#109df7", "#ffd23f", "#2ec4b6"]; // logo gradient + two accents
+
+function launchConfetti(durationMs = 3600) {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (document.getElementById("pm-confetti")) return;
+  const canvas = document.createElement("canvas");
+  canvas.id = "pm-confetti";
+  canvas.setAttribute("aria-hidden", "true");
+  canvas.style.cssText = "position:fixed;inset:0;width:100%;height:100%;z-index:400;pointer-events:none";
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext("2d");
+  let W = 0, H = 0, dpr = 1;
+  const resize = () => {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+  resize();
+  window.addEventListener("resize", resize);
+
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const pieces = [];
+  const add = (x, y, vx, vy, delay) => pieces.push({
+    x, y, vx, vy, delay, born: false,
+    w: rnd(6, 12), h: rnd(4, 9), rot: rnd(0, Math.PI * 2), vr: rnd(-9, 9),
+    color: CONFETTI_COLORS[(Math.random() * CONFETTI_COLORS.length) | 0],
+    round: Math.random() < 0.18, wobble: rnd(0, Math.PI * 2), wobbleSpeed: rnd(4, 9), drag: rnd(0.985, 0.995)
+  });
+  // two cannons from the bottom corners, fired inwards and upwards...
+  for (let i = 0; i < 90; i++) {
+    const speed = rnd(700, 1350) * Math.min(1, H / 800 + 0.35);
+    const a = rnd(-1.35, -0.75), b = rnd(-2.4, -1.8); // radians, both pointing up; left fires right, right fires left
+    add(0, H, Math.cos(a) * speed, Math.sin(a) * speed, rnd(0, 0.25));
+    add(W, H, Math.cos(b) * speed, Math.sin(b) * speed, rnd(0, 0.25));
+  }
+  // ...then a shower from the top across the full width
+  for (let i = 0; i < 130; i++) add(rnd(0, W), rnd(-H * 0.25, -10), rnd(-60, 60), rnd(40, 220), rnd(0.35, 2.1));
+
+  const start = performance.now();
+  let last = start;
+  function frame(now) {
+    const t = (now - start) / 1000, dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    ctx.clearRect(0, 0, W, H);
+    let alive = 0;
+    for (const p of pieces) {
+      if (t < p.delay) { alive++; continue; }
+      p.vy += 900 * dt;                                  // gravity
+      p.vx *= Math.pow(p.drag, dt * 60); p.vy *= Math.pow(p.drag, dt * 60);
+      p.wobble += p.wobbleSpeed * dt;
+      p.x += (p.vx + Math.sin(p.wobble) * 40) * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+      if (p.y > H + 30) continue;
+      alive++;
+      const fade = t > durationMs / 1000 - 0.9 ? Math.max(0, (durationMs / 1000 - t) / 0.9) : 1;
+      ctx.save();
+      ctx.globalAlpha = fade;
+      ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.scale(1, Math.cos(p.wobble * 1.3));   // flutter
+      ctx.fillStyle = p.color;
+      if (p.round) { ctx.beginPath(); ctx.arc(0, 0, p.w / 2.4, 0, Math.PI * 2); ctx.fill(); }
+      else ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    }
+    if (t < durationMs / 1000 && alive) requestAnimationFrame(frame);
+    else cleanup();
+  }
+  function cleanup() { window.removeEventListener("resize", resize); canvas.remove(); }
+  setTimeout(cleanup, durationMs + 1500); // never leave the overlay behind (e.g. if the tab was in the background)
+  requestAnimationFrame(frame);
+}
+
+// `token` identifies the invitation (the personal questionnaire's id), so the two pages agree.
+function celebrateInviteOnce(token) {
+  const force = new URLSearchParams(window.location.search).get("confetti") === "1";
+  const key = `pm-invite-confetti:${token}`;
+  try {
+    if (!force && localStorage.getItem(key)) return;
+    localStorage.setItem(key, "1");
+  } catch (err) {
+    if (!force) return; // can't remember it (storage blocked), so don't risk repeating it on every visit
+  }
+  setTimeout(() => launchConfetti(), 350); // let the page settle first
+}
+
 function initMyInterview() {
   const root = document.getElementById("mi-root");
   if (!root) return;
@@ -485,6 +576,7 @@ function initMyInterview() {
     .then(data => {
       if (data.state === "invited") {
         show(interviewPanel(data));
+        celebrateInviteOnce(data.token);
       } else if (data.state === "published") {
         show(hero("Your interview is live.", "Thank you for taking part.",
           `<a class="btn btn-primary" href="${escapeAttr(data.url)}">Read your interview &rarr;</a>`, ctxFrom(data)));
@@ -740,7 +832,7 @@ function initMyMap() {
           : data.onMap
             ? "You're on the map, and here's where your pin stands. Each person gets one pin, and we review it before it goes live."
             : "We couldn't approve your pin as submitted. You can drop a new one where you work.",
-        `${canAdd ? `<a class="btn btn-primary" href="join-map.html">${empty ? "Put yourself on the map" : "Drop a new pin"} &rarr;</a>` : ""}<a class="${canAdd ? "bracket-link" : "btn btn-primary"}" href="map.html">${canAdd ? "[ Open the map ]" : "Open the map &rarr;"}</a>`
+        `${canAdd ? `<a class="btn btn-primary" href="join-map.html">${empty ? "Put yourself on the map" : "Drop a new pin"} &rarr;</a>` : ""}<a class="${canAdd ? "bracket-link" : "btn btn-primary"}" href="map.html${empty ? "" : "?me=1"}">${canAdd ? "[ Open the map ]" : "Open the map &rarr;"}</a>`
       ) + (empty ? "" : `<section class="wrap mm-list-wrap"><ul class="mm-list">${cards.join("")}</ul></section>`);
     })
     .catch(() => { root.innerHTML = hero("Something went wrong.", "We couldn't load your map details just now. Please refresh in a moment."); });

@@ -107,6 +107,7 @@ function initInterview() {
     if (!resp.ok) return renderInvalid(root);
     apply(await resp.json());
     render(back.registeredNow);
+    if (!state.asAdmin && !state.published) celebrateInviteOnce(token); // first visit after being invited, on either page
   }
 
   function apply(data) {

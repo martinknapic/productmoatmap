@@ -91,6 +91,27 @@ async function fetchCommunityPeople() {
   }
 }
 
+// ---------- "See my pin" (map.html?me=1) ----------
+// Flies to the signed-in member's own place on the map and opens their card. That is their live
+// interview if they have one, else their pin (approved, or still pending). A pending pin isn't in
+// the public data yet, so for them alone it is added to the globe here, labelled as awaiting review.
+// Signed out, or nothing to show: the map just opens as usual.
+
+async function fetchMyPlace() {
+  try {
+    const resp = await fetch("/api/member-map", { credentials: "same-origin", cache: "no-store" });
+    if (!resp.ok) return null;
+    const d = await resp.json();
+    if (d.interview && d.interview.slug) return { slug: d.interview.slug };
+    const pin = (d.pins || []).find(p => p.status === "approved") || (d.pins || []).find(p => p.status === "pending");
+    return pin && typeof pin.lat === "number" && typeof pin.lng === "number" ? pin : null;
+  } catch (err) {
+    return null;
+  }
+}
+
+const PENDING_NOTE = "Waiting for review. Only you can see this pin until it's approved.";
+
 // ---------- Data → GeoJSON ----------
 // Populated by initGlobe() once the community people fetch resolves; declared
 // here (rather than inside initGlobe) so the functions below that close over
@@ -383,10 +404,14 @@ function spinGlobe() {
 // second pass.
 
 async function initGlobe() {
-  const communityPeople = await fetchCommunityPeople();
+  const wantsMine = new URLSearchParams(location.search).get("me") === "1";
+  const [communityPeople, myPlace] = await Promise.all([fetchCommunityPeople(), wantsMine ? fetchMyPlace() : Promise.resolve(null)]);
   ALL_PEOPLE = PEOPLE.concat(
     (typeof INTERVIEWS !== "undefined" ? INTERVIEWS : []).map(interviewToPersonShape)
   ).concat(communityPeople);
+  if (myPlace && !myPlace.slug && myPlace.status === "pending") {
+    ALL_PEOPLE.push({ name: myPlace.name, role: myPlace.role, company: myPlace.company, city: myPlace.city, country: myPlace.country, photo: myPlace.picture, lat: myPlace.lat, lng: myPlace.lng, snippet: PENDING_NOTE, mine: true });
+  }
   buildFeatures();
 
   map = new maplibregl.Map({
@@ -414,8 +439,23 @@ async function initGlobe() {
 
   const deepLinkSlug = new URLSearchParams(location.search).get("slug");
 
+  // Which person is "mine": by interview slug, else the one at my pin's coordinates.
+  const mineIndex = () => {
+    if (!myPlace) return -1;
+    if (myPlace.slug) return ALL_PEOPLE.findIndex(p => p.slug === myPlace.slug);
+    let idx = ALL_PEOPLE.findIndex(p => p.mine);
+    if (idx === -1) idx = ALL_PEOPLE.findIndex(p => typeof p.lat === "number" && Math.abs(p.lat - myPlace.lat) < 1e-9 && Math.abs(p.lng - myPlace.lng) < 1e-9 && p.name === myPlace.name);
+    return idx;
+  };
+
   map.on("load", () => {
-    if (deepLinkSlug) {
+    const mine = mineIndex();
+    if (mine !== -1 && coordsByIndex[mine]) {
+      userInteracted = true;
+      document.getElementById("hint").classList.add("hidden");
+      map.once("moveend", () => showSidePanel(ALL_PEOPLE[mine]));
+      map.flyTo({ center: coordsByIndex[mine], zoom: 10.5, duration: 2200 });
+    } else if (deepLinkSlug) {
       userInteracted = true;
       document.getElementById("hint").classList.add("hidden");
       const idx = ALL_PEOPLE.findIndex(p => p.slug === deepLinkSlug);

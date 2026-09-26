@@ -77,6 +77,21 @@ answer).
   server, warning if that fails; a saved photo that can't be loaded shows a message with
   "Try again" instead of a broken image, and the published page simply omits it.
 
+## "See my pin" and the invitation confetti
+
+- **See my pin:** on `join-map.html` (the "You're already on the map" view) and on My map, the
+  button opens `map.html?me=1`. The map asks `/api/member-map` (the caller's own records only,
+  now including their pin's coordinates and profile fields) and flies to their place at street
+  zoom with their card open: their live interview if they have one, else their pin. A pin that is
+  still pending review is not on the public map, so for its owner alone it is added to the globe
+  and the card says it is waiting for review. Signed out or nothing to show: the map opens as usual.
+- **Invitation confetti:** the first time an invited person opens either My interview or their
+  personal questionnaire (whichever comes first), `launchConfetti()` in `assets/site.js` fires
+  colourful confetti over the whole page for a few seconds. `celebrateInviteOnce(token)` remembers
+  it per invitation in `localStorage` (shared by both pages), so it happens once per browser.
+  Skipped for admins previewing, once published, and under prefers-reduced-motion; add
+  `?confetti=1` to either URL to replay it.
+
 ## Newsletter prompt on sign-up
 
 Every "Sign up / Sign in with LinkedIn" button (signup, apply, recommend, put yourself on the
