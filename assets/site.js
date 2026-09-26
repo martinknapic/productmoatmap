@@ -284,6 +284,11 @@ function initSignup() {
         : "You're not subscribed to the newsletter - we'll only add you if you tick the box.";
       successBlock.hidden = false;
       window.scrollTo({ top: 0, behavior: "smooth" });
+      // someone who is already on the map doesn't need the "put yourself on the map" suggestion
+      fetch("/api/member-map", { credentials: "same-origin", cache: "no-store" })
+        .then(r => (r.ok ? r.json() : null))
+        .then(d => { const cta = document.getElementById("su-map-cta"); if (cta && d && d.onMap) cta.style.display = "none"; })
+        .catch(() => {});
     } catch (err) {
       errorEl.hidden = false;
     }

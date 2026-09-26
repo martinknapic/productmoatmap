@@ -1536,3 +1536,6 @@ body.nl-open { overflow: hidden; }
   .nl-modal { max-width: none; max-height: 92vh; padding: 32px 22px 24px; box-shadow: none; border-width: 1px 0 0; }
 }
 @media (prefers-reduced-motion: reduce) { .nl-overlay, .nl-modal { animation: none; } }
+
+/* signup.html: what to do after the profile is created */
+.su-next { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }

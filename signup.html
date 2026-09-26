@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=2">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=2">
   <link rel="stylesheet" href="assets/swiss.css?v=20">
-  <link rel="stylesheet" href="assets/site.css?v=54">
+  <link rel="stylesheet" href="assets/site.css?v=55">
 </head>
 <body class="light">
   <script>try{if(localStorage.getItem("pm-theme")==="dark")document.body.classList.remove("light")}catch(e){}</script>
@@ -90,10 +90,15 @@
 
   <main class="wrap">
     <div id="su-success" class="apply-success" hidden>
-      <div class="eyebrow"><span class="num">&check;</span> You're all set</div>
-      <h2>Your profile is live.</h2>
+      <div class="eyebrow"><span class="num">&check;</span> Welcome</div>
+      <h2>Your profile is created.</h2>
+      <p>It's private: only you can see it, and nothing about you is public unless you choose to add it. Here's what you can do next.</p>
       <p id="su-success-newsletter"></p>
-      <a class="btn btn-ghost" href="account.html">Go to my profile &rarr;</a>
+      <div class="su-next">
+        <a class="btn btn-primary" id="su-map-cta" href="join-map.html">Put yourself on the map &rarr;</a>
+        <a class="btn btn-ghost" href="apply.html">Apply to be featured</a>
+        <a class="btn btn-ghost" href="account.html">Go to my profile</a>
+      </div>
     </div>
   </main>
 
@@ -115,7 +120,7 @@
     </div>
   </footer>
 
-  <script src="assets/site.js?v=58"></script>
+  <script src="assets/site.js?v=60"></script>
   <script>
     initTheme();
     initSignup();
