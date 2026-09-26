@@ -19,7 +19,9 @@ module.exports = async (req, res) => {
     console.error("[published] failed:", (err && err.stack) || err);
   }
 
-  res.setHeader("Cache-Control", "public, max-age=0, s-maxage=30, stale-while-revalidate=300");
+  // Short edge cache and no stale-while-revalidate: a just-published article has to show up within
+  // seconds, not serve the old list for minutes while the CDN refreshes in the background.
+  res.setHeader("Cache-Control", "public, max-age=0, s-maxage=10");
   if ((req.query || {}).format === "js") {
     res.setHeader("Content-Type", "application/javascript; charset=utf-8");
     // JSON.stringify output is a valid JS literal except for U+2028/2029, escaped here.
