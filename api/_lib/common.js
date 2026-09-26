@@ -141,6 +141,32 @@ async function findMapPresence(session) {
   return { pins, live, onMap: !!live || pins.some(s => (s.status || "pending") !== "rejected") };
 }
 
+// One record per person. Pins written before the one-pin-per-person rule can leave the same person
+// with several records; anyone sharing an email or LinkedIn ID is one person. Keeps the record that
+// is (or is closest to being) on the map: approved, then pending, then removed, then rejected —
+// newest first within a status. Order of the input is otherwise preserved.
+const MAP_STATUS_RANK = { approved: 0, pending: 1, removed: 2, rejected: 3 };
+function dedupeMapPins(pins) {
+  const groupOf = pins.map((_, i) => i);
+  const find = i => (groupOf[i] === i ? i : (groupOf[i] = find(groupOf[i])));
+  const seen = new Map();
+  pins.forEach((s, i) => {
+    [lowerTrim(s.email) && `e:${lowerTrim(s.email)}`, s.linkedinId && `l:${s.linkedinId}`].filter(Boolean).forEach(key => {
+      if (seen.has(key)) groupOf[find(i)] = find(seen.get(key));
+      else seen.set(key, i);
+    });
+  });
+  const rank = s => (MAP_STATUS_RANK[s.status || "pending"] ?? 1);
+  const best = new Map();
+  pins.forEach((s, i) => {
+    const g = find(i);
+    const cur = best.get(g);
+    if (!cur || rank(s) < rank(cur) || (rank(s) === rank(cur) && String(s.submittedAt) > String(cur.submittedAt))) best.set(g, s);
+  });
+  const keep = new Set(best.values());
+  return pins.filter(s => keep.has(s));
+}
+
 // Deterministic per person, so two simultaneous submissions land on the same blob and the second
 // is refused by the storage layer (allowOverwrite: false) instead of slipping past the check above.
 const mapPinId = session => crypto.createHash("sha256").update(lowerTrim(session.email) || `li:${session.sub}`).digest("hex");
@@ -441,7 +467,7 @@ async function takenSlugs(exceptId) {
 module.exports = {
   crypto, defaults,
   parseCookies, adminSession, memberSession, requireAdmin, isAdminRequest, clip,
-  readJSON, writeJSON, readCandidate, saveCandidate, listCandidates, findCandidatesByEmail, deleteCandidate, MAP_PREFIX, findMapPresence, mapPinId,
+  readJSON, writeJSON, readCandidate, saveCandidate, listCandidates, findCandidatesByEmail, deleteCandidate, MAP_PREFIX, findMapPresence, mapPinId, dedupeMapPins,
   upsertMember, readMember, saveMemberDetails, setNetworkOptIn, isNetworkMember, cleanMemberDetails, FOCUS_TAGS, readBank, defaultBank, cleanSections, QUESTION_BANK_PATH,
   requiredProgress, deriveStatus, isLive, blankCandidate, cleanProfile, ID_RE, newId,
   slugify, CATEGORIES, defaultCategory, toPublicInterview, takenSlugs, FOCUS_LABELS

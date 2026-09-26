@@ -5,7 +5,8 @@
 // (they hold an email address), so every read here goes through the SDK's
 // authenticated get() rather than a bare fetch of a public URL.
 //
-// GET  -> list every submission, newest first.
+// GET  -> list submissions, newest first, one per person (see C.dedupeMapPins): the pin that is
+//         on the map, or failing that their latest one, so the same person never appears twice.
 // POST -> { id, status } to set a submission's status ("pending" |
 //          "approved" | "rejected" | "removed"). Only "approved" ones are picked up by
 //          api/map-people.js for the public globe. "removed" is a soft delete: the record stays
@@ -15,6 +16,7 @@
 
 const crypto = require("crypto");
 const { list, get, put } = require("@vercel/blob");
+const C = require("./_lib/common");
 
 const SESSION_COOKIE = "bo_session";
 const PREFIX = "map-submissions/";
@@ -66,8 +68,7 @@ module.exports = async (req, res) => {
   if (req.method === "GET") {
     try {
       const { blobs } = await list({ prefix: PREFIX });
-      const submissions = (await Promise.all(blobs.map(b => readSubmission(b.pathname))))
-        .filter(Boolean)
+      const submissions = C.dedupeMapPins((await Promise.all(blobs.map(b => readSubmission(b.pathname)))).filter(Boolean))
         .sort((a, b) => (a.submittedAt < b.submittedAt ? 1 : -1));
       return res.status(200).json(submissions);
     } catch (err) {

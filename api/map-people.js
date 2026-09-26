@@ -8,6 +8,7 @@
 // configured yet or the read fails.
 
 const { list, get } = require("@vercel/blob");
+const C = require("./_lib/common");
 
 const PREFIX = "map-submissions/";
 
@@ -25,7 +26,8 @@ module.exports = async (req, res) => {
     const { blobs } = await list({ prefix: PREFIX });
     const submissions = (await Promise.all(blobs.map(b => readSubmission(b.pathname)))).filter(Boolean);
 
-    const people = submissions
+    // One pin per person, so the globe and the backoffice list (api/map-submissions.js) agree.
+    const people = C.dedupeMapPins(submissions)
       .filter(s => s.status === "approved")
       .map(s => ({
         name: s.name,
