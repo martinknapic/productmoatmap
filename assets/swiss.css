@@ -71,6 +71,7 @@ ul { list-style: none; }
   align-items: center;
   justify-content: space-between;
   gap: 24px;
+  position: relative;
 }
 
 .logo {
@@ -113,6 +114,9 @@ ul { list-style: none; }
   .logo-word { width: 123px; }
 }
 
+/* Pinned to the exact horizontal/vertical center of .nav-inner via absolute
+   positioning, so it never shifts as the right-hand side (avatar, sign-up
+   CTA, theme toggle) loads in, changes width, or disappears. */
 .nav-links {
   display: flex;
   align-items: center;
@@ -122,6 +126,10 @@ ul { list-style: none; }
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--ink-body);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .nav-links a {

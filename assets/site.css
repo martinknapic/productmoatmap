@@ -1124,6 +1124,10 @@ footer {
   .nav-right { gap: 10px; }
   .nav-right .nav-cta { padding: 9px 12px; }
   .nav-links {
+    position: static;
+    left: auto;
+    top: auto;
+    transform: none;
     order: 3;
     flex-basis: 100%;
     justify-content: flex-start;
