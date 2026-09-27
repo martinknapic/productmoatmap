@@ -784,16 +784,18 @@ function accountSignedInHTML(profile) {
     : memberInitials(profile.name);
   return `
     <div class="eyebrow">My profile</div>
-    <div class="account-card">
-      <div class="avatar-xl${profile.picture ? " has-photo" : ""}">${avatarInner}</div>
-      <div>
-        <h1 class="account-name">${escapeHTML(profile.name || "ProductMoat member")}</h1>
-        <p class="account-email">${escapeHTML(profile.email || "")}</p>
-        <p class="account-note">Your photo and email come from LinkedIn (signing in again on Apply, Recommend, or Put yourself on the map refreshes them). Everything else below is yours to edit.</p>
-        <button class="btn btn-ghost" id="account-logout-btn">Log out</button>
+    <div class="account-top">
+      <div class="account-card">
+        <div class="avatar-xl${profile.picture ? " has-photo" : ""}">${avatarInner}</div>
+        <div>
+          <h1 class="account-name">${escapeHTML(profile.name || "ProductMoat member")}</h1>
+          <p class="account-email">${escapeHTML(profile.email || "")}</p>
+          <p class="account-note">Your photo and email come from LinkedIn (signing in again on Apply, Recommend, or Put yourself on the map refreshes them). Everything else below is yours to edit.</p>
+          <button class="btn btn-ghost" id="account-logout-btn">Log out</button>
+        </div>
       </div>
+      <p class="account-status" id="account-status" hidden></p>
     </div>
-    <p class="account-status" id="account-status" hidden></p>
   `;
 }
 
