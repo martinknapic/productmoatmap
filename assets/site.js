@@ -325,15 +325,15 @@ function initSignup() {
   completeSignup(newsletterPref);
 }
 
-// ---------- Profile / Map / Articles (signed-in profile pages) ----------
+// ---------- Profile / Map / My interview (signed-in profile pages) ----------
 // Every page of a member's own profile carries the same three sub-menus: Profile (their details),
-// Map (their pin) and Articles (their application / interview). Each page fills #member-tabs once
-// it knows the visitor is signed in.
+// Map (their pin) and My interview (their application / interview). Each page fills #member-tabs
+// once it knows the visitor is signed in.
 
 const MEMBER_TABS = [
   ["profile", "Profile", "account.html"],
   ["map", "Map", "my-map.html"],
-  ["articles", "Articles", "my-interview.html"]
+  ["interview", "My interview", "my-interview.html"]
 ];
 
 function showMemberTabs(current) {
@@ -347,13 +347,13 @@ function showMemberTabs(current) {
 // Where someone stands on the list, in one sentence (uses the /api/my-interview answer).
 function applicationStatusHTML(d) {
   const fmt = iso => (iso ? new Date(iso).toLocaleDateString([], { dateStyle: "long" }) : "");
-  const articles = `<a class="bracket-link" href="my-interview.html">[ See it under Articles ]</a>`;
-  if (d.state === "published") return `<strong>Your interview is live.</strong> ${articles}`;
-  if (d.state === "invited") return `<strong>You've been invited.</strong> Your interview is open. ${articles}`;
+  const myInterview = `<a class="bracket-link" href="my-interview.html">[ See it under My interview ]</a>`;
+  if (d.state === "published") return `<strong>Your interview is live.</strong> ${myInterview}`;
+  if (d.state === "invited") return `<strong>You've been invited.</strong> Your interview is open. ${myInterview}`;
   if (d.state === "applied") {
     return d.source === "recommended"
-      ? `<strong>Someone recommended you.</strong> We'll be in touch if it looks like a fit. ${articles}`
-      : `<strong>You applied${d.appliedAt ? ` on ${escapeHTML(fmt(d.appliedAt))}` : ""}.</strong> Your application is pending review. ${articles}`;
+      ? `<strong>Someone recommended you.</strong> We'll be in touch if it looks like a fit. ${myInterview}`
+      : `<strong>You applied${d.appliedAt ? ` on ${escapeHTML(fmt(d.appliedAt))}` : ""}.</strong> Your application is pending review. ${myInterview}`;
   }
   return `You haven't applied to be interviewed yet. <a class="bracket-link" href="apply.html">[ Apply ]</a>`;
 }
@@ -598,6 +598,7 @@ function initMyInterview() {
   fetch("/api/my-interview", { credentials: "same-origin" })
     .then(resp => (resp.status === 401 ? { state: "signed-out" } : resp.ok ? resp.json() : Promise.reject(resp.status)))
     .then(data => {
+      if (data.state !== "signed-out") showMemberTabs("interview");
       if (data.state === "invited") {
         show(interviewPanel(data));
         celebrateInviteOnce(data.token);
