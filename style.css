@@ -63,6 +63,16 @@ body.map-page {
 }
 .map-hint.hidden { opacity: 0; }
 
+/* Sized to the subheader's own scale (mono labels, 14px bold tagline) rather
+   than the shared .btn/.nav-cta padding, so dropping it into this row doesn't
+   grow the bar's height - it just sits inline at the row's existing size. */
+.map-subheader-inner .jm-nav-cta {
+  padding: 4px 12px;
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+
 .nav-right {
   display: flex;
   align-items: center;
@@ -70,9 +80,8 @@ body.map-page {
   flex-shrink: 0;
 }
 
-/* .nav-cta's own sizing lives in swiss.css (shared by the nav-wide Sign up
-   CTA); this map-only class just hides the longer "Put yourself on the map"
-   label on narrow screens, without affecting that shared style elsewhere. */
+/* This map-only class just hides the "Put yourself on the map" label on
+   narrow screens, where the subheader row is already tight. */
 @media (max-width: 600px) {
   .jm-nav-cta { display: none; }
 }
