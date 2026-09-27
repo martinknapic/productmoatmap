@@ -165,7 +165,9 @@ const BO_ICONS = {
   down: boIcon('<circle cx="12" cy="12" r="10"/><path d="M8 12l4 4 4-4"/><path d="M12 8v8"/>'),
   archive: boIcon('<path d="M3 4h18v4H3z"/><path d="M5 8v12h14V8"/><path d="M10 12h4"/>'),
   trash: boIcon('<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>'),
-  live: boIcon('<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>')
+  live: boIcon('<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>'),
+  netIn: boIcon('<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M17 11l2 2 4-4"/>'),
+  netOut: boIcon('<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="17" y1="8" x2="22" y2="13"/><line x1="22" y1="8" x2="17" y2="13"/>')
 };
 
 // boIconTooltips (data-tip hover/focus tooltip) now lives in backoffice.js, shared
@@ -214,6 +216,20 @@ function boPublishedCell(c) {
 }
 const boPublishedTime = c => { const p = c.publish || {}; return Date.parse(p.publishedAt || p.scheduledPublishAt || "") || 0; };
 
+// Alumni network column: read live off their member record (attached by the API as c.network),
+// not stored on the candidate itself - so it always matches what My profile / the network page shows.
+const boCandNetEmail = c => c.profile.email || (c.verified && c.verified.email) || "";
+function boNetPill(c) {
+  if (!boCandNetEmail(c)) return `<span class="bo-cell-dim">-</span>`;
+  const n = c.network;
+  const on = !!(n && n.optedIn);
+  const day = iso => (iso ? new Date(iso).toLocaleDateString([], { dateStyle: "medium" }) : "");
+  const tip = on
+    ? `In the alumni network${n.at ? ` since ${day(n.at)}` : ""}.`
+    : n && n.leftAt ? `Left the alumni network on ${day(n.leftAt)}.` : "Hasn't opted in to the alumni network.";
+  return `<span class="bo-pill bo-pill-${on ? "nl-confirmed" : "nl-off"}" data-tip="${boEscapeHTML(tip)}" tabindex="0">${on ? "In" : "Not in"}</span>`;
+}
+
 // Every action that already exists on the candidate and preview pages, as one row of icon buttons.
 // Which ones show depends on where the person is in the pipeline. [group, key, icon, tooltip, {href|danger}]
 function boRowActions(c) {
@@ -223,6 +239,10 @@ function boRowActions(c) {
   const approved = !!(c.approval && c.approval.approved);
   const a = [];
   a.push(["main", "edit", "edit", "Edit: profile, invitation, questions and answers", { href: `candidate.html?id=${id}` }]);
+  if (boCandNetEmail(c)) {
+    const netOn = !!(c.network && c.network.optedIn);
+    a.push(["main", netOn ? "networkOut" : "networkIn", netOn ? "netOut" : "netIn", netOn ? "Kick out of the alumni network" : "Check into the alumni network"]);
+  }
   if (declined) {
     a.push(["main", "restore", "undo", "Restore to the pipeline"]);
   } else {
@@ -294,6 +314,7 @@ async function initBackofficeCandidates() {
         <td>${boEscapeHTML(c.profile.role) || "-"}<br><span class="bo-cell-dim">${boEscapeHTML(c.profile.company)}</span></td>
         <td>${boEscapeHTML(c.profile.location) || "-"}</td>
         <td><span class="bo-badge bo-badge-src">${boEscapeHTML(BO_SOURCE_LABELS[c.source] || c.source)}</span>${c.recommendation ? ` <a class="bo-rec bo-li-inline" data-tip-rec="${boEscapeHTML(c.id)}" href="${boEscapeHTML(boRecommenderLinkedIn(c.recommendation).url)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${boEscapeHTML(c.recommendation.recommenderName || "the recommender")}'s LinkedIn - hover for who recommended them">${BO_LINKEDIN_SVG}</a>` : ""}</td>
+        <td>${boNetPill(c)}</td>
         <td>${boPill(c.status)}</td>
         <td>${boPublishedCell(c)}</td>
         <td class="bo-cell-url">${(() => {
@@ -381,6 +402,12 @@ async function initBackofficeCandidates() {
         return;
       }
       case "unlock": return call({ action: "lock", locked: false }, "Unlocked, they can edit again");
+      case "networkIn":
+        if (!(await boConfirm({ title: "Check into the alumni network?", message: `<strong>${name}</strong> is added to the ProductMoat alumni network - visible to other members once they've been interviewed, and with access to the directory right away.`, confirmLabel: "Check in" }))) return;
+        return call({ action: "setNetwork", optedIn: true }, "Checked into the alumni network");
+      case "networkOut":
+        if (!(await boConfirm({ title: "Kick out of the alumni network?", message: `<strong>${name}</strong> loses access to the alumni network directory and disappears from it immediately.`, confirmLabel: "Kick out", danger: true }))) return;
+        return call({ action: "setNetwork", optedIn: false }, "Removed from the alumni network");
       case "unpublish": {
         const live = c.status === "published";
         if (!(await boConfirm({ title: live ? "Take this interview offline?" : "Cancel the schedule?", message: live ? `<strong>${name}</strong>'s interview goes offline and returns to preview. It stays locked, so you can review or reschedule it.` : `<strong>${name}</strong>'s interview will no longer go live on schedule and returns to preview.`, confirmLabel: live ? "Unpublish" : "Cancel schedule", danger: true }))) return;
@@ -631,6 +658,22 @@ async function initBackofficeCandidate() {
         </div>
       </section>` : ""}
 
+      <section class="bo-card" ${tab("profile")}>
+        <h3>Alumni network</h3>
+        ${(() => {
+          const email = boCandNetEmail(c);
+          if (!email) return `<p class="bo-section-note">No email on file yet - add one above before checking them in.</p>`;
+          const n = c.network;
+          const on = !!(n && n.optedIn);
+          const day = iso => (iso ? new Date(iso).toLocaleDateString([], { dateStyle: "medium" }) : "");
+          const note = on
+            ? `Checked in${n.at ? ` on ${boEscapeHTML(day(n.at))}` : ""}. They're visible to other network members once interviewed, and have access to the directory.`
+            : n && n.leftAt ? `Not checked in - left on ${boEscapeHTML(day(n.leftAt))}.` : `Not checked in - hasn't opted in.`;
+          return `<p class="bo-section-note">${note}</p>
+          <div class="bo-inline"><button class="btn ${on ? "btn-ghost" : "btn-primary"}" id="bo-net-toggle">${on ? "Kick out of the alumni network" : "Check into the alumni network"}</button></div>`;
+        })()}
+      </section>
+
       <section class="bo-card bo-danger" ${tab("profile")}>
         <h3>Remove</h3>
         <div class="bo-inline">
@@ -735,6 +778,11 @@ async function initBackofficeCandidate() {
       if (!window.confirm(live ? `Take ${boCandName(c)}'s interview offline and return it to preview? It stays locked, so you can review or reschedule it.` : "Cancel the schedule and return this to preview?")) return;
       const data = await act({ action: "unpublish" });
       if (data) location.href = `preview.html?id=${encodeURIComponent(id)}`;
+    });
+    on("#bo-net-toggle", async () => {
+      const on = !!(c.network && c.network.optedIn);
+      if (on && !window.confirm(`Kick ${boCandName(c)} out of the alumni network? They lose access to the directory and disappear from it immediately.`)) return;
+      await act({ action: "setNetwork", optedIn: !on }, on ? "Removed from the alumni network" : "Checked into the alumni network");
     });
     on("#bo-decline", () => act({ action: "decline", declined: !c.declined }, c.declined ? "Restored" : "Archived"));
     on("#bo-delete", () => {

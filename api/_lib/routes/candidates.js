@@ -13,11 +13,29 @@ const C = require("../common");
 
 const STATUS_ACTIONS_NEED_ID = new Set([
   "update", "invite", "setQuestionnaire", "resetQuestionnaire", "setAnswers", "approve", "lock", "decline",
-  "revokeLink", "setPublishing", "publish", "unpublish", "delete"
+  "revokeLink", "setPublishing", "publish", "unpublish", "setNetwork", "delete"
 ]);
 
 function withPreview(c) {
   return { ...c, preview: c.publish && c.publish.slug ? C.toPublicInterview(c) : C.toPublicInterview({ ...c, publish: { ...c.publish, slug: c.publish.slug || C.slugify(c.profile.name) } }) };
+}
+
+// ---------- Alumni network status: read live off the member record, keyed by email ----------
+// A candidate's alumni network membership isn't stored on the candidate — it's whatever their
+// member record says (the same record the Apply checkbox and My profile page write to), so
+// checking someone in or out here takes effect everywhere at once.
+const norm = e => String(e || "").trim().toLowerCase();
+const candidateEmail = c => (c.verified && c.verified.email) || c.profile.email || "";
+
+function withNetwork(c, member) {
+  const n = member && member.network;
+  return { ...c, network: n ? { optedIn: !!n.optedIn, at: n.at || null, leftAt: n.leftAt || null } : null };
+}
+
+async function attachNetworkMany(list) {
+  const members = await C.listMembers();
+  const byEmail = new Map(members.map(m => [norm(m.email), m]));
+  return list.map(c => withNetwork(c, byEmail.get(norm(candidateEmail(c)))));
 }
 
 const isDate = v => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
@@ -32,9 +50,11 @@ module.exports = async (req, res) => {
       const id = (req.query || {}).id;
       if (id) {
         const c = await C.readCandidate(id);
-        return c ? res.status(200).json(withPreview(c)) : res.status(404).json({ error: "not_found" });
+        if (!c) return res.status(404).json({ error: "not_found" });
+        const member = await C.readMember(candidateEmail(c));
+        return res.status(200).json(withPreview(withNetwork(c, member)));
       }
-      return res.status(200).json(await C.listCandidates());
+      return res.status(200).json(await attachNetworkMany(await C.listCandidates()));
     }
     if (req.method !== "POST") return res.status(405).json({ error: "method_not_allowed" });
 
@@ -123,6 +143,13 @@ module.exports = async (req, res) => {
       case "decline": c.declined = body.declined !== false; break;
       case "revokeLink": c.linkRevoked = body.revoked !== false; break;
 
+      case "setNetwork": {
+        const email = candidateEmail(c);
+        if (!email) return res.status(400).json({ error: "missing_email" });
+        await C.setNetworkOptIn({ email, name: c.profile.name, picture: c.profile.photo || null }, body.optedIn !== false, "backoffice");
+        break;
+      }
+
       case "setPublishing": {
         const pub = c.publish;
         if (body.category !== undefined) {
@@ -190,7 +217,8 @@ module.exports = async (req, res) => {
     }
 
     await C.saveCandidate(c);
-    return res.status(200).json({ ok: true, candidate: withPreview(c) });
+    const member = await C.readMember(candidateEmail(c));
+    return res.status(200).json({ ok: true, candidate: withPreview(withNetwork(c, member)) });
   } catch (err) {
     console.error("[candidates] failed:", (err && err.stack) || err);
     return res.status(500).json({ error: "storage_failed" });
