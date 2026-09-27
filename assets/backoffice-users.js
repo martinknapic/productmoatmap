@@ -56,7 +56,7 @@ async function initBackofficeUsers() {
   function actionsOf(u) {
     const a = [];
     const d = dblOf(u);
-    if (u.candidate) a.push(`<a class="bo-icon-btn" href="candidate.html?id=${encodeURIComponent(u.candidate.id)}" data-tip="Open their candidate page" aria-label="Open their candidate page">${BO_ICONS.edit}</a>`);
+    if (u.candidate) a.push(`<a class="bo-icon-btn" href="candidate?id=${encodeURIComponent(u.candidate.id)}" data-tip="Open their candidate page" aria-label="Open their candidate page">${BO_ICONS.edit}</a>`);
     if (u.newsletter.optedIn && state.newsletter.configured && (d.key === "not_synced" || d.key === "problem")) a.push(`<button type="button" class="bo-icon-btn" data-act="sync" data-email="${e(u.email)}" data-tip="Send to the newsletter list now" aria-label="Send to the newsletter list now">${BO_ICONS.send}</button>`);
     if (u.email) a.push(`<button type="button" class="bo-icon-btn" data-act="copy" data-email="${e(u.email)}" data-tip="Copy email address" aria-label="Copy email address">${BO_COPY_SVG}</button>`);
     return `<div class="bo-actions">${a.join("")}</div>`;

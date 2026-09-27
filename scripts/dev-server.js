@@ -56,13 +56,13 @@ http.createServer(async (req, res) => {
   if (redirect) { res.writeHead(redirect.permanent ? 308 : 307, { Location: redirect.destination }); return res.end(); }
 
   if (url.pathname === "/dev-login") {
-    res.writeHead(302, { "Set-Cookie": signedCookie("bo_session", { email: "admin@dev.local", name: "Dev Admin" }), Location: "/backoffice/candidates.html" });
+    res.writeHead(302, { "Set-Cookie": signedCookie("bo_session", { email: "admin@dev.local", name: "Dev Admin" }), Location: "/backoffice/candidates" });
     return res.end();
   }
   if (url.pathname === "/dev-member-login") {
     const email = url.searchParams.get("email") || "member@dev.local";
     const name = url.searchParams.get("name") || "Dev Member";
-    res.writeHead(302, { "Set-Cookie": signedCookie("pm_session", { email, name }), Location: url.searchParams.get("to") || "/apply.html" });
+    res.writeHead(302, { "Set-Cookie": signedCookie("pm_session", { email, name }), Location: url.searchParams.get("to") || "/apply" });
     return res.end();
   }
   if (url.pathname === "/dev-logout") {
@@ -100,10 +100,19 @@ http.createServer(async (req, res) => {
   }
 
   let pathname = decodeURIComponent(url.pathname);
+
+  // Mirror vercel.json's "cleanUrls": true — a request for the literal *.html
+  // URL redirects (308) to the extensionless path, same as production.
+  if (pathname.endsWith(".html")) {
+    res.writeHead(308, { Location: pathname.slice(0, -".html".length) + url.search });
+    return res.end();
+  }
+
   if (/^\/interview\/(productmanagement|productux)\/[^/]+\/?$/.test(pathname)) pathname = "/person.html"; // vercel.json rewrite
   let file = path.join(ROOT, pathname);
   if (!file.startsWith(ROOT)) { res.writeHead(403); return res.end(); }
   if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, "index.html");
+  else if (!fs.existsSync(file) && fs.existsSync(`${file}.html`)) file = `${file}.html`; // cleanUrls: /about -> about.html
   if (!fs.existsSync(file)) { res.writeHead(404); return res.end("Not found"); }
   res.writeHead(200, { "Content-Type": types[path.extname(file)] || "application/octet-stream", "Cache-Control": "no-store" });
   fs.createReadStream(file).pipe(res);

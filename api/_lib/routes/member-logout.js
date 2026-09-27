@@ -7,8 +7,8 @@
 // default, closing off an open-redirect via this endpoint.
 
 function safeNext(raw) {
-  if (typeof raw !== "string") return "/index.html";
-  if (!raw.startsWith("/") || raw.startsWith("//")) return "/index.html";
+  if (typeof raw !== "string") return "/";
+  if (!raw.startsWith("/") || raw.startsWith("//")) return "/";
   return raw;
 }
 

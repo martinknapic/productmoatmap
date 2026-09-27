@@ -9,7 +9,7 @@ function initInterviewPreview() {
   const top = document.getElementById("ivp-bar-top");
   const bottom = document.getElementById("ivp-bar-bottom");
   const root = document.getElementById("person-root");
-  const back = `interview.html?t=${encodeURIComponent(token)}`;
+  const back = `interview?t=${encodeURIComponent(token)}`;
 
   const message = (title, body, actions = "") => {
     top.innerHTML = `<div class="wrap ivp-message"><h1>${title}</h1><p>${body}</p><div class="iv-actions">${actions}</div></div>`;

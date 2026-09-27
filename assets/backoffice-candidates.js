@@ -43,7 +43,7 @@ function boCandAvatar(profile, extraClass = "") {
 function boCandLink(c) {
   if (c.invitation && c.questionnaire && c.status !== "declined") {
     if (c.linkRevoked) return { kind: "Revoked", text: "link revoked", url: null };
-    return { kind: "Questionnaire", text: `interview?t=${c.id.slice(0, 8)}…`, url: `${location.origin}/interview.html?t=${c.id}` };
+    return { kind: "Questionnaire", text: `interview?t=${c.id.slice(0, 8)}…`, url: `${location.origin}/interview?t=${c.id}` };
   }
   return null;
 }
@@ -54,10 +54,10 @@ function boCandLink(c) {
 function boArticleLink(c) {
   if (["invited", "drafting", "ready"].includes(c.status) && c.invitation && c.questionnaire) {
     // a revoked questionnaire link also closes the private preview page, so use the admin preview then
-    return { kind: "Preview", url: c.linkRevoked ? `${location.origin}/backoffice/preview.html?id=${c.id}` : `${location.origin}/interview-preview.html?t=${c.id}` };
+    return { kind: "Preview", url: c.linkRevoked ? `${location.origin}/backoffice/preview?id=${c.id}` : `${location.origin}/interview-preview?t=${c.id}` };
   }
   if (c.status === "locked" || c.status === "scheduled") {
-    return { kind: c.status === "scheduled" ? "Scheduled" : "Preview", url: `${location.origin}/backoffice/preview.html?id=${c.id}` };
+    return { kind: c.status === "scheduled" ? "Scheduled" : "Preview", url: `${location.origin}/backoffice/preview?id=${c.id}` };
   }
   if (c.status === "published" && c.publish && c.publish.slug) {
     const category = c.publish.category || (c.profile.focusTag === "design" ? "productux" : "productmanagement");
@@ -67,7 +67,7 @@ function boArticleLink(c) {
 }
 
 const boPill = status => `<span class="bo-pill bo-pill-${boEscapeHTML(status)}">${boEscapeHTML(BO_STATUS_LABELS[status] || status)}</span>`;
-const boQuestionnaireLink = c => `${location.origin}/interview.html?t=${c.id}`;
+const boQuestionnaireLink = c => `${location.origin}/interview?t=${c.id}`;
 const boWhen = iso => (iso ? new Date(iso).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "-");
 const boCandName = c => c.profile.name || "(name not known yet)";
 const boToast = (text) => {
@@ -238,7 +238,7 @@ function boRowActions(c) {
   const live = c.status === "published", sched = c.status === "scheduled", declined = !!c.declined;
   const approved = !!(c.approval && c.approval.approved);
   const a = [];
-  a.push(["main", "edit", "edit", "Edit: profile, invitation, questions and answers", { href: `candidate.html?id=${id}` }]);
+  a.push(["main", "edit", "edit", "Edit: profile, invitation, questions and answers", { href: `candidate?id=${id}` }]);
   if (boCandNetEmail(c)) {
     const netOn = !!(c.network && c.network.optedIn);
     a.push(["main", netOn ? "networkOut" : "networkIn", netOn ? "netOut" : "netIn", netOn ? "Kick out of the alumni network" : "Check into the alumni network"]);
@@ -256,7 +256,7 @@ function boRowActions(c) {
       if (!c.locked) a.push(["flow", "lock", "lock", "Lock and prepare the review (they can no longer edit)"]);
       else a.push(["flow", "unlock", "unlock", "Unlock so they can edit again"]);
     }
-    if (c.locked || sched || live) a.push(["flow", "preview", "eye", "Open the preview, then schedule or publish", { href: `preview.html?id=${id}` }]);
+    if (c.locked || sched || live) a.push(["flow", "preview", "eye", "Open the preview, then schedule or publish", { href: `preview?id=${id}` }]);
     if (live || sched) a.push(["flow", "unpublish", "down", live ? "Unpublish: take it offline and return to preview" : "Cancel the schedule and return to preview"]);
     a.push(["danger", "decline", "archive", "Decline / archive: remove from the pipeline (can be restored)"]);
   }
@@ -385,7 +385,7 @@ async function initBackofficeCandidates() {
       case "invite": {
         if (!(await boConfirm({ title: "Invite this person?", message: `This creates <strong>${name}</strong>'s private questionnaire and marks them as invited. You then send them the link yourself, and the next screen has the message ready to copy.`, confirmLabel: "Create & invite" }))) return;
         const data = await call({ action: "invite", channel: c.source === "recommended" ? "linkedin" : "email" });
-        if (data) location.href = `candidate.html?id=${encodeURIComponent(c.id)}#invitation`;
+        if (data) location.href = `candidate?id=${encodeURIComponent(c.id)}#invitation`;
         return;
       }
       case "revokeLink":
@@ -398,7 +398,7 @@ async function initBackofficeCandidates() {
         const approved = !!(c.approval && c.approval.approved);
         if (!(await boConfirm({ title: "Lock and prepare the review?", message: `${approved ? "" : `<strong>${name}</strong> hasn't marked this version as final. `}Locking means they can no longer edit, and you can then preview and publish. You can unlock it again later.`, confirmLabel: "Lock & prepare review" }))) return;
         const data = await call({ action: "lock", locked: true });
-        if (data) location.href = `preview.html?id=${encodeURIComponent(c.id)}`;
+        if (data) location.href = `preview?id=${encodeURIComponent(c.id)}`;
         return;
       }
       case "unlock": return call({ action: "lock", locked: false }, "Unlocked, they can edit again");
@@ -435,7 +435,7 @@ async function initBackofficeCandidates() {
     }
     if (e.target.closest("a")) return; // links (LinkedIn, article, questionnaire, actions) open on their own; never open the row
     const row = e.target.closest("[data-open]");
-    if (row) location.href = `candidate.html?id=${encodeURIComponent(row.dataset.open)}`;
+    if (row) location.href = `candidate?id=${encodeURIComponent(row.dataset.open)}`;
   });
 
   // add by hand
@@ -447,7 +447,7 @@ async function initBackofficeCandidates() {
     const profile = Object.fromEntries(["name", "email", "role", "company", "location", "linkedin", "focusTag"].map(k => [k, String(f.get(k) || "")]));
     try {
       const data = await boCandApi({ action: "create", profile, notes: String(f.get("notes") || "") });
-      location.href = `candidate.html?id=${encodeURIComponent(data.id)}`;
+      location.href = `candidate?id=${encodeURIComponent(data.id)}`;
     } catch (err) {
       boToast(err.message === "missing_name" ? "A name is required."
         : err.message === "storage_failed" ? "Couldn't save: storage isn't reachable (is Vercel Blob connected to this project?)."
@@ -513,13 +513,13 @@ async function initBackofficeCandidate() {
       if (!resp.ok) throw new Error("nf");
       c = await resp.json();
       render();
-    } catch (err) { root.innerHTML = `<p class="bo-empty">Candidate not found. <a class="bracket-link" href="candidates.html">[ Back to the list ]</a></p>`; }
+    } catch (err) { root.innerHTML = `<p class="bo-empty">Candidate not found. <a class="bracket-link" href="candidates">[ Back to the list ]</a></p>`; }
   }
 
   async function act(payload, okMsg) {
     try {
       const data = await boCandApi({ id, ...payload });
-      if (data.deleted) { location.href = "candidates.html"; return null; }
+      if (data.deleted) { location.href = "candidates"; return null; }
       if (data.candidate) c = data.candidate;
       render();
       if (okMsg) boToast(okMsg);
@@ -551,7 +551,7 @@ async function initBackofficeCandidate() {
         <div class="bo-cand-title">
           ${boCandAvatar(p, "bo-cand-avatar-lg")}
           <div>
-          <a class="bracket-link" href="candidates.html">[ ← All candidates ]</a>
+          <a class="bracket-link" href="candidates">[ ← All candidates ]</a>
           <h2>${boEscapeHTML(boCandName(c))} ${boPill(c.status)}</h2>
           <p class="bo-section-note">${boEscapeHTML(BO_SOURCE_LABELS[c.source] || c.source)} · added ${boEscapeHTML(boWhen(c.createdAt))}${c.approval && c.approval.approved ? ` · marked final by ${c.approval.by === "admin" ? "you (on their behalf)" : "the person"} ${boEscapeHTML(boWhen(c.approval.at))}` : ""}</p>
           </div>
@@ -559,7 +559,7 @@ async function initBackofficeCandidate() {
         <div class="bo-cand-actions">
           ${c.status === "published" ? `<a class="btn btn-ghost" href="${boEscapeHTML(c.preview.url)}" target="_blank" rel="noopener">View live</a>` : ""}
           ${c.status === "published" || c.status === "scheduled" ? `<button class="btn btn-ghost" id="bo-unpublish">${c.status === "scheduled" ? "Cancel schedule → back to preview" : "Unpublish → back to preview"}</button>` : ""}
-          ${c.locked || c.status === "scheduled" || c.status === "published" ? `<a class="btn btn-primary" href="preview.html?id=${encodeURIComponent(c.id)}">Open preview &amp; publish</a>` : ""}
+          ${c.locked || c.status === "scheduled" || c.status === "published" ? `<a class="btn btn-primary" href="preview?id=${encodeURIComponent(c.id)}">Open preview &amp; publish</a>` : ""}
         </div>
       </div>
 
@@ -771,13 +771,13 @@ async function initBackofficeCandidate() {
     on("#bo-lock", async () => {
       if (!(c.approval && c.approval.approved) && !window.confirm("They haven't marked this version as final. Lock it anyway? They won't be able to edit any more.")) return;
       const data = await act({ action: "lock", locked: true });
-      if (data) location.href = `preview.html?id=${encodeURIComponent(id)}`;
+      if (data) location.href = `preview?id=${encodeURIComponent(id)}`;
     });
     on("#bo-unpublish", async () => {
       const live = c.status === "published";
       if (!window.confirm(live ? `Take ${boCandName(c)}'s interview offline and return it to preview? It stays locked, so you can review or reschedule it.` : "Cancel the schedule and return this to preview?")) return;
       const data = await act({ action: "unpublish" });
-      if (data) location.href = `preview.html?id=${encodeURIComponent(id)}`;
+      if (data) location.href = `preview?id=${encodeURIComponent(id)}`;
     });
     on("#bo-net-toggle", async () => {
       const on = !!(c.network && c.network.optedIn);
@@ -810,7 +810,7 @@ async function initBackofficePreview() {
 
   async function load() {
     const resp = await fetch(`/api/candidates?id=${encodeURIComponent(id)}`, { credentials: "same-origin" });
-    if (!resp.ok) { bar.innerHTML = `<div class="wrap"><p>Candidate not found. <a href="candidates.html">Back to the list</a></p></div>`; return; }
+    if (!resp.ok) { bar.innerHTML = `<div class="wrap"><p>Candidate not found. <a href="candidates">Back to the list</a></p></div>`; return; }
     c = await resp.json();
     render();
   }
@@ -818,7 +818,7 @@ async function initBackofficePreview() {
   async function act(payload, msg) {
     try {
       const data = await boCandApi({ id, ...payload });
-      if (data.deleted) { location.href = "candidates.html"; return null; }
+      if (data.deleted) { location.href = "candidates"; return null; }
       c = data.candidate; render(); if (msg) boToast(msg); return data;
     } catch (err) {
       boToast(({ slug_taken: "That URL is already taken.", lock_first: "Lock the interview first.", missing_schedule: "Pick a schedule date/time first." })[err.message] || "That didn't work - try again.");
@@ -840,7 +840,7 @@ async function initBackofficePreview() {
             ${live ? `<a class="bracket-link" href="${boEscapeHTML(p.url)}" target="_blank" rel="noopener">[ View live ]</a>` : ""}
           </div>
           <div class="pv-links">
-            <a class="bracket-link" href="candidate.html?id=${encodeURIComponent(id)}">[ ← Candidate ]</a>
+            <a class="bracket-link" href="candidate?id=${encodeURIComponent(id)}">[ ← Candidate ]</a>
           </div>
         </div>
 

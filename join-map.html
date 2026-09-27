@@ -16,11 +16,11 @@
   <script>try{if(localStorage.getItem("pm-theme")==="dark")document.body.classList.remove("light")}catch(e){}</script>
   <nav class="nav">
     <div class="nav-inner">
-      <a class="logo" href="index.html"><span class="logo-mark"></span><span class="logo-word" role="img" aria-label="ProductMoat"></span></a>
+      <a class="logo" href="/"><span class="logo-mark"></span><span class="logo-word" role="img" aria-label="ProductMoat"></span></a>
       <div class="nav-links">
-        <a href="index.html#directory">Interviews</a>
-        <a href="map.html">Map</a>
-        <a href="apply.html">Apply</a>
+        <a href="/#directory">Interviews</a>
+        <a href="map">Map</a>
+        <a href="apply">Apply</a>
       </div>
       <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" aria-label="Switch to dark mode" title="Switch to dark mode"><svg class="theme-icon-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg><svg class="theme-icon-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></button>
     </div>
@@ -28,7 +28,7 @@
 
   <section class="apply-hero">
     <div class="wrap">
-      <a class="back-link" href="map.html">&larr; Back to the map</a>
+      <a class="back-link" href="map">&larr; Back to the map</a>
       <div class="eyebrow">Put yourself on the map</div>
       <h1>Add your pin to the globe.</h1>
       <p class="about-lede" id="jm-lede-out">
@@ -62,7 +62,7 @@
         <p class="hint-inline li-error" id="li-error" hidden>LinkedIn sign-in didn't go through - try again.</p>
       </div>
       <p class="hint-inline signup-privacy-note">
-        Read more in the <a class="bracket-link" href="privacy.html">[ Privacy Policy ]</a>.
+        Read more in the <a class="bracket-link" href="privacy">[ Privacy Policy ]</a>.
       </p>
     </section>
 
@@ -125,32 +125,32 @@
       <div class="eyebrow"><span class="num">&check;</span> Already on the map</div>
       <h2>You're already on the map.</h2>
       <p>Each person gets one pin, and yours is already there or waiting for review. You can see where it stands on your profile.</p>
-      <a class="btn btn-primary" href="map.html?me=1">See my pin &rarr;</a>
-      <a class="btn btn-ghost" href="map.html">&larr; Back to the map</a>
+      <a class="btn btn-primary" href="map?me=1">See my pin &rarr;</a>
+      <a class="btn btn-ghost" href="map">&larr; Back to the map</a>
     </div>
 
     <div class="apply-success" id="jm-success" hidden>
       <div class="eyebrow"><span class="num">✓</span> Received</div>
       <h2>Thanks - you're in the queue.</h2>
       <p>We review every new pin before it goes live. Once it's approved, you'll show up on the map.</p>
-      <a class="btn btn-ghost" href="map.html">&larr; Back to the map</a>
+      <a class="btn btn-ghost" href="map">&larr; Back to the map</a>
     </div>
   </main>
 
   <footer>
     <div class="wrap footer-inner">
       <div class="footer-brand">
-        <a class="logo footer-logo" href="index.html"><span class="logo-mark"></span><span class="logo-word" role="img" aria-label="ProductMoat"></span></a>
+        <a class="logo footer-logo" href="/"><span class="logo-mark"></span><span class="logo-word" role="img" aria-label="ProductMoat"></span></a>
         <p class="footer-blurb">
           ProductMoat is an ongoing interview series exploring the essence of product management
           and product design at the intersection of AI.
         </p>
       </div>
       <div class="footer-links">
-        <a href="index.html#directory">Interviews</a>
-        <a href="map.html">World map</a>
-        <a href="about.html">About</a>
-        <a href="privacy.html">Privacy</a>
+        <a href="/#directory">Interviews</a>
+        <a href="map">World map</a>
+        <a href="about">About</a>
+        <a href="privacy">Privacy</a>
       </div>
     </div>
   </footer>

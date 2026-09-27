@@ -98,7 +98,7 @@ function initNetwork() {
         ${people.length ? `<div class="net-grid" id="net-grid">${people.map(cardHTML).join("")}</div>
           <p class="bo-empty net-empty" id="net-none" hidden>No one matches that.</p>`
           : `<p class="net-empty">No one is listed yet. Members appear here once they've been interviewed and have agreed to be visible - you'll be one of them when it's your turn.</p>`}
-        <p class="net-leave">Changed your mind? <a class="bracket-link" href="account.html">[ Leave the network from My profile ]</a></p>
+        <p class="net-leave">Changed your mind? <a class="bracket-link" href="account">[ Leave the network from My profile ]</a></p>
       </section>`);
     const grid = document.getElementById("net-grid");
     if (!grid) return;
@@ -127,7 +127,7 @@ function initNetwork() {
       .then(data => {
         if (data.signedOut) {
           show(hero("Sign in to see the network.", "The alumni network is members-only. Sign in with LinkedIn to join or to browse it.",
-            `<div class="mi-actions"><a class="btn btn-primary" href="signup.html">Sign up with LinkedIn</a><a class="bracket-link" href="apply.html">[ Apply to be interviewed ]</a></div>`));
+            `<div class="mi-actions"><a class="btn btn-primary" href="signup">Sign up with LinkedIn</a><a class="bracket-link" href="apply">[ Apply to be interviewed ]</a></div>`));
         } else if (!data.joined) {
           renderJoin();
         } else {

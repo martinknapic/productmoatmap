@@ -18,7 +18,7 @@ function allowedEmails() {
 }
 
 function redirectToLogin(res, query) {
-  res.setHeader("Location", `/backoffice/index.html${query ? `?${query}` : ""}`);
+  res.setHeader("Location", `/backoffice${query ? `?${query}` : ""}`);
   res.status(302).end();
 }
 
@@ -99,7 +99,7 @@ module.exports = async (req, res) => {
       "Set-Cookie",
       `${SESSION_COOKIE}=${cookieValue}; Max-Age=${SESSION_TTL_SECONDS}; Path=/; HttpOnly; Secure; SameSite=Lax`
     );
-    res.setHeader("Location", "/backoffice/candidates.html");
+    res.setHeader("Location", "/backoffice/candidates");
     return res.status(302).end();
   } catch (err) {
     console.error("[backoffice-callback] unexpected exception:", err && err.stack || err);

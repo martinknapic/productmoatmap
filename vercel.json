@@ -1,20 +1,31 @@
 {
+  "cleanUrls": true,
   "redirects": [
     {
-      "source": "/calendar.html",
+      "source": "/calendar",
       "destination": "/",
       "permanent": false
     },
     {
-      "source": "/backoffice/profiles.html",
-      "destination": "/backoffice/users.html",
+      "source": "/backoffice/profiles",
+      "destination": "/backoffice/users",
       "permanent": false
+    },
+    {
+      "source": "/index",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/backoffice/index",
+      "destination": "/backoffice",
+      "permanent": true
     }
   ],
   "rewrites": [
     {
       "source": "/interview/:category(productmanagement|productux)/:slug",
-      "destination": "/person.html"
+      "destination": "/person"
     },
     {
       "source": "/api/apply",

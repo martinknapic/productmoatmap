@@ -144,7 +144,7 @@ function initMemberNav() {
           .catch(() => settleMapCta(false));
       } else {
         settleMapCta(false);
-        if (!/(^|\/)signup\.html$/.test(location.pathname)) renderSignupCTA(navInner);
+        if (!/(^|\/)signup$/.test(location.pathname)) renderSignupCTA(navInner);
       }
     })
     .catch(() => settleMapCta(false));
@@ -172,7 +172,7 @@ function insertBeforeTheme(navInner, el) {
 function renderSignupCTA(navInner) {
   const link = document.createElement("a");
   link.className = "btn btn-primary nav-cta signup-nav-link";
-  link.href = "signup.html";
+  link.href = "signup";
   link.textContent = "Sign up";
   insertBeforeTheme(navInner, link);
 }
@@ -189,10 +189,10 @@ function renderMemberNav(navInner, profile) {
       <span class="member-avatar">${avatarInner}</span>
     </button>
     <div class="member-dropdown" role="menu">
-      <a href="account.html" role="menuitem">My profile</a>
-      <a href="my-interview.html" role="menuitem">My interview</a>
-      ${ALUMNI_NETWORK_ENABLED ? `<a href="network.html" role="menuitem">Alumni network</a>` : ""}
-      ${profile.isAdmin ? `<a href="/backoffice/candidates.html" role="menuitem">Backoffice</a>` : ""}
+      <a href="account" role="menuitem">My profile</a>
+      <a href="my-interview" role="menuitem">My interview</a>
+      ${ALUMNI_NETWORK_ENABLED ? `<a href="network" role="menuitem">Alumni network</a>` : ""}
+      ${profile.isAdmin ? `<a href="/backoffice/candidates" role="menuitem">Backoffice</a>` : ""}
       <a href="#" id="member-logout-link" role="menuitem">Log out</a>
     </div>
   `;
@@ -351,9 +351,9 @@ function initSignup() {
 // once it knows the visitor is signed in.
 
 const MEMBER_TABS = [
-  ["profile", "Profile", "account.html"],
-  ["map", "Map", "my-map.html"],
-  ["interview", "My interview", "my-interview.html"]
+  ["profile", "Profile", "account"],
+  ["map", "Map", "my-map"],
+  ["interview", "My interview", "my-interview"]
 ];
 
 function showMemberTabs(current) {
@@ -367,7 +367,7 @@ function showMemberTabs(current) {
 // Where someone stands on the list, in one sentence (uses the /api/my-interview answer).
 function applicationStatusHTML(d) {
   const fmt = iso => (iso ? new Date(iso).toLocaleDateString([], { dateStyle: "long" }) : "");
-  const myInterview = `<a class="bracket-link" href="my-interview.html">[ See it under My interview ]</a>`;
+  const myInterview = `<a class="bracket-link" href="my-interview">[ See it under My interview ]</a>`;
   if (d.state === "published") return `<strong>Your interview is live.</strong> ${myInterview}`;
   if (d.state === "invited") return `<strong>You've been invited.</strong> Your interview is open. ${myInterview}`;
   if (d.state === "applied") {
@@ -375,7 +375,7 @@ function applicationStatusHTML(d) {
       ? `<strong>Someone recommended you.</strong> We'll be in touch if it looks like a fit. ${myInterview}`
       : `<strong>You applied${d.appliedAt ? ` on ${escapeHTML(fmt(d.appliedAt))}` : ""}.</strong> Your application is pending review. ${myInterview}`;
   }
-  return `<p>You haven't applied to be interviewed yet.</p><a class="btn btn-primary" href="apply.html">Apply to be interviewed</a>`;
+  return `<p>You haven't applied to be interviewed yet.</p><a class="btn btn-primary" href="apply">Apply to be interviewed</a>`;
 }
 
 // ---------- The whole journey as a strip of steps ----------
@@ -526,7 +526,7 @@ function initMyInterview() {
   const fmtDate = iso => (iso ? new Date(iso).toLocaleDateString([], { dateStyle: "long" }) : "");
   const fmtDay = iso => (iso ? new Date(`${iso}T00:00:00`).toLocaleDateString([], { dateStyle: "long" }) : "");
 
-  const cta = `<a class="btn btn-primary" href="apply.html">Apply to be interviewed</a>`;
+  const cta = `<a class="btn btn-primary" href="apply">Apply to be interviewed</a>`;
   const stepsStrip = (ctx) => `<div class="iv-steps-wrap"><div class="wrap"><ol class="iv-steps" id="mi-steps" aria-label="The interview process">${processStepsHTML(buildProcessSteps(ctx))}</ol></div></div>`;
   const hero = (title, lede, extra = "", ctx = null) => `
     ${ctx ? stepsStrip(ctx) : ""}
@@ -556,7 +556,7 @@ function initMyInterview() {
         </div>
         <div class="benefit-item">
           <h3>How it works</h3>
-          <p>Apply &rarr; we review it ourselves &rarr; if it's a fit, you get an invitation with a personal link &rarr; you answer at your pace &rarr; we prepare a preview together. <a class="bracket-link" href="questions.html">[ See the questions ]</a> <a class="bracket-link" href="process.html">[ The process ]</a></p>
+          <p>Apply &rarr; we review it ourselves &rarr; if it's a fit, you get an invitation with a personal link &rarr; you answer at your pace &rarr; we prepare a preview together. <a class="bracket-link" href="questions">[ See the questions ]</a> <a class="bracket-link" href="process">[ The process ]</a></p>
         </div>
       </div>
     </section>
@@ -577,8 +577,8 @@ function initMyInterview() {
   // the interview itself: only exists from the invitation on
   function interviewPanel(d) {
     const pct = d.requiredTotal ? Math.round((d.requiredDone / d.requiredTotal) * 100) : 0;
-    const link = `interview.html?t=${encodeURIComponent(d.token)}`;
-    const preview = `interview-preview.html?t=${encodeURIComponent(d.token)}`;
+    const link = `interview?t=${encodeURIComponent(d.token)}`;
+    const preview = `interview-preview?t=${encodeURIComponent(d.token)}`;
     const est = d.estimatedPublishDate ? `<p class="mi-est">Estimated publish date: <strong>${escapeHTML(fmtDay(d.estimatedPublishDate))}</strong></p>` : "";
     let title, lede, primary;
     if (d.status === "scheduled") {
@@ -631,12 +631,12 @@ function initMyInterview() {
           recommended
             ? "A member of the community suggested you for the series. We'll be in touch by email or LinkedIn if it looks like a fit - your personal interview will appear here as soon as you're invited."
             : `Thank you for applying${data.appliedAt ? ` on ${escapeHTML(fmtDate(data.appliedAt))}` : ""}. We read every application ourselves and will be in touch by email or LinkedIn if it looks like a fit - your personal interview will appear here as soon as you're invited.`,
-          `<a class="bracket-link" href="questions.html">[ See what the interview covers ]</a> <a class="bracket-link" href="process.html">[ The process ]</a>`,
+          `<a class="bracket-link" href="questions">[ See what the interview covers ]</a> <a class="bracket-link" href="process">[ The process ]</a>`,
           { hasRecord: true, source: data.source }));
       } else if (data.state === "signed-out") {
         show(hero("Sign in to see your interview.",
           "Your personal interview page is tied to your LinkedIn account. Sign up or sign in, and it will show up here once you've been invited.",
-          `<a class="btn btn-primary" href="signup.html">Sign up with LinkedIn</a>`) + pitch);
+          `<a class="btn btn-primary" href="signup">Sign up with LinkedIn</a>`) + pitch);
       } else {
         show(hero("You haven't been interviewed yet.",
           "ProductMoat is an interview series with product people around the world. If you'd like to be featured, apply - if it's a fit, your personal interview page will appear right here.",
@@ -677,7 +677,7 @@ function initAccount() {
         })
         .catch(() => {});
       document.getElementById("account-logout-btn").addEventListener("click", () => {
-        window.location.href = "/api/member-logout?next=%2Faccount.html";
+        window.location.href = "/api/member-logout?next=%2Faccount";
       });
       if (detailsRoot) initAccountDetails(detailsRoot, data.details, data.network);
     })
@@ -727,7 +727,7 @@ function initAccountDetails(el, d, networkJoined) {
       <div class="form-submit-row">
         <button type="submit" class="btn btn-primary" id="account-save">Save my details</button>
         <span class="hint-inline" id="account-save-status" role="status"></span>
-        <a class="bracket-link" href="join-map.html">[ Put yourself on the map → ]</a>
+        <a class="bracket-link" href="join-map">[ Put yourself on the map → ]</a>
       </div>
     </form>`;
 
@@ -786,10 +786,10 @@ function renderAccountNetwork(box, joined) {
   box.innerHTML = joined
     ? `<h2>Alumni network</h2>
        <p>You're in the network: you can browse the members-only directory, and once you've been interviewed other members can see your profile and email.</p>
-       <div class="account-network-actions"><a class="btn btn-primary" href="network.html">Open the directory</a><button type="button" class="btn btn-ghost" id="net-leave">Leave the network</button></div>`
+       <div class="account-network-actions"><a class="btn btn-primary" href="network">Open the directory</a><button type="button" class="btn btn-ghost" id="net-leave">Leave the network</button></div>`
     : `<h2>Alumni network</h2>
        <p>A members-only network of the product people we've interviewed. Joining is your explicit choice: you agree to be visible to other members (name, photo, role, company, location, focus areas, bio, links and email) once you've been interviewed, and in return you can browse the directory.</p>
-       <div class="account-network-actions"><a class="btn btn-ghost" href="network.html">Learn more &amp; join</a></div>`;
+       <div class="account-network-actions"><a class="btn btn-ghost" href="network">Learn more &amp; join</a></div>`;
   const leave = box.querySelector("#net-leave");
   if (leave) leave.addEventListener("click", async () => {
     if (!window.confirm("Leave the alumni network? You'll disappear from the directory and lose access to it. You can rejoin any time.")) return;
@@ -828,9 +828,9 @@ function accountSignedOutHTML() {
     <h1>You're not signed in.</h1>
     <p class="about-lede">
       ProductMoat doesn't have a standalone sign-in - verifying with LinkedIn on the
-      <a class="bracket-link" href="apply.html">Apply</a>,
-      <a class="bracket-link" href="recommend.html">Recommend</a>, or
-      <a class="bracket-link" href="join-map.html">Put yourself on the map</a>
+      <a class="bracket-link" href="apply">Apply</a>,
+      <a class="bracket-link" href="recommend">Recommend</a>, or
+      <a class="bracket-link" href="join-map">Put yourself on the map</a>
       form also signs you in site-wide.
     </p>
   `;
@@ -861,7 +861,7 @@ function initMyMap() {
       if (data.signedOut) {
         root.innerHTML = hero("Sign in to see your place on the map.",
           "Your pin is tied to your LinkedIn account. Sign up or sign in and it will show up here.",
-          `<a class="btn btn-primary" href="signup.html">Sign up with LinkedIn</a>`);
+          `<a class="btn btn-primary" href="signup">Sign up with LinkedIn</a>`);
         return;
       }
       showMemberTabs("map");
@@ -885,7 +885,7 @@ function initMyMap() {
           : data.onMap
             ? "You're on the map, and here's where your pin stands. Each person gets one pin, and we review it before it goes live."
             : "We couldn't approve your pin as submitted. You can drop a new one where you work.",
-        `${canAdd ? `<a class="btn btn-primary" href="join-map.html">${empty ? "Put yourself on the map" : "Drop a new pin"} &rarr;</a>` : ""}${empty ? "" : `<a class="${canAdd ? "bracket-link" : "btn btn-primary"}" href="map.html${zoomable ? "?me=1" : ""}">${canAdd ? "[ Open the map ]" : "Open the map &rarr;"}</a>`}`
+        `${canAdd ? `<a class="btn btn-primary" href="join-map">${empty ? "Put yourself on the map" : "Drop a new pin"} &rarr;</a>` : ""}${empty ? "" : `<a class="${canAdd ? "bracket-link" : "btn btn-primary"}" href="map${zoomable ? "?me=1" : ""}">${canAdd ? "[ Open the map ]" : "Open the map &rarr;"}</a>`}`
       ) + (empty ? "" : `<section class="wrap mm-list-wrap"><ul class="mm-list">${cards.join("")}</ul></section>`);
     })
     .catch(() => { root.innerHTML = hero("Something went wrong.", "We couldn't load your map details just now. Please refresh in a moment."); });
@@ -1159,7 +1159,7 @@ function initPerson() {
   const p = findInterview(slug);
   const root = document.getElementById("person-root");
   if (!p) {
-    root.innerHTML = `<div class="not-found"><p>No interview found for &ldquo;${escapeHTML(slug || "")}&rdquo;.</p><br><a class="btn btn-ghost" href="index.html">&larr; Back to all conversations</a></div>`;
+    root.innerHTML = `<div class="not-found"><p>No interview found for &ldquo;${escapeHTML(slug || "")}&rdquo;.</p><br><a class="btn btn-ghost" href="/">&larr; Back to all conversations</a></div>`;
     return;
   }
   renderPersonPage(root, p);
@@ -1177,7 +1177,7 @@ function renderPersonPage(root, p, opts = {}) {
       <div class="wrap">
         <div class="hero-content">
           <div class="hero-content-top">
-            ${opts.preview ? "" : `<a class="back-link" href="index.html">&larr; All conversations</a>`}
+            ${opts.preview ? "" : `<a class="back-link" href="/">&larr; All conversations</a>`}
             <div class="profile-top">
               ${avatarHTML(p, "avatar-xl")}
               <div>
@@ -1205,7 +1205,7 @@ function renderPersonPage(root, p, opts = {}) {
           <div class="hero-globe-col">
             <div id="mini-map" class="hero-globe"></div>
             <div class="hero-globe-scrim"></div>
-            <a class="hero-globe-caption" href="map.html?slug=${p.slug}">
+            <a class="hero-globe-caption" href="map?slug=${p.slug}">
               <span>${escapeHTML(p.location)}</span>
               <span class="mini-map-cta">View on map &rarr;</span>
             </a>
@@ -2128,8 +2128,8 @@ function calRenderCell(week, today, interview) {
   // week is already taken, and a past "gap" week can't be filled retroactively.
   const hoverHTML = status === "open"
     ? `<div class="cal-hover">
-        <a class="cal-hover-btn" href="/apply.html">Apply</a>
-        <a class="cal-hover-btn" href="/recommend.html">Recommend</a>
+        <a class="cal-hover-btn" href="/apply">Apply</a>
+        <a class="cal-hover-btn" href="/recommend">Recommend</a>
       </div>`
     : "";
 

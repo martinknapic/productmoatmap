@@ -286,7 +286,7 @@ beyond the OAuth redirect round-trip.
 3. LinkedIn redirects to `/api/linkedin-callback`, which exchanges the code for an access
    token + ID token using the Client Secret (server-side only), decodes the ID token, and
    packs `name`/`email`/`picture` into a short-lived, HMAC-signed, `HttpOnly` cookie —
-   never into the URL. It then redirects to `/<page>.html?li=ok&state=<nonce>` (or
+   never into the URL. It then redirects to `/<page>?li=ok&state=<nonce>` (or
    `li=denied` / `li=error` on failure); `<page>` is whitelisted server-side (`apply` or
    `recommend`, defaulting to `apply`) so a crafted `state` can't be used as an open
    redirect.

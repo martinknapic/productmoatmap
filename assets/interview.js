@@ -844,7 +844,7 @@ function initInterview() {
   // The preview shows what has been saved; warn if there's something that hasn't.
   function openPreview() {
     if (isDirty() && !window.confirm("You have changes that aren't saved yet. The preview only shows what you've saved. Open it anyway?")) return;
-    window.location.href = `interview-preview.html?t=${encodeURIComponent(token)}`;
+    window.location.href = `interview-preview?t=${encodeURIComponent(token)}`;
   }
 
   // ---------- saving ----------
@@ -976,7 +976,7 @@ function renderInvalid(root) {
           It may have expired, been replaced by a newer one, or been copied incompletely. Reply
           to the message we sent you and we'll get you a fresh link.
         </p>
-        <a class="btn btn-ghost" href="questions.html">See what the interview covers &rarr;</a>
+        <a class="btn btn-ghost" href="questions">See what the interview covers &rarr;</a>
       </div>
     </section>
   `;

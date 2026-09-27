@@ -72,7 +72,7 @@ async function boCurrentGuard() {
     if (userEl) userEl.textContent = `Logged in as ${me.name || me.email}`;
     return true;
   } catch (err) {
-    location.replace("index.html");
+    location.replace("/backoffice");
     return false;
   }
 }

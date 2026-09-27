@@ -52,7 +52,7 @@ function parseState(rawState) {
 }
 
 function redirectToApply(res, page, query, token) {
-  res.setHeader("Location", `/${page}.html?${token ? `t=${token}&` : ""}${query}`);
+  res.setHeader("Location", `/${page}?${token ? `t=${token}&` : ""}${query}`);
   res.status(302).end();
 }
 

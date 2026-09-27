@@ -11,15 +11,18 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const config = {
   runtime: "nodejs",
+  // Listed both as the real file path (/*.html) and as the clean URL (cleanUrls
+  // in vercel.json strips the extension) since which form middleware sees isn't
+  // documented — matching both keeps the gate solid either way.
   matcher: [
-    "/backoffice/candidates.html",
-    "/backoffice/candidate.html",
-    "/backoffice/preview.html",
-    "/backoffice/questions.html",
-    "/backoffice/users.html",
-    "/backoffice/profiles.html",
-    "/backoffice/map-submissions.html",
-    "/backoffice/calendar.html"
+    "/backoffice/candidates.html", "/backoffice/candidates",
+    "/backoffice/candidate.html", "/backoffice/candidate",
+    "/backoffice/preview.html", "/backoffice/preview",
+    "/backoffice/questions.html", "/backoffice/questions",
+    "/backoffice/users.html", "/backoffice/users",
+    "/backoffice/profiles.html", "/backoffice/profiles",
+    "/backoffice/map-submissions.html", "/backoffice/map-submissions",
+    "/backoffice/calendar.html", "/backoffice/calendar"
   ]
 };
 
@@ -58,7 +61,7 @@ export default function middleware(request) {
   const session = secret ? verify(cookies[SESSION_COOKIE], secret) : null;
 
   if (!session) {
-    return Response.redirect(new URL("/backoffice/index.html", request.url));
+    return Response.redirect(new URL("/backoffice", request.url));
   }
 
   return next();
