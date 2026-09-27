@@ -267,7 +267,11 @@ function initSignup() {
       badge.className = "li-badge";
       badge.innerHTML = `<span class="li-badge-check">&check;</span> You're signed in as ${escapeHTML(p.name || "a LinkedIn member")} via LinkedIn`;
       gate.insertBefore(badge, signInBtn);
-      signInBtn.lastChild.textContent = " Confirm & create my profile";
+      signInBtn.style.display = "none";
+      withNewsletterPrompt(newsletterCheckbox, () => {
+        errorEl.hidden = true;
+        completeSignup(newsletterCheckbox.checked);
+      });
     });
   }
 
