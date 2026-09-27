@@ -14,45 +14,52 @@ function boQuestionEditor(mount, initialSections, onChange) {
   function render() {
     mount.innerHTML = `
       <div class="bo-qed">
-        ${sections.map((s, si) => `
-          <div class="bo-qed-section" data-si="${si}">
-            <div class="bo-qed-section-head">
-              <div class="bo-qed-fields">
-                <label class="bo-lbl">Section title
-                  <input type="text" class="bo-input" data-f="title" value="${esc(s.title)}" maxlength="120">
-                </label>
-                <label class="bo-lbl">Short description
-                  <input type="text" class="bo-input" data-f="blurb" value="${esc(s.blurb || "")}" maxlength="300">
-                </label>
+        ${sections.map((s, si) => { if (s._open === undefined) s._open = false; return `
+          <div class="bo-qed-section${s._open ? " is-open" : ""}" data-si="${si}">
+            <button type="button" class="bo-qed-toggle" data-act="sec-toggle" aria-expanded="${s._open}">
+              <span class="bo-qed-chevron"></span>
+              <span class="bo-qed-toggle-title">${esc(s.title || "Untitled section")}</span>
+              <span class="bo-qed-toggle-count">${s.questions.length} question${s.questions.length === 1 ? "" : "s"}</span>
+            </button>
+            <div class="bo-qed-body">
+              <div class="bo-qed-section-head">
+                <div class="bo-qed-fields">
+                  <label class="bo-lbl">Section title
+                    <input type="text" class="bo-input" data-f="title" value="${esc(s.title)}" maxlength="120">
+                  </label>
+                  <label class="bo-lbl">Short description
+                    <input type="text" class="bo-input" data-f="blurb" value="${esc(s.blurb || "")}" maxlength="300">
+                  </label>
+                </div>
+                <div class="bo-qed-tools">
+                  <button type="button" class="bo-row-remove" data-act="sec-up" ${si === 0 ? "disabled" : ""}>[ ↑ ]</button>
+                  <button type="button" class="bo-row-remove" data-act="sec-down" ${si === sections.length - 1 ? "disabled" : ""}>[ ↓ ]</button>
+                  <button type="button" class="bo-row-remove" data-act="sec-del">[ Delete section ]</button>
+                </div>
               </div>
-              <div class="bo-qed-tools">
-                <button type="button" class="bo-row-remove" data-act="sec-up" ${si === 0 ? "disabled" : ""}>[ ↑ ]</button>
-                <button type="button" class="bo-row-remove" data-act="sec-down" ${si === sections.length - 1 ? "disabled" : ""}>[ ↓ ]</button>
-                <button type="button" class="bo-row-remove" data-act="sec-del">[ Delete section ]</button>
-              </div>
+              <ol class="bo-qed-list">
+                ${s.questions.map((q, qi) => `
+                  <li class="bo-qed-q" data-qi="${qi}">
+                    <div class="bo-qed-fields">
+                      <label class="bo-lbl">Question
+                        <input type="text" class="bo-input" data-f="text" value="${esc(q.text)}" maxlength="300">
+                      </label>
+                      <label class="bo-lbl">Guidance shown under it
+                        <input type="text" class="bo-input" data-f="hint" value="${esc(q.hint || "")}" maxlength="300">
+                      </label>
+                    </div>
+                    <div class="bo-qed-tools">
+                      <label class="bo-check"><input type="checkbox" data-f="required" ${q.required ? "checked" : ""}> Required</label>
+                      ${q.fromProfile ? `<span class="bo-badge">FROM PROFILE</span>` : ""}
+                      <button type="button" class="bo-row-remove" data-act="q-up" ${qi === 0 ? "disabled" : ""}>[ ↑ ]</button>
+                      <button type="button" class="bo-row-remove" data-act="q-down" ${qi === s.questions.length - 1 ? "disabled" : ""}>[ ↓ ]</button>
+                      <button type="button" class="bo-row-remove" data-act="q-del">[ Remove ]</button>
+                    </div>
+                  </li>`).join("")}
+              </ol>
+              <button type="button" class="btn btn-ghost bo-small" data-act="q-add">+ Add a question</button>
             </div>
-            <ol class="bo-qed-list">
-              ${s.questions.map((q, qi) => `
-                <li class="bo-qed-q" data-qi="${qi}">
-                  <div class="bo-qed-fields">
-                    <label class="bo-lbl">Question
-                      <input type="text" class="bo-input" data-f="text" value="${esc(q.text)}" maxlength="300">
-                    </label>
-                    <label class="bo-lbl">Guidance shown under it
-                      <input type="text" class="bo-input" data-f="hint" value="${esc(q.hint || "")}" maxlength="300">
-                    </label>
-                  </div>
-                  <div class="bo-qed-tools">
-                    <label class="bo-check"><input type="checkbox" data-f="required" ${q.required ? "checked" : ""}> Required</label>
-                    ${q.fromProfile ? `<span class="bo-badge">FROM PROFILE</span>` : ""}
-                    <button type="button" class="bo-row-remove" data-act="q-up" ${qi === 0 ? "disabled" : ""}>[ ↑ ]</button>
-                    <button type="button" class="bo-row-remove" data-act="q-down" ${qi === s.questions.length - 1 ? "disabled" : ""}>[ ↓ ]</button>
-                    <button type="button" class="bo-row-remove" data-act="q-del">[ Remove ]</button>
-                  </div>
-                </li>`).join("")}
-            </ol>
-            <button type="button" class="btn btn-ghost bo-small" data-act="q-add">+ Add a question</button>
-          </div>`).join("")}
+          </div>`; }).join("")}
         <button type="button" class="btn btn-ghost bo-small" data-act="sec-add">+ Add a section</button>
       </div>`;
   }
@@ -68,6 +75,10 @@ function boQuestionEditor(mount, initialSections, onChange) {
       q[f] = f === "required" ? e.target.checked : e.target.value;
     } else {
       s[f] = e.target.value;
+      if (f === "title") {
+        const title = secEl.querySelector(".bo-qed-toggle-title");
+        if (title) title.textContent = s.title || "Untitled section";
+      }
     }
     changed();
   });
@@ -79,13 +90,18 @@ function boQuestionEditor(mount, initialSections, onChange) {
     const qEl = btn.closest("[data-qi]");
     const qi = qEl ? Number(qEl.dataset.qi) : -1;
     const swap = (arr, i, j) => { [arr[i], arr[j]] = [arr[j], arr[i]]; };
+    if (btn.dataset.act === "sec-toggle") {
+      sections[si]._open = !sections[si]._open;
+      render();
+      return;
+    }
     switch (btn.dataset.act) {
       case "sec-up": swap(sections, si, si - 1); break;
       case "sec-down": swap(sections, si, si + 1); break;
       case "sec-del":
         if (!window.confirm(`Delete the section "${sections[si].title}" and its ${sections[si].questions.length} question(s)?`)) return;
         sections.splice(si, 1); break;
-      case "sec-add": sections.push({ title: "New section", blurb: "", questions: [] }); break;
+      case "sec-add": sections.push({ title: "New section", blurb: "", questions: [], _open: true }); break;
       case "q-up": swap(sections[si].questions, qi, qi - 1); break;
       case "q-down": swap(sections[si].questions, qi, qi + 1); break;
       case "q-del": sections[si].questions.splice(qi, 1); break;

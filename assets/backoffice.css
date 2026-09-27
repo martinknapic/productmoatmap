@@ -423,7 +423,23 @@ textarea.bo-input { resize: vertical; line-height: 1.5; }
 .bo-check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; }
 
 /* question editor */
-.bo-qed-section { border: 1px solid var(--line-soft); padding: 18px 20px; margin-bottom: 18px; }
+.bo-qed-section { border: 1px solid var(--line-soft); margin-bottom: 18px; }
+.bo-qed-toggle {
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  padding: 16px 20px; background: none; border: none; text-align: left; cursor: pointer;
+  font-family: var(--font-mono); color: var(--ink);
+}
+.bo-qed-toggle:hover .bo-qed-toggle-title { color: var(--accent); }
+.bo-qed-chevron {
+  flex: none; width: 8px; height: 8px;
+  border-right: 2px solid var(--ink-dim); border-bottom: 2px solid var(--ink-dim);
+  transform: rotate(45deg); transition: transform 0.15s ease;
+}
+.bo-qed-section.is-open .bo-qed-chevron { transform: rotate(-135deg); }
+.bo-qed-toggle-title { flex: 1; font-size: 14px; font-weight: 700; transition: color 0.15s ease; }
+.bo-qed-toggle-count { font-size: 12px; color: var(--ink-dim); }
+.bo-qed-body { display: none; padding: 0 20px 18px; border-top: 1px solid var(--line-soft); }
+.bo-qed-section.is-open .bo-qed-body { display: block; padding-top: 18px; }
 .bo-qed-section-head, .bo-qed-q { display: flex; gap: 16px; justify-content: space-between; align-items: flex-start; }
 .bo-qed-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; flex: 1; }
 .bo-qed-tools { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; justify-content: flex-end; padding-top: 18px; }
