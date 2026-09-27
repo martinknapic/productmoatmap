@@ -268,6 +268,15 @@ function initSignup() {
       badge.innerHTML = `<span class="li-badge-check">&check;</span> You're signed in as ${escapeHTML(p.name || "a LinkedIn member")} via LinkedIn`;
       gate.insertBefore(badge, signInBtn);
       signInBtn.style.display = "none";
+      // Already subscribed? Nothing left to ask - the checkbox (and the "before you continue"
+      // prompt it would otherwise trigger while unchecked) would just be asking again.
+      if (p.newsletter) {
+        const row = newsletterCheckbox.closest(".newsletter-checkbox-row");
+        if (row) row.style.display = "none";
+        errorEl.hidden = true;
+        completeSignup(true);
+        return;
+      }
       withNewsletterPrompt(newsletterCheckbox, () => {
         errorEl.hidden = true;
         completeSignup(newsletterCheckbox.checked);
@@ -1590,8 +1599,10 @@ function fillIfEmpty(id, value) {
 }
 
 function sessionGateHTML(profile) {
-  return `
-    <div class="li-badge"><span class="li-badge-check">&check;</span> Signed in as ${escapeHTML(profile.name || "LinkedIn member")} via LinkedIn</div>
+  const badge = `<div class="li-badge"><span class="li-badge-check">&check;</span> Signed in as ${escapeHTML(profile.name || "LinkedIn member")} via LinkedIn</div>`;
+  // Already subscribed? Nothing left to offer here - the checkbox would just be asking again.
+  if (profile.newsletter) return badge;
+  return `${badge}
     <div class="form-checkbox-row li-newsletter-row newsletter-checkbox-row">
       <input type="checkbox" id="li-newsletter">
       <label for="li-newsletter" id="li-newsletter-label">Subscribe me to the ProductMoat newsletter <span class="li-optional">(optional)</span>.</label>

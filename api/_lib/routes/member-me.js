@@ -7,6 +7,7 @@
 // or by expiring on its own.
 
 const crypto = require("crypto");
+const { readMember } = require("../common");
 
 const SESSION_COOKIE = "pm_session";
 
@@ -50,11 +51,13 @@ module.exports = async (req, res) => {
   // themselves are still gated by middleware.js and their own LinkedIn login.
   const admins = (process.env.BACKOFFICE_ALLOWED_EMAIL || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
   const isAdmin = !!session.email && admins.includes(String(session.email).trim().toLowerCase());
+  const member = await readMember(session.email);
 
   return res.status(200).json({
     name: session.name,
     email: session.email,
     picture: session.picture,
-    isAdmin
+    isAdmin,
+    newsletter: !!(member && member.newsletter)
   });
 };
