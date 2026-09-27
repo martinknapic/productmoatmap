@@ -287,7 +287,13 @@ function initSignup() {
       // someone who is already on the map doesn't need the "put yourself on the map" suggestion
       fetch("/api/member-map", { credentials: "same-origin", cache: "no-store" })
         .then(r => (r.ok ? r.json() : null))
-        .then(d => { const cta = document.getElementById("su-map-cta"); if (cta && d && d.onMap) cta.style.display = "none"; })
+        .then(d => {
+          if (!d || !d.onMap) return;
+          const cta = document.getElementById("su-map-cta");
+          if (cta) cta.style.display = "none";
+          const mapStep = document.getElementById("su-check-map");
+          if (mapStep) mapStep.classList.add("is-done");
+        })
         .catch(() => {});
     } catch (err) {
       errorEl.hidden = false;

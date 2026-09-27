@@ -625,7 +625,7 @@ footer {
 /* ================= Apply page ================= */
 
 .apply-hero {
-  padding: 64px 0 48px;
+  padding: 48px 0 36px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -784,7 +784,7 @@ footer {
 }
 
 .apply-success {
-  padding: 90px 0 110px;
+  padding: 56px 0 72px;
   max-width: 52ch;
 }
 .apply-success h2 {
@@ -793,10 +793,15 @@ footer {
   margin-top: 6px;
 }
 .apply-success p {
-  margin: 18px 0 32px;
+  margin: 14px 0 26px;
   color: var(--ink-body);
   font-size: 16.5px;
   line-height: 1.6;
+}
+
+@media (max-height: 760px) {
+  .apply-hero { padding: 28px 0 22px; }
+  .apply-success { padding: 32px 0 44px; }
 }
 
 .li-gate { margin-bottom: 28px; }
@@ -1167,11 +1172,15 @@ footer {
 
 .jm-location-grid { margin-top: 28px; }
 
-.jm-signup { max-width: 640px; padding: 40px 0 48px; }
+.jm-signup { max-width: 640px; padding: 24px 0 36px; }
 .jm-signup .signup-fineprint { margin-top: 0; }
 .jm-signup .li-gate { margin: 20px 0 0; }
 #jm-form { padding-top: 36px; }
 #jm-form .hint-inline.is-error { color: var(--accent); }
+@media (max-height: 760px) {
+  .jm-signup { padding: 16px 0 24px; }
+  .jm-signup .li-gate { margin-top: 14px; }
+}
 
 .jm-preview {
   display: flex;
@@ -1200,15 +1209,24 @@ footer {
 /* ================= Account page ================= */
 
 .account-hero {
-  padding: 56px 0 88px;
+  padding: 56px 0 40px;
+}
+
+.account-top {
+  margin-top: 32px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 28px 40px;
+  flex-wrap: wrap;
 }
 
 .account-card {
-  margin-top: 32px;
   display: flex;
   align-items: center;
   gap: 24px;
   max-width: 68ch;
+  flex: 1 1 420px;
 }
 
 .account-name { font-size: clamp(22px, 3vw, 28px); margin-bottom: 4px; }
@@ -1396,11 +1414,52 @@ footer {
 
 /* Sign-up: the consent + button block now sits above the benefit cards */
 .signup-hero .signup-privacy-note { margin-bottom: 8px; }
-.signup-hero .signup-benefits { margin-top: 44px; }
+.signup-hero .signup-benefits { margin-top: 32px; }
+.signup-hero .signup-benefit { padding: 24px 22px; }
+
+/* Sign-up success: what to do next, kept tight so it reads without scrolling */
+#su-success { padding: 48px 0 64px; max-width: 46ch; }
+#su-success p { margin: 14px 0; }
+
+.su-checklist {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.su-check-item {
+  position: relative;
+  padding-left: 24px;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  letter-spacing: 0.02em;
+  color: var(--ink-body);
+}
+.su-check-item::before {
+  content: "\2192";
+  position: absolute;
+  left: 0;
+  font-weight: 700;
+  color: var(--accent);
+}
+.su-check-item.is-done { color: var(--ink); }
+.su-check-item.is-done::before { content: "\2713"; }
+
+/* Short viewports (13" laptops with a bookmark bar, small MacBooks): trim
+   vertical spacing so the sign-up flow still reads without scrolling. */
+@media (max-height: 760px) {
+  .signup-hero .li-gate { margin-top: 16px; }
+  .signup-fineprint { margin: 14px 0 12px; }
+  .signup-hero .signup-benefits { margin-top: 22px; }
+  .signup-hero .signup-benefit { padding: 16px 18px; gap: 8px; }
+  #su-success { padding: 28px 0 40px; }
+}
 
 
 /* ---------- My profile: editable details ---------- */
-.account-details { padding-top: 40px; padding-bottom: 72px; }
+.account-details { padding-top: 8px; padding-bottom: 72px; }
 .account-form { max-width: 860px; }
 .account-form .form-submit-row { margin-top: 28px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
 .account-form .hint-inline.is-error { color: var(--accent); }
@@ -1481,7 +1540,7 @@ footer {
 .member-tabs a:hover { color: var(--ink); }
 .member-tabs a.is-active { color: var(--ink); border-bottom-color: var(--ink); font-weight: 700; }
 
-.account-status { margin-top: 28px; max-width: 68ch; padding: 14px 18px; border: 1px solid var(--line-soft); color: var(--ink-body); line-height: 1.6; }
+.account-status { margin: 0; flex: 0 1 320px; align-self: flex-start; padding: 14px 18px; border: 1px solid var(--line-soft); color: var(--ink-body); line-height: 1.6; }
 .account-status strong { color: var(--ink); }
 
 .mm-list-wrap { padding-bottom: 72px; }
