@@ -681,6 +681,74 @@ footer {
   cursor: pointer;
 }
 
+/* Newsletter opt-in checkboxes ("Subscribe me...") get their own larger,
+   positive-colored treatment so the ask reads as a friendly invite rather
+   than a routine form field. */
+.newsletter-checkbox-row {
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--line-soft);
+  border-radius: 10px;
+  background: var(--paper-alt);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.newsletter-checkbox-row:has(input:checked) {
+  border-color: var(--positive);
+  background: color-mix(in srgb, var(--positive) 12%, var(--paper-alt));
+}
+
+.newsletter-checkbox-row input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  border: 2px solid var(--ink-dim);
+  border-radius: 7px;
+  background: var(--paper);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  accent-color: var(--positive);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.newsletter-checkbox-row input[type="checkbox"]:hover {
+  border-color: var(--positive);
+}
+
+.newsletter-checkbox-row input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--positive);
+  outline-offset: 2px;
+}
+
+.newsletter-checkbox-row input[type="checkbox"]:checked {
+  background: var(--positive);
+  border-color: var(--positive);
+}
+
+.newsletter-checkbox-row input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 3px;
+  width: 6px;
+  height: 12px;
+  border: solid var(--positive-ink);
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg);
+}
+
+.newsletter-checkbox-row label {
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--ink);
+  font-weight: 500;
+  cursor: pointer;
+}
+
 .req { color: var(--accent); }
 
 .hint-inline {

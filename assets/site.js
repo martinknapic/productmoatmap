@@ -1586,7 +1586,7 @@ function fillIfEmpty(id, value) {
 function sessionGateHTML(profile) {
   return `
     <div class="li-badge"><span class="li-badge-check">&check;</span> Signed in as ${escapeHTML(profile.name || "LinkedIn member")} via LinkedIn</div>
-    <div class="form-checkbox-row li-newsletter-row">
+    <div class="form-checkbox-row li-newsletter-row newsletter-checkbox-row">
       <input type="checkbox" id="li-newsletter">
       <label for="li-newsletter" id="li-newsletter-label">Subscribe me to the ProductMoat newsletter <span class="li-optional">(optional)</span>.</label>
     </div>`;

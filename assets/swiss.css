@@ -11,6 +11,8 @@
   --line-soft: #3a3a38;
   --accent: #ff5b3f;
   --accent-ink: #ffffff;
+  --positive: #4cc37f;
+  --positive-ink: #0c1f14;
   --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-mono: "Courier New", Courier, monospace;
 }
@@ -25,6 +27,8 @@ body.light {
   --line-soft: #d8d6cc;
   --accent: #b3311f;
   --accent-ink: #ffffff;
+  --positive: #2f9e5e;
+  --positive-ink: #ffffff;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
