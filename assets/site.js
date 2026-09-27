@@ -95,15 +95,13 @@ function toggleTheme() {
   if (miniMapInstance) miniMapInstance.setStyle(miniMapStyleURL());
 }
 
-const THEME_ICON_SUN = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>';
-const THEME_ICON_MOON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
-
+// Both icons ship inline in the button's HTML; CSS shows/hides them based on
+// body.light so the correct one is there on first paint (see swiss.css). This
+// only keeps the accessible label in sync with the current theme.
 function updateThemeBtn() {
   const btn = document.getElementById("theme-btn");
   if (!btn) return;
   const isLight = document.body.classList.contains("light");
-  // Icon shown is the mode a click switches TO, matching the old "LIGHT"/"DARK" label text.
-  btn.innerHTML = isLight ? THEME_ICON_MOON : THEME_ICON_SUN;
   const label = isLight ? "Switch to dark mode" : "Switch to light mode";
   btn.setAttribute("aria-label", label);
   btn.setAttribute("title", label);
@@ -129,9 +127,9 @@ function initMemberNav() {
 
   // map.html's "Put yourself on the map" button is pointless for someone who is already on the map
   // (a pin pending / approved, or a published interview with a location), so it's hidden for them.
-  // It stays hidden only while we check, then comes back unless they are on the map.
+  // It ships hidden in the markup (no flash of the wrong state) and only appears once we've
+  // confirmed they're not already on it.
   const mapCta = navInner.querySelector(".jm-nav-cta");
-  if (mapCta) mapCta.style.visibility = "hidden";
   const settleMapCta = (onMap) => { if (mapCta) { if (onMap) mapCta.style.display = "none"; mapCta.style.visibility = ""; } };
 
   fetch("/api/member-me", { credentials: "same-origin" })

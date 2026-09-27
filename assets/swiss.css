@@ -157,6 +157,12 @@ ul { list-style: none; }
 }
 .theme-btn:hover { background: var(--ink); color: var(--paper); }
 .theme-btn svg { display: block; }
+/* Which icon shows is driven purely by the body.light class, which the inline
+   head script sets before the nav ever paints - so the right icon is there
+   from the first frame instead of swapping in after JS runs. */
+.theme-btn .theme-icon-moon { display: none; }
+body.light .theme-btn .theme-icon-sun { display: none; }
+body.light .theme-btn .theme-icon-moon { display: block; }
 
 /* Compact CTA variant for the nav bar (e.g. the Sign up button, map.html's
    "Put yourself on the map") — smaller than the default .btn padding so it
