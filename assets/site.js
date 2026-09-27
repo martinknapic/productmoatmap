@@ -129,7 +129,7 @@ function initMemberNav() {
   // (a pin pending / approved, or a published interview with a location), so it's hidden for them.
   // It ships hidden in the markup (no flash of the wrong state) and only appears once we've
   // confirmed they're not already on it.
-  const mapCta = navInner.querySelector(".jm-nav-cta");
+  const mapCta = document.querySelector(".jm-nav-cta");
   const settleMapCta = (onMap) => { if (mapCta) { if (onMap) mapCta.style.display = "none"; mapCta.style.visibility = ""; } };
 
   fetch("/api/member-me", { credentials: "same-origin" })
@@ -232,6 +232,7 @@ function initSignup() {
   const signInBtn = document.getElementById("li-signin-btn");
   const errorEl = document.getElementById("li-error");
   const newsletterCheckbox = document.getElementById("su-newsletter");
+  const heroSection = document.getElementById("su-hero");
   const consentBlock = document.getElementById("su-consent");
   const successBlock = document.getElementById("su-success");
   const successNewsletterNote = document.getElementById("su-success-newsletter");
@@ -283,6 +284,7 @@ function initSignup() {
       const saved = await resp.json().catch(() => ({}));
       if (typeof saved.newsletter === "boolean") newsletter = saved.newsletter;
 
+      if (heroSection) heroSection.hidden = true;
       consentBlock.hidden = true;
       successNewsletterNote.textContent = newsletter
         ? "You're subscribed to the newsletter - every issue includes an unsubscribe link."
