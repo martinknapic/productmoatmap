@@ -1542,6 +1542,8 @@ footer {
 
 .account-status { margin: 0; flex: 0 1 320px; align-self: flex-start; padding: 14px 18px; border: 1px solid var(--line-soft); color: var(--ink-body); line-height: 1.6; }
 .account-status strong { color: var(--ink); }
+.account-status p { margin: 0 0 12px; }
+.account-status .btn { padding: 12px 20px; font-size: 13px; }
 
 .mm-list-wrap { padding-bottom: 72px; }
 .mm-list { list-style: none; max-width: 760px; border-top: 1px solid var(--line-soft); }

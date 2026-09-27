@@ -2,13 +2,20 @@
 // Avatars are flat ink-on-paper medallions (see .avatar rules in swiss.css) by default -
 // no per-person color. A person with a `photo` field gets that photo instead.
 
+// Alumni network is built but hidden from nav/account until there are enough interviewed
+// members to make the directory worth browsing.
+const ALUMNI_NETWORK_ENABLED = false;
+
 function initials(name) {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("");
 }
 
 function avatarHTML(person, cls) {
   if (person.photo) {
-    return `<div class="${cls}"><img src="${person.photo}" alt="${escapeHTML(person.name)}"></div>`;
+    // Site-relative paths (e.g. "assets/photos/x.jpg") are stored without a leading slash;
+    // root them so pages outside the site root (like backoffice/calendar.html) still resolve them.
+    const src = /^https?:\/\//i.test(person.photo) ? person.photo : `/${person.photo.replace(/^\/+/, "")}`;
+    return `<div class="${cls}"><img src="${src}" alt="${escapeHTML(person.name)}"></div>`;
   }
   return `<div class="${cls}">${initials(person.name)}</div>`;
 }
@@ -186,7 +193,7 @@ function renderMemberNav(navInner, profile) {
     <div class="member-dropdown" role="menu">
       <a href="account.html" role="menuitem">My profile</a>
       <a href="my-interview.html" role="menuitem">My interview</a>
-      <a href="network.html" role="menuitem">Alumni network</a>
+      ${ALUMNI_NETWORK_ENABLED ? `<a href="network.html" role="menuitem">Alumni network</a>` : ""}
       ${profile.isAdmin ? `<a href="/backoffice/candidates.html" role="menuitem">Backoffice</a>` : ""}
       <a href="#" id="member-logout-link" role="menuitem">Log out</a>
     </div>
@@ -355,7 +362,7 @@ function applicationStatusHTML(d) {
       ? `<strong>Someone recommended you.</strong> We'll be in touch if it looks like a fit. ${myInterview}`
       : `<strong>You applied${d.appliedAt ? ` on ${escapeHTML(fmt(d.appliedAt))}` : ""}.</strong> Your application is pending review. ${myInterview}`;
   }
-  return `You haven't applied to be interviewed yet. <a class="bracket-link" href="apply.html">[ Apply ]</a>`;
+  return `<p>You haven't applied to be interviewed yet.</p><a class="btn btn-primary" href="apply.html">Apply to be interviewed</a>`;
 }
 
 // ---------- The whole journey as a strip of steps ----------
@@ -712,10 +719,12 @@ function initAccountDetails(el, d, networkJoined) {
     </form>`;
 
   // Alumni network membership (explicit opt-in; leaving removes visibility and access at once)
-  const netBox = document.createElement("div");
-  netBox.className = "account-network";
-  el.appendChild(netBox);
-  renderAccountNetwork(netBox, !!networkJoined);
+  if (ALUMNI_NETWORK_ENABLED) {
+    const netBox = document.createElement("div");
+    netBox.className = "account-network";
+    el.appendChild(netBox);
+    renderAccountNetwork(netBox, !!networkJoined);
+  }
 
   const form = el.querySelector("#account-form");
   const status = el.querySelector("#account-save-status");
@@ -795,7 +804,7 @@ function accountSignedInHTML(profile) {
           <button class="btn btn-ghost" id="account-logout-btn">Log out</button>
         </div>
       </div>
-      <p class="account-status" id="account-status" hidden></p>
+      <div class="account-status" id="account-status" hidden></div>
     </div>
   `;
 }
@@ -843,13 +852,17 @@ function initMyMap() {
         return;
       }
       showMemberTabs("map");
-      const pins = data.pins || [];
+      // Each person has at most one map submission (the API already resolves theirs to a
+      // single record), so there is never more than one pin card to show here.
+      const pin = (data.pins || [])[0] || null;
       const iv = data.interview;
       const place = p => [p.city, p.country].filter(Boolean).join(", ") || "Pinned location";
-      const cards = [
-        iv ? `<li class="mm-card"><div><div class="mm-place">${escapeHTML(iv.location || "Your location")}</div><div class="mm-meta">Your interview puts you on the map</div></div><a class="bracket-link" href="${escapeAttr(iv.url)}">[ Read it ]</a></li>` : "",
-        ...pins.map(p => `<li class="mm-card"><div><div class="mm-place">${escapeHTML(place(p))}</div><div class="mm-meta">Pin submitted ${escapeHTML(fmtDate(p.submittedAt))}</div></div><span class="mm-status is-${escapeAttr(p.status)}">${escapeHTML(STATUS[p.status] || p.status)}</span></li>`)
-      ].filter(Boolean);
+      // Only an approved or still-pending pin (or a published interview) actually appears on the
+      // public globe for map.html?me=1 to fly to - a rejected/removed pin has nothing to zoom to.
+      const zoomable = !!iv || (pin && (pin.status === "approved" || pin.status === "pending"));
+      const ivCard = iv ? `<li class="mm-card"><div><div class="mm-place">${escapeHTML(iv.location || "Your location")}</div><div class="mm-meta">Your interview puts you on the map</div></div><a class="bracket-link" href="${escapeAttr(iv.url)}">[ Read it ]</a></li>` : "";
+      const pinCard = pin ? `<li class="mm-card"><div><div class="mm-place">${escapeHTML(place(pin))}</div><div class="mm-meta">Submitted ${escapeHTML(fmtDate(pin.submittedAt))}${pin.status === "approved" && pin.approvedAt ? ` &middot; Granted ${escapeHTML(fmtDate(pin.approvedAt))}` : ""}</div></div><span class="mm-status is-${escapeAttr(pin.status)}">${escapeHTML(STATUS[pin.status] || pin.status)}</span></li>` : "";
+      const cards = [ivCard, pinCard].filter(Boolean);
       const empty = !cards.length;
       const canAdd = !data.onMap; // one pin per person; a rejected pin can be replaced
       root.innerHTML = hero(
@@ -859,7 +872,7 @@ function initMyMap() {
           : data.onMap
             ? "You're on the map, and here's where your pin stands. Each person gets one pin, and we review it before it goes live."
             : "We couldn't approve your pin as submitted. You can drop a new one where you work.",
-        `${canAdd ? `<a class="btn btn-primary" href="join-map.html">${empty ? "Put yourself on the map" : "Drop a new pin"} &rarr;</a>` : ""}<a class="${canAdd ? "bracket-link" : "btn btn-primary"}" href="map.html${empty ? "" : "?me=1"}">${canAdd ? "[ Open the map ]" : "Open the map &rarr;"}</a>`
+        `${canAdd ? `<a class="btn btn-primary" href="join-map.html">${empty ? "Put yourself on the map" : "Drop a new pin"} &rarr;</a>` : ""}${empty ? "" : `<a class="${canAdd ? "bracket-link" : "btn btn-primary"}" href="map.html${zoomable ? "?me=1" : ""}">${canAdd ? "[ Open the map ]" : "Open the map &rarr;"}</a>`}`
       ) + (empty ? "" : `<section class="wrap mm-list-wrap"><ul class="mm-list">${cards.join("")}</ul></section>`);
     })
     .catch(() => { root.innerHTML = hero("Something went wrong.", "We couldn't load your map details just now. Please refresh in a moment."); });
@@ -2100,8 +2113,8 @@ function calRenderCell(week, today, interview) {
   // week is already taken, and a past "gap" week can't be filled retroactively.
   const hoverHTML = status === "open"
     ? `<div class="cal-hover">
-        <a class="cal-hover-btn" href="apply.html">Apply</a>
-        <a class="cal-hover-btn" href="recommend.html">Recommend</a>
+        <a class="cal-hover-btn" href="/apply.html">Apply</a>
+        <a class="cal-hover-btn" href="/recommend.html">Recommend</a>
       </div>`
     : "";
 

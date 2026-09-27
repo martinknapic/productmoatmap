@@ -74,20 +74,22 @@
 
 .bo-subnav {
   display: flex;
-  gap: 24px;
-  font-family: var(--font-mono);
-  font-size: 14px;
-  font-weight: 500;
+  gap: 6px;
   color: var(--ink-dim);
 }
 
 .bo-subnav a {
-  padding-bottom: 3px;
-  border-bottom: 1px solid transparent;
-  transition: border-color 0.15s ease, color 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid transparent;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
-.bo-subnav a:hover { color: var(--ink); }
-.bo-subnav a.bo-subnav-active { color: var(--ink); border-bottom-color: var(--ink); }
+.bo-subnav a svg { width: 19px; height: 19px; }
+.bo-subnav a:hover, .bo-subnav a:focus-visible { color: var(--ink); background: var(--paper-alt); outline: none; }
+.bo-subnav a.bo-subnav-active { color: var(--ink); background: var(--paper-alt); border-color: var(--line-soft); }
 
 .bo-section { margin-bottom: 56px; }
 

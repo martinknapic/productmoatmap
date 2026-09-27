@@ -11,6 +11,9 @@
 //          "approved" | "rejected" | "removed"). Only "approved" ones are picked up by
 //          api/map-people.js for the public globe. "removed" is a soft delete: the record stays
 //          (so the backoffice can show it as removed and restore it) but is never public.
+//          Each status change stamps statusChangedAt; the first time it becomes "approved" also
+//          stamps approvedAt (kept even if the status later moves away from "approved"), so the
+//          member's My map page can show when their pin was granted.
 //       -> { id, edit: { lat, lng, city, country, role, company } } to adjust the pin and its
 //          details; the status is left as it is.
 
@@ -105,6 +108,8 @@ module.exports = async (req, res) => {
         submission.editedAt = new Date().toISOString();
       } else {
         submission.status = status;
+        submission.statusChangedAt = new Date().toISOString();
+        if (status === "approved" && !submission.approvedAt) submission.approvedAt = submission.statusChangedAt;
       }
       await put(pathname, JSON.stringify(submission), {
         access: "private",

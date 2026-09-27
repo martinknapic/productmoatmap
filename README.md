@@ -349,8 +349,10 @@ deployment to test the OAuth round-trip end-to-end.
 
 **My profile details:** `account.html` lets a signed-in member keep their Apply details (name, role, company, location, years, several focus areas, LinkedIn/website/X, short bio, pull quote) on their private member record (`members/<hash>.json` → `details`, via `api/_lib/routes/member-profile.js`). Apply and Put yourself on the map prefill from it; no interview page is needed.
 
-**Calendar (`calendar.html`) is hidden for now:** its nav links are removed and `vercel.json` redirects `/calendar.html` to the
-home page. To bring it back, delete that redirect and re-add `<a href="calendar.html">Calendar</a>` to the nav of each page.
+**Calendar is backoffice-only:** the public `calendar.html` stays hidden (its nav links are removed and `vercel.json`
+redirects `/calendar.html` to the home page), but the same publishing-calendar view lives at
+`backoffice/calendar.html`, gated by `middleware.js` like the rest of the dashboard. To bring the public page back,
+delete that redirect and re-add `<a href="calendar.html">Calendar</a>` to the nav of each page.
 
 ## Candidates → invitation → interview → publish
 
@@ -400,7 +402,8 @@ a server-enforced session (not just a client-side check).
 | `api/backoffice-me.js` | Returns the current session's name/email as JSON, for the "Logged in as …" display |
 | `api/backoffice-logout.js` | Clears the session cookie |
 | `backoffice/map-submissions.html` + `api/map-submissions.js` | The "Put yourself on the map" moderation queue — see that section above |
-| `middleware.js` | Vercel Routing Middleware — checks the session cookie **before** serving `candidates.html`, `candidate.html`, `preview.html`, `questions.html`, `map-submissions.html`, or `profiles.html`, redirecting to the login page otherwise. This is the actual security boundary; `assets/backoffice.js`'s own check is just for UI (who's logged in, wiring sign-out) |
+| `middleware.js` | Vercel Routing Middleware — checks the session cookie **before** serving `candidates.html`, `candidate.html`, `preview.html`, `questions.html`, `map-submissions.html`, `calendar.html`, or `profiles.html`, redirecting to the login page otherwise. This is the actual security boundary; `assets/backoffice.js`'s own check is just for UI (who's logged in, wiring sign-out) |
+| `backoffice/calendar.html` | The publishing-calendar view (same board as the hidden public `calendar.html`) for internal use only — reachable from the main menu, gated like every other dashboard page |
 | `package.json` | Installs `@vercel/functions` (which `middleware.js` needs for its `next()` pass-through helper) and `@vercel/blob` (used by `api/join-map.js` and friends). Nothing else about the site gets a build step; every other page is still plain static HTML/CSS/JS |
 
 Reuses the same LinkedIn app/credentials as the Apply page's verification gate (same

@@ -18,7 +18,8 @@ export const config = {
     "/backoffice/questions.html",
     "/backoffice/users.html",
     "/backoffice/profiles.html",
-    "/backoffice/map-submissions.html"
+    "/backoffice/map-submissions.html",
+    "/backoffice/calendar.html"
   ]
 };
 

@@ -168,31 +168,8 @@ const BO_ICONS = {
   live: boIcon('<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>')
 };
 
-// One small floating tooltip for every element with data-tip (position: fixed, so the table's
-// horizontal scroll can't clip it). Shown on hover and on keyboard focus.
-function boIconTooltips(container) {
-  let tip = null;
-  const ensure = () => {
-    if (!tip) { tip = document.createElement("div"); tip.className = "bo-tip"; tip.setAttribute("role", "tooltip"); tip.hidden = true; document.body.appendChild(tip); }
-    return tip;
-  };
-  const hide = () => { if (tip) tip.hidden = true; };
-  const show = (el) => {
-    const t = ensure();
-    t.textContent = el.dataset.tip;
-    t.hidden = false;
-    const a = el.getBoundingClientRect(), w = t.offsetWidth, h = t.offsetHeight;
-    t.style.left = `${Math.max(8, Math.min(a.left + a.width / 2 - w / 2, window.innerWidth - w - 8))}px`;
-    t.style.top = `${a.top - h - 8 < 8 ? a.bottom + 8 : a.top - h - 8}px`;
-  };
-  const target = e => e.target.closest && e.target.closest("[data-tip]");
-  container.addEventListener("mouseover", e => { const el = target(e); if (el) show(el); });
-  container.addEventListener("mouseout", e => { if (target(e)) hide(); });
-  container.addEventListener("focusin", e => { const el = target(e); if (el) show(el); });
-  container.addEventListener("focusout", e => { if (target(e)) hide(); });
-  container.addEventListener("click", hide);
-  window.addEventListener("scroll", hide, true);
-}
+// boIconTooltips (data-tip hover/focus tooltip) now lives in backoffice.js, shared
+// by every backoffice page including the nav icons.
 
 // Confirmation dialog: resolves true only if they press the confirm button. Cancel is focused first,
 // and Esc, the backdrop and Cancel all say no.

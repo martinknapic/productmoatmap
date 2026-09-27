@@ -61,6 +61,9 @@ async function boCurrentGuard() {
     });
   }
 
+  const subnav = document.querySelector(".bo-subnav");
+  if (subnav) boIconTooltips(subnav);
+
   try {
     const resp = await fetch("/api/backoffice-me", { credentials: "same-origin" });
     if (!resp.ok) throw new Error("not authenticated");
@@ -72,6 +75,33 @@ async function boCurrentGuard() {
     location.replace("index.html");
     return false;
   }
+}
+
+// One small floating tooltip for every element with data-tip (position: fixed, so a table's
+// horizontal scroll, or the nav, can't clip it). Shown on hover and on keyboard focus. Shared
+// by the icon-only main menu (every dashboard page) and the candidates/users tables.
+function boIconTooltips(container) {
+  let tip = null;
+  const ensure = () => {
+    if (!tip) { tip = document.createElement("div"); tip.className = "bo-tip"; tip.setAttribute("role", "tooltip"); tip.hidden = true; document.body.appendChild(tip); }
+    return tip;
+  };
+  const hide = () => { if (tip) tip.hidden = true; };
+  const show = (el) => {
+    const t = ensure();
+    t.textContent = el.dataset.tip;
+    t.hidden = false;
+    const a = el.getBoundingClientRect(), w = t.offsetWidth, h = t.offsetHeight;
+    t.style.left = `${Math.max(8, Math.min(a.left + a.width / 2 - w / 2, window.innerWidth - w - 8))}px`;
+    t.style.top = `${a.top - h - 8 < 8 ? a.bottom + 8 : a.top - h - 8}px`;
+  };
+  const target = e => e.target.closest && e.target.closest("[data-tip]");
+  container.addEventListener("mouseover", e => { const el = target(e); if (el) show(el); });
+  container.addEventListener("mouseout", e => { if (target(e)) hide(); });
+  container.addEventListener("focusin", e => { const el = target(e); if (el) show(el); });
+  container.addEventListener("focusout", e => { if (target(e)) hide(); });
+  container.addEventListener("click", hide);
+  window.addEventListener("scroll", hide, true);
 }
 
 // ---------- Login page ----------
