@@ -9,7 +9,7 @@
   <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png?v=2">
   <link rel="stylesheet" href="../assets/swiss.css?v=20">
   <link rel="stylesheet" href="../assets/site.css?v=65">
-  <link rel="stylesheet" href="../assets/calendar.css?v=1">
+  <link rel="stylesheet" href="../assets/calendar.css?v=2">
   <link rel="stylesheet" href="../assets/backoffice.css?v=27">
 </head>
 <body class="light">
@@ -33,12 +33,15 @@
   <header class="cal-hero">
     <div class="wrap">
       <div class="eyebrow">The publishing calendar</div>
+      <div class="cal-years" id="cal-years" role="group" aria-label="Year"></div>
       <div class="cal-legend">
         <div class="cal-legend-item"><span class="cal-swatch cal-swatch-published"></span>Published</div>
+        <div class="cal-legend-item"><span class="cal-swatch cal-swatch-planned"></span>Scheduled / estimated</div>
         <div class="cal-legend-item"><span class="cal-swatch cal-swatch-current"></span>Current week</div>
         <div class="cal-legend-item"><span class="cal-swatch cal-swatch-open"></span>Open - still available</div>
         <div class="cal-legend-item"><span class="cal-swatch cal-swatch-gap"></span>No issue published</div>
       </div>
+      <p class="cal-note" id="cal-note"></p>
     </div>
   </header>
 
@@ -46,15 +49,10 @@
     <div class="wrap-cal" id="cal-board"></div>
   </main>
 
-  <script src="../assets/people-data.js?v=15"></script>
-  <script src="/api/published?format=js"></script>
-  <script src="../assets/site.js?v=64"></script>
+  <script src="../assets/site.js?v=69"></script>
   <script src="../assets/backoffice.js?v=15"></script>
-  <script>
-    (async () => {
-      if (!(await boCurrentGuard())) return;
-      initCalendar();
-    })();
-  </script>
+  <script src="../assets/backoffice-candidates.js?v=22"></script>
+  <script src="../assets/backoffice-calendar.js?v=1"></script>
+  <script>initBackofficeCalendar();</script>
 </body>
 </html>

@@ -2146,7 +2146,7 @@ function calRenderCell(week, today, interview) {
     </td>`;
 }
 
-function calRenderQuarter(quarterWeeks, quarterNum, today, weekInterviews) {
+function calRenderQuarter(quarterWeeks, quarterNum, today, weekInterviews, renderCell = calRenderCell) {
   const monthGroups = [];
   quarterWeeks.forEach(w => {
     const last = monthGroups[monthGroups.length - 1];
@@ -2162,7 +2162,7 @@ function calRenderQuarter(quarterWeeks, quarterNum, today, weekInterviews) {
     `<th colspan="${g.count}">${CAL_MONTH_NAMES[g.month]}</th>`
   ).join("");
 
-  const cellsHTML = quarterWeeks.map(w => calRenderCell(w, today, weekInterviews.get(w.index))).join("");
+  const cellsHTML = quarterWeeks.map(w => renderCell(w, today, weekInterviews.get(w.index))).join("");
 
   return `
     <section class="cal-quarter">

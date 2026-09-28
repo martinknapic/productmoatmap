@@ -206,7 +206,7 @@
 
 .cal-cell[data-status="gap"] .cal-empty-label { opacity: 0.5; }
 
-/* Hover overlay — Apply / Recommend, slides up over the bottom of the cell */
+/* Hover overlay - Recommend, slides up over the bottom of the cell */
 
 .cal-hover {
   position: absolute;
@@ -239,3 +239,119 @@
   .cal-legend { gap: 14px 20px; }
   .wrap-cal { padding: 36px 20px 72px; gap: 36px; }
 }
+
+/* ---------- Backoffice calendar: year filter, planned weeks, multi-candidate weeks ---------- */
+
+.cal-years {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 20px;
+}
+
+.cal-note {
+  margin-top: 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+.cal-note:empty { display: none; }
+
+.cal-error {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+
+.cal-swatch-planned { background: transparent; border: 1px solid var(--ink); }
+
+.cal-cell[data-status="planned"] .cal-cell-inner { border: 1px solid var(--line); }
+
+.cal-kind {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-dim);
+}
+.cal-kind-published { color: #2f7d4f; }
+.cal-kind-scheduled { color: var(--accent); }
+
+.cal-card { gap: 4px; }
+
+/* "N candidates" - the count stands in for the card, the list opens on hover */
+
+.cal-multi {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+  cursor: default;
+  transition: background 0.15s ease;
+}
+.cal-multi:hover, .cal-multi:focus-visible { background: var(--paper-alt); }
+
+.cal-multi-count {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.cal-multi-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-dim);
+}
+
+.cal-pop {
+  position: fixed;
+  z-index: 60;
+  width: 300px;
+  max-width: calc(100vw - 16px);
+  max-height: 60vh;
+  overflow-y: auto;
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+}
+.cal-pop[hidden] { display: none; }
+
+.cal-pop-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  transition: background 0.15s ease;
+}
+.cal-pop-row:last-child { border-bottom: none; }
+.cal-pop-row:hover { background: var(--paper-alt); }
+
+.cal-pop-avatar { width: 32px; height: 32px; font-size: 11px; }
+
+.cal-pop-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+
+.cal-pop-name { font-size: 13px; font-weight: 700; line-height: 1.25; }
+
+.cal-pop-sub {
+  font-size: 11.5px;
+  color: var(--ink-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cal-pop-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+
+.cal-pop-date { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-dim); }
