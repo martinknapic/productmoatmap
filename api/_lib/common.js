@@ -542,6 +542,36 @@ function toPublicInterview(c) {
   };
 }
 
+// Looks a free-text "City, Country" up on OpenStreetMap so a published interview lands on the globe
+// without anyone typing coordinates. Returns { lat, lng } or null (never throws).
+async function geocodeLocation(location) {
+  const q = String(location || "").trim();
+  if (!q) return null;
+  try {
+    const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(q)}`, {
+      headers: { "User-Agent": "ProductMoat/1.0 (https://www.productmoat.com)", "Accept": "application/json" },
+      signal: AbortSignal.timeout(5000)
+    });
+    if (!resp.ok) return null;
+    const hit = (await resp.json())[0];
+    const lat = hit && Number(hit.lat), lng = hit && Number(hit.lon);
+    return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+  } catch (err) {
+    console.error("[geocode] failed:", (err && err.message) || err);
+    return null;
+  }
+}
+
+// Fills profile.lat/lng from the location when missing. True when the profile changed.
+async function ensureCoords(c) {
+  const p = c.profile;
+  if (!p || (typeof p.lat === "number" && typeof p.lng === "number")) return false;
+  const hit = await geocodeLocation(p.location);
+  if (!hit) return false;
+  p.lat = hit.lat; p.lng = hit.lng;
+  return true;
+}
+
 async function takenSlugs(exceptId) {
   const all = await listCandidates();
   const set = new Set();
@@ -560,7 +590,7 @@ module.exports = {
   readJSON, writeJSON, readCandidate, saveCandidate, listCandidates, findCandidatesByEmail, deleteCandidate, MAP_PREFIX, findMapPresence, mapPinId, dedupeMapPins,
   upsertMember, readMember, saveMemberDetails, setNetworkOptIn, isNetworkMember, cleanMemberDetails, FOCUS_TAGS, readBank, defaultBank, cleanSections, QUESTION_BANK_PATH,
   requiredProgress, deriveStatus, isLive, blankCandidate, cleanProfile, ID_RE, newId,
-  slugify, CATEGORIES, defaultCategory, toPublicInterview, takenSlugs, FOCUS_LABELS,
+  geocodeLocation, ensureCoords, slugify, CATEGORIES, defaultCategory, toPublicInterview, takenSlugs, FOCUS_LABELS,
   parsePhotoDataUrl, savePhoto, readPhoto, deletePhoto, photoView,
   listMembers, syncMemberToList, memberPath
 };

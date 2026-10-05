@@ -14,7 +14,12 @@ const C = require("../common");
 module.exports = async (req, res) => {
   let list = [];
   try {
-    list = (await C.listCandidates()).filter(C.isLive).map(C.toPublicInterview);
+    const live = (await C.listCandidates()).filter(C.isLive);
+    // Interviews published before coordinates were filled in automatically: geocode once and keep.
+    for (const c of live.filter(c => typeof c.profile.lat !== "number" || typeof c.profile.lng !== "number")) {
+      if (await C.ensureCoords(c)) await C.saveCandidate(c).catch(() => {});
+    }
+    list = live.map(C.toPublicInterview);
   } catch (err) {
     console.error("[published] failed:", (err && err.stack) || err);
   }

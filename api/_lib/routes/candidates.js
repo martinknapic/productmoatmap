@@ -190,6 +190,7 @@ module.exports = async (req, res) => {
           pub.slug = slug;
         }
         if (!pub.category) pub.category = C.defaultCategory(c.profile);
+        await C.ensureCoords(c); // so the interview also appears on the globe
         if (body.mode === "now") {
           pub.publishedAt = new Date().toISOString();
           pub.scheduledPublishAt = null;
