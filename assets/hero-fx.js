@@ -653,6 +653,14 @@ void main(){
     const photo = src ? `<img src="${esc(src)}" alt="Portrait of ${esc(p.name)}" draggable="false" fetchpriority="high"${useFeatured ? ' style="object-position:center 30%"' : ""}>` : `<span class="spot-initials">${esc(initials)}</span>`;
     const ring = "READ THE INTERVIEW \u2022 READ THE INTERVIEW \u2022 ";
     const month = p.publishedDate ? new Date(p.publishedDate + "T00:00").toLocaleDateString("en", { month: "short", year: "numeric" }).toUpperCase() : "";
+    // Same week numbering as the calendar (site.js): 52 Monday-start weeks, W1 holds 1 Jan.
+    const wkInfo = (() => {
+      if (!p.publishedDate) return null;
+      const d = calDateUTC(p.publishedDate), weeks = calBuildYearWeeks(d.getUTCFullYear());
+      const w = weeks.find(x => d >= x.start && d <= x.end) || (d > weeks[51].end ? weeks[51] : null);
+      return w ? { wk: w.index, total: weeks.length } : null;
+    })();
+    const chipDate = month ? month + (wkInfo ? " \u00b7 W" + wkInfo.wk + "/" + wkInfo.total : "") : "";
     slot.innerHTML = `
       <div class="spot">
         <div class="spot-stage">
@@ -660,7 +668,7 @@ void main(){
             <span class="spot-photo">${photo}</span>
             <span class="spot-tone"></span>
             <span class="spot-glare"></span>
-            <span class="spot-chip"><i></i>Latest conversation${month ? " \u00b7 " + month : ""}</span>
+            <span class="spot-chip"><i></i>Featured conversation${chipDate ? " \u00b7 " + chipDate : ""}</span>
             <span class="spot-cap"><b>${esc(p.name)}</b><i>${esc(p.role)} \u00b7 ${esc(p.company)}</i><em>${esc(p.location)}</em></span>
             <span class="spot-frame" aria-hidden="true"></span>
           </a>
