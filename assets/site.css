@@ -1756,3 +1756,10 @@ body.nl-open { overflow: hidden; }
   .hs-row { flex-direction: column; }
   .hs-row input[type="email"] { border-right: 1px solid var(--ink); border-bottom: none; }
 }
+
+/* ---------- End of interview: email signup ---------- */
+.interview-subscribe { border-top: 1px solid var(--line); padding: 56px 0 72px; }
+.interview-subscribe .is-title { font-size: clamp(24px, 3.4vw, 34px); font-weight: 700; letter-spacing: -0.01em; line-height: 1.1; }
+.interview-subscribe .is-sub { margin-top: 12px; font-size: 17px; line-height: 1.6; color: var(--ink-body); max-width: 520px; }
+.interview-subscribe .hero-subscribe { margin-top: 24px; }
+@media (max-width: 760px) { .interview-subscribe { padding: 40px 0 56px; } }

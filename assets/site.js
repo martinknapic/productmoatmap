@@ -1389,6 +1389,25 @@ function renderPersonPage(root, p, opts = {}) {
         </div>
       </div>
     </section>
+
+    ${opts.preview ? "" : `
+    <section class="interview-subscribe">
+      <div class="wrap">
+        <div class="qna-inner">
+          <h2 class="is-title">Enjoyed this conversation?</h2>
+          <p class="is-sub">A new interview with a product person lands every week. Get it in your inbox.</p>
+          <form class="hero-subscribe" novalidate>
+            <label class="label-mono" for="is-email">Your email</label>
+            <div class="hs-row">
+              <input id="is-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" required>
+              <input class="hs-trap" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+              <button class="btn btn-primary" type="submit">Subscribe</button>
+            </div>
+            <p class="hs-note" role="status" aria-live="polite">One email per interview. Unsubscribe any time. <a href="/privacy">Privacy</a></p>
+          </form>
+        </div>
+      </div>
+    </section>`}
   `;
   if (!opts.hydrate) root.innerHTML = markup;
 
@@ -2409,26 +2428,25 @@ function initCalendar() {
   el.innerHTML = quartersHTML;
 }
 
-// Homepage hero: email-only newsletter signup (POST /api/subscribe).
-(function () {
-  const form = document.getElementById("hero-subscribe");
+// Email-only newsletter signup (POST /api/subscribe). Used in the homepage hero and at the end of every
+// interview. Delegated, so it also covers forms that are built after load (client-rendered pages).
+document.addEventListener("submit", async e => {
+  const form = e.target.closest ? e.target.closest("form.hero-subscribe") : null;
   if (!form) return;
-  const note = document.getElementById("hs-note");
+  e.preventDefault();
+  const note = form.querySelector(".hs-note");
   const btn = form.querySelector("button");
   const say = (msg, cls) => { note.textContent = msg; note.className = "hs-note" + (cls ? " " + cls : ""); };
-  form.addEventListener("submit", async e => {
-    e.preventDefault();
-    const email = form.email.value.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return say("Please enter a valid email address.", "is-error");
-    btn.disabled = true;
-    try {
-      const r = await fetch("/api/subscribe", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, website: form.website.value })
-      });
-      if (r.ok) { form.reset(); say("Thanks! Check your inbox - you may need to confirm your address.", "is-ok"); }
-      else say(r.status === 429 ? "Too many attempts. Please try again later." : "Something went wrong. Please try again.", "is-error");
-    } catch (err) { say("Network problem. Please try again.", "is-error"); }
-    btn.disabled = false;
-  });
-})();
+  const email = form.email.value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return say("Please enter a valid email address.", "is-error");
+  btn.disabled = true;
+  try {
+    const r = await fetch("/api/subscribe", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, website: form.website.value })
+    });
+    if (r.ok) { form.reset(); say("Thanks! Check your inbox - you may need to confirm your address.", "is-ok"); }
+    else say(r.status === 429 ? "Too many attempts. Please try again later." : "Something went wrong. Please try again.", "is-error");
+  } catch (err) { say("Network problem. Please try again.", "is-error"); }
+  btn.disabled = false;
+});
