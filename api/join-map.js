@@ -53,7 +53,7 @@ module.exports = async (req, res) => {
       name: clip(session.name, 200),
       email: clip(session.email, 200),
       linkedinId: clip(session.sub, 100),
-      picture: typeof session.picture === "string" ? clip(session.picture, 1000) : null,
+      picture: typeof session.picture === "string" ? (await C.mirrorProfilePhoto(clip(session.picture, 1000))) || null : null,
       city: clip(city, 200),
       country: clip(country, 200),
       role: clip(role, 200),

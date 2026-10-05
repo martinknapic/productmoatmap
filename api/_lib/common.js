@@ -133,6 +133,47 @@ function deletePhoto(id) {
   return del(`${PHOTO_PREFIX}${id}.json`).catch(() => {});
 }
 
+// ---------- Profile photo (the round picture): mirrored from LinkedIn into our own storage ----------
+// LinkedIn photo URLs are signed and expire (the "e=" timestamp), so hotlinking them eventually leaves
+// a broken image. Whenever a LinkedIn photo URL is saved we download it once and keep our own copy
+// (profile-photos/<id>.json, same base64-JSON shape as the featured photo) served by
+// api/_lib/routes/profile-photo.js. The id is derived from the source URL, so saving the same URL again
+// overwrites the same blob. If the download fails we keep the original URL, so a save never fails on it.
+
+const PROFILE_PHOTO_PREFIX = "profile-photos/";
+const PROFILE_PHOTO_URL_RE = /^\/api\/profile-photo\?id=[a-f0-9]{32}$/;
+
+function isLinkedInPhotoUrl(u) {
+  try {
+    const url = new URL(String(u || ""));
+    return url.protocol === "https:" && !url.username && !url.password && (url.hostname === "licdn.com" || url.hostname.endsWith(".licdn.com"));
+  } catch (e) { return false; }
+}
+
+async function mirrorProfilePhoto(url) {
+  if (!isLinkedInPhotoUrl(url)) return url;
+  try {
+    const resp = await fetch(url, { redirect: "error", signal: AbortSignal.timeout(8000) });
+    const type = String(resp.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+    if (!resp.ok || !PHOTO_TYPES[type]) return url;
+    const buffer = Buffer.from(await resp.arrayBuffer());
+    if (!buffer.length || buffer.length > PHOTO_MAX_BYTES || !photoMagicOk(type, buffer)) return url;
+    const id = crypto.createHash("sha256").update(url).digest("hex").slice(0, 32);
+    await writeJSON(`${PROFILE_PHOTO_PREFIX}${id}.json`, { type, data: buffer.toString("base64"), at: new Date().toISOString() });
+    return `/api/profile-photo?id=${id}`;
+  } catch (err) {
+    console.error("[profile-photo] mirror failed, keeping original url:", (err && err.message) || err);
+    return url;
+  }
+}
+
+async function readProfilePhoto(id) {
+  if (!PHOTO_ID_RE.test(id || "")) return null;
+  const rec = await readJSON(`${PROFILE_PHOTO_PREFIX}${id}.json`);
+  if (!rec || typeof rec.data !== "string") return null;
+  return { type: rec.type, buffer: Buffer.from(rec.data, "base64") };
+}
+
 // What the pages get: where to load it from and its real size (used to avoid stretching small photos).
 function photoView(c) {
   const f = c && c.featuredPhoto;
@@ -150,6 +191,7 @@ const readCandidate = id => (ID_RE.test(id || "") ? readJSON(`${CANDIDATE_PREFIX
 async function saveCandidate(c) {
   c.updatedAt = new Date().toISOString();
   c.status = deriveStatus(c);
+  if (c.profile) c.profile.photo = await mirrorProfilePhoto(c.profile.photo);
   await writeJSON(`${CANDIDATE_PREFIX}${c.id}.json`, c);
   return c;
 }
@@ -321,6 +363,7 @@ function cleanUrl(value, max) {
   if (!v) return "";
   if (/^https?:\/\//i.test(v) && !/[\s"'<>]/.test(v)) return v;
   if (/^assets\/[\w./-]+$/.test(v)) return v;
+  if (PROFILE_PHOTO_URL_RE.test(v)) return v;
   return "";
 }
 
@@ -341,9 +384,9 @@ function cleanProfile(p) {
     location: plain(p.location, 200),
     yearsExperience: Number.isFinite(years) && p.yearsExperience !== "" && p.yearsExperience != null ? Math.max(0, Math.min(60, Math.round(years))) : null,
     focusTag: FOCUS_TAGS.includes(p.focusTag) ? p.focusTag : "other",
-    linkedin: cleanUrl(p.linkedin, 300),
-    website: cleanUrl(p.website, 300),
-    twitter: cleanUrl(p.twitter, 300),
+    linkedin: looseUrl(p.linkedin, 300),
+    website: looseUrl(p.website, 300),
+    twitter: looseUrl(p.twitter, 300),
     snippet: plain(p.snippet, 200),
     pullQuote: plain(p.pullQuote, 160),
     photo: cleanUrl(p.photo, 1000),
@@ -416,12 +459,20 @@ async function syncMemberToList(record) {
   return record;
 }
 
+// A picture we already mirrored is kept (a fresh LinkedIn sign-in only carries the 100px thumbnail and
+// must not replace a better one); otherwise mirror the session's picture.
+async function memberPicture(session, existing) {
+  const kept = existing && existing.picture;
+  if (kept && PROFILE_PHOTO_URL_RE.test(kept)) return kept;
+  return (await mirrorProfilePhoto(session.picture || kept || null)) || null;
+}
+
 async function saveMemberDetails(session, details) {
   const existing = await readMember(session.email);
   const record = {
     name: session.name || (existing && existing.name) || "",
     email: session.email,
-    picture: session.picture || (existing && existing.picture) || null,
+    picture: await memberPicture(session, existing),
     newsletter: !!(existing && existing.newsletter),
     source: (existing && existing.source) || "profile",
     createdAt: (existing && existing.createdAt) || new Date().toISOString(),
@@ -443,7 +494,7 @@ async function setNetworkOptIn(session, optedIn, source) {
   const existing = await readMember(session.email);
   const now = new Date().toISOString();
   const record = existing || {
-    name: session.name || "", email: session.email, picture: session.picture || null,
+    name: session.name || "", email: session.email, picture: await memberPicture(session, null),
     newsletter: false, source: source || "network", createdAt: now
   };
   record.network = optedIn
@@ -462,7 +513,7 @@ async function upsertMember(session, newsletter, source) {
   const record = {
     name: session.name || "",
     email: session.email,
-    picture: session.picture || null,
+    picture: await memberPicture(session, existing),
     newsletter: !!newsletter || !!(existing && existing.newsletter),
     source: (existing && existing.newsletter && !newsletter) ? (existing.source || source) : source,
     createdAt: (existing && existing.createdAt) || new Date().toISOString(),
@@ -591,6 +642,6 @@ module.exports = {
   upsertMember, readMember, saveMemberDetails, setNetworkOptIn, isNetworkMember, cleanMemberDetails, FOCUS_TAGS, readBank, defaultBank, cleanSections, QUESTION_BANK_PATH,
   requiredProgress, deriveStatus, isLive, blankCandidate, cleanProfile, ID_RE, newId,
   geocodeLocation, ensureCoords, slugify, CATEGORIES, defaultCategory, toPublicInterview, takenSlugs, FOCUS_LABELS,
-  parsePhotoDataUrl, savePhoto, readPhoto, deletePhoto, photoView,
+  mirrorProfilePhoto, readProfilePhoto, isLinkedInPhotoUrl, parsePhotoDataUrl, savePhoto, readPhoto, deletePhoto, photoView,
   listMembers, syncMemberToList, memberPath
 };

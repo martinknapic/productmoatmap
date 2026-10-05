@@ -328,7 +328,7 @@ function initInterview() {
             } else if (f.area) {
               input = `<textarea class="ivq-input" id="${id}" data-profile="${f.key}" rows="2" maxlength="${f.max}">${escapeHTML(v)}</textarea>`;
             } else {
-              input = `<input class="ivq-input" id="${id}" data-profile="${f.key}" type="${f.type || "text"}" ${f.type === "number" ? 'min="0" max="60"' : `maxlength="${f.max}"`} value="${escapeAttr(v)}">`;
+              input = `<input class="ivq-input" id="${id}" data-profile="${f.key}" type="${f.type === "url" ? "text" : (f.type || "text")}"${f.type === "url" ? ' inputmode="url" autocapitalize="off" spellcheck="false"' : ""} ${f.type === "number" ? 'min="0" max="60"' : `maxlength="${f.max}"`} value="${escapeAttr(v)}">`;
             }
             return `<div class="iv-field${f.area ? " is-wide" : ""}"><label class="iv-label" for="${id}">${escapeHTML(f.label)}${f.required ? ' <span class="req">*</span>' : ""}</label>${input}</div>`;
           }).join("")}
