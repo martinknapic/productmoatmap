@@ -1,0 +1,21 @@
+name: Lighthouse
+# Runs Lighthouse (mobile + desktop, 3 runs each, median) against a sample interview page served by the
+# local dev server and fails the build if performance, accessibility, best practices, SEO, blocking
+# time or layout shift regress. See scripts/lighthouse-ci.js for the thresholds.
+on:
+  push:
+  pull_request:
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/lighthouse-ci.js
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
