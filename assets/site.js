@@ -1412,9 +1412,17 @@ function initMiniMap(p) {
 function initMiniGlobe(p) {
   const el = document.getElementById("mini-map");
   if (!el) return;
-  // MapLibre is ~250 KB and the globe is decoration, so it is fetched only once the globe is about
-  // to be seen (and never blocks the interview text from painting).
-  whenNearViewport(el, () => withMapLibre(() => startMiniGlobe(p)));
+  // The globe is decoration, but it is expensive: ~250 KB of MapLibre plus WebGL that, on a phone or
+  // a machine without a GPU (PageSpeed's test runner), freezes the main thread for seconds. So it
+  // starts only once the globe is near the screen AND the visitor has actually interacted with the
+  // page (moved, scrolled, tapped, pressed a key). Until then the CSS placeholder circle is shown.
+  whenNearViewport(el, () => whenUserActive(() => withMapLibre(() => startMiniGlobe(p))));
+}
+
+function whenUserActive(run) {
+  const events = ["pointermove", "pointerdown", "touchstart", "wheel", "scroll", "keydown"];
+  const go = () => { events.forEach(e => window.removeEventListener(e, go)); run(); };
+  events.forEach(e => window.addEventListener(e, go, { passive: true, once: true }));
 }
 
 // Calls run() once `el` is within 300px of the viewport (immediately without IntersectionObserver).
