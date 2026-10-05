@@ -1162,17 +1162,19 @@ function initPerson() {
     root.innerHTML = `<div class="not-found"><p>No interview found for &ldquo;${escapeHTML(slug || "")}&rdquo;.</p><br><a class="btn btn-ghost" href="/">&larr; Back to all conversations</a></div>`;
     return;
   }
-  renderPersonPage(root, p);
+  // The server already rendered this interview into the page (api/_lib/seo.js): keep that markup
+  // (no flash, no layout shift) and only attach the interactive parts.
+  renderPersonPage(root, p, { hydrate: root.getAttribute("data-ssr") === p.slug });
 }
 
 // Renders the full interview page for `p` into `root`. Also used by the backoffice preview
 // (backoffice/preview.html) so the preview is byte-for-byte what gets published.
 function renderPersonPage(root, p, opts = {}) {
-  if (!opts.preview) document.title = `${p.name} - Product Moat`;
+  if (!opts.preview && !opts.hydrate) document.title = `${p.name} - Product Moat`; // hydrate: keep the server's SEO title
 
   const hasCoords = typeof p.lat === "number" && typeof p.lng === "number";
 
-  root.innerHTML = `
+  const markup = `
     <section class="profile-hero">
       <div class="wrap">
         <div class="hero-content">
@@ -1220,7 +1222,7 @@ function renderPersonPage(root, p, opts = {}) {
       <div class="wrap">
         <div class="foreword-inner">
           <div class="label-mono">Foreword</div>
-          ${p.foreword.split(/\n\s*\n/).map(para => para.trim()).filter(Boolean).map(para => `<p>${escapeHTML(para).replace(/\n/g, "<br>")}</p>`).join("")}
+          <div class="foreword-body">${p.foreword.split(/\n\s*\n/).map(para => para.trim()).filter(Boolean).map(para => `<p>${escapeHTML(para).replace(/\n/g, "<br>")}</p>`).join("")}</div>
           <div class="foreword-byline">- Martin Knapic, Product Moat</div>
         </div>
       </div>
@@ -1234,6 +1236,7 @@ function renderPersonPage(root, p, opts = {}) {
       </div>
     </section>
   `;
+  if (!opts.hydrate) root.innerHTML = markup;
 
   if (p.photo) {
     const avatarEl = root.querySelector(".avatar-xl");

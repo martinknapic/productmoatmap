@@ -427,6 +427,14 @@ footer {
 
 .foreword-inner .label-mono { margin-bottom: 14px; }
 
+@media (min-width: 900px) {
+  .foreword-inner { max-width: none; }
+  .foreword-body {
+    column-count: 2;
+    column-gap: 56px;
+  }
+}
+
 .foreword-inner p + p { margin-top: 1em; }
 .foreword-inner p {
   font-size: 18px;
