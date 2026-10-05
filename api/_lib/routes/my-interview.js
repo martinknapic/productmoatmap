@@ -22,7 +22,7 @@ const RANK = { published: 4, invited: 3, applied: 2, none: 0 };
 function classify(c) {
   if (c.declined) return { state: "none" };
   const base = { source: c.source, appliedAt: c.createdAt };
-  if (C.isLive(c)) return { ...base, state: "published", status: "published", url: `/interview/${(c.publish && c.publish.category) || C.defaultCategory(c.profile)}/${c.publish.slug}` };
+  if (C.isLive(c)) return { ...base, state: "published", status: "published", token: c.id, url: `/interview/${(c.publish && c.publish.category) || C.defaultCategory(c.profile)}/${c.publish.slug}` };
   if (c.invitation && c.questionnaire && !c.linkRevoked) {
     const p = C.requiredProgress(c);
     return {

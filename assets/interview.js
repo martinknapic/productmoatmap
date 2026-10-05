@@ -107,7 +107,9 @@ function initInterview() {
     if (!resp.ok) return renderInvalid(root);
     apply(await resp.json());
     render(back.registeredNow);
-    if (!state.asAdmin && !state.published) celebrateInviteOnce(token); // first visit after being invited, on either page
+    if (!state.asAdmin) { // first visit after being invited, or after going live, on either page
+      if (state.published) celebratePublishedOnce(token); else celebrateInviteOnce(token);
+    }
   }
 
   function apply(data) {
@@ -145,6 +147,21 @@ function initInterview() {
 
   // ---------- rendering ----------
 
+  // Once live: the official URL, right at the top, to open and share. Not shown to admins previewing.
+  function livePanel() {
+    if (!state.published || state.asAdmin) return "";
+    const full = new URL(state.published.url, window.location.origin).href;
+    return `<h1>Your interview is live.</h1>
+      <p class="about-lede">Thank you for taking part. This is its official address - open it, share it, or save it.</p>
+      <div class="iv-live">
+        <a class="iv-live-url" href="${escapeAttr(full)}">${escapeHTML(full)}</a>
+        <div class="iv-live-actions">
+          <a class="btn btn-primary" href="${escapeAttr(full)}">Read it &rarr;</a>
+          <button type="button" class="btn" id="iv-copy-url" data-url="${escapeAttr(full)}">Copy link</button>
+        </div>
+      </div>`;
+  }
+
   function render(registeredNow) {
     const first = (state.profile.name || "").split(/\s+/)[0] || "there";
     document.title = `${first}'s interview - Product Moat`;
@@ -154,15 +171,15 @@ function initInterview() {
         <div class="wrap iv-hero-grid">
           <div class="iv-hero-text">
             <div class="eyebrow">Your interview</div>
-            <h1>Hi ${escapeHTML(first)} - let's hear your story.</h1>
+            ${livePanel() || `<h1>Hi ${escapeHTML(first)} - let's hear your story.</h1>
             <p class="about-lede">
               This page is yours alone. Open a question to answer it - press <strong>Save</strong> under an answer
               to keep it, then leave and come back to the same link any time. Only the
               <span class="q-badge q-badge-req">Required</span> questions are needed; skip any
               <span class="q-badge q-badge-opt">Optional</span> ones. The wording may be adjusted as we
               go, and when you're happy, tell us with the button at the bottom.
-            </p>
-            ${state.estimatedPublishDate ? `<p class="iv-est">Estimated publish date: <strong>${escapeHTML(formatDay(state.estimatedPublishDate))}</strong></p>` : ""}
+            </p>`}
+            ${!state.published && state.estimatedPublishDate ? `<p class="iv-est">Estimated publish date: <strong>${escapeHTML(formatDay(state.estimatedPublishDate))}</strong></p>` : ""}
             <div class="iv-progress" id="iv-progress"></div>
           </div>
           <div class="iv-hero-photo">${heroPhoto()}</div>
@@ -635,6 +652,12 @@ function initInterview() {
   }
 
   function wire() {
+    const copyBtn = document.getElementById("iv-copy-url");
+    if (copyBtn) copyBtn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(copyBtn.dataset.url); copyBtn.textContent = "Copied"; }
+      catch (err) { copyBtn.textContent = "Press Ctrl/Cmd+C on the link"; }
+      setTimeout(() => { copyBtn.textContent = "Copy link"; }, 2200);
+    });
     renderCustomRows();
     wirePhoto();
 

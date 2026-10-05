@@ -507,9 +507,13 @@ function launchConfetti(durationMs = 3600) {
 }
 
 // `token` identifies the invitation (the personal questionnaire's id), so the two pages agree.
-function celebrateInviteOnce(token) {
+function celebrateInviteOnce(token) { celebrateOnce(`pm-invite-confetti:${token}`); }
+
+// Same again, once, the first time the person opens either page after their interview went live.
+function celebratePublishedOnce(token) { celebrateOnce(`pm-publish-confetti:${token}`); }
+
+function celebrateOnce(key) {
   const force = new URLSearchParams(window.location.search).get("confetti") === "1";
-  const key = `pm-invite-confetti:${token}`;
   try {
     if (!force && localStorage.getItem(key)) return;
     localStorage.setItem(key, "1");
@@ -625,6 +629,7 @@ function initMyInterview() {
       } else if (data.state === "published") {
         show(hero("Your interview is live.", "Thank you for taking part.",
           `<a class="btn btn-primary" href="${escapeAttr(data.url)}">Read your interview &rarr;</a>`, ctxFrom(data)));
+        celebratePublishedOnce(data.token);
       } else if (data.state === "applied") {
         const recommended = data.source === "recommended";
         show(hero(recommended ? "Someone recommended you." : "You applied - your application is pending review.",

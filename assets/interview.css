@@ -189,6 +189,9 @@ textarea.ivq-input { min-height: 150px; }
 }
 
 /* ----- status banners, details form, est. date ----- */
+.iv-live { margin: 4px 0 22px; padding: 18px 20px; border: 1px solid #2f7d4f; background: var(--paper-alt); }
+.iv-live-url { display: block; font-weight: 600; font-size: 17px; word-break: break-all; margin-bottom: 14px; }
+.iv-live-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .iv-est { margin: -8px 0 22px; color: var(--ink-body); font-size: 15px; }
 .iv-note.is-approved { border-color: #2f7d4f; }
 .iv-note.is-locked { border-color: var(--ink); background: var(--paper-alt); }
