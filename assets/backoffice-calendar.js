@@ -5,6 +5,11 @@
 // live, the date it is scheduled for, or (failing both) the estimated date they were told.
 // Declined candidates and candidates with no date yet are left off.
 //
+// A switch above the board flips between two views of the same data: "Publishing" (the week each
+// candidate goes live) and "Homepage" (who is featured on the main page that week, with the
+// from-to dates). The homepage features the newest interview, so a candidate is featured for the
+// full Monday to Sunday week of their publish date.
+//
 // Reuses the week maths and quarter table from site.js (calBuildYearWeeks, calRenderQuarter)
 // and the avatar / escaping helpers from backoffice-candidates.js and backoffice.js.
 
@@ -38,12 +43,27 @@ function boCalWeekOf(weeks, year, dateStr) {
   return d > last.end && d.getUTCFullYear() === year ? last.index : 0;
 }
 
+const BO_CAL_MODES = { publishing: "Publishing", featured: "Homepage" };
+const BO_CAL_EYEBROWS = { publishing: "The publishing calendar", featured: "The homepage calendar" };
+const BO_CAL_MODE_KEY = "bo-cal-mode";
+
+// "Mon 5 Oct" for a week boundary (the week dates are UTC midnights, see calBuildYearWeeks).
+const boCalDayLabel = d => d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+
 const boCalNameOf = c => c.profile.name || "(name not known yet)";
 const boCalHref = c => `candidate?id=${encodeURIComponent(c.id)}`;
 const boCalKindTag = e => `<span class="cal-kind cal-kind-${e.kind}">${BO_CAL_KIND_LABELS[e.kind]}</span>`;
 
-function boCalRenderCell(week, today, entries) {
+// The from-to block on a featured card: the week the candidate holds the homepage, Monday to Sunday.
+const boCalFeaturedDates = week => `
+  <span class="cal-feat">
+    <span class="cal-feat-row"><span class="cal-feat-lbl">From</span>${boEscapeHTML(boCalDayLabel(week.start))}</span>
+    <span class="cal-feat-row"><span class="cal-feat-lbl">To</span>${boEscapeHTML(boCalDayLabel(week.end))}</span>
+  </span>`;
+
+function boCalRenderCell(week, today, entries, mode) {
   entries = entries || [];
+  const featured = mode === "featured";
   const isCurrent = today >= week.start && today <= week.end;
   const isPast = week.end < today;
   const status = entries.some(e => e.kind === "published") ? "published" : entries.length ? "planned" : isPast ? "gap" : "open";
@@ -56,13 +76,13 @@ function boCalRenderCell(week, today, entries) {
       <a class="cal-card" href="${boCalHref(e.c)}" title="${boEscapeHTML(boCalNameOf(e.c))}">
         ${boCandAvatar(e.c.profile, "cal-card-avatar")}
         <span class="cal-card-name">${boEscapeHTML(boCalNameOf(e.c))}</span>
-        ${boCalKindTag(e)}
+        ${featured ? boCalFeaturedDates(week) : boCalKindTag(e)}
       </a>`;
   } else if (entries.length > 1) {
     bodyHTML = `
-      <button type="button" class="cal-multi" data-week="${week.index}" aria-haspopup="true" aria-label="${entries.length} candidates in week ${week.index}">
+      <button type="button" class="cal-multi" data-week="${week.index}" aria-haspopup="true" aria-label="${entries.length} candidates ${featured ? "featured" : "publishing"} in week ${week.index}">
         <span class="cal-multi-count">${entries.length}</span>
-        <span class="cal-multi-label">candidates</span>
+        <span class="cal-multi-label">${featured ? "overlap" : "candidates"}</span>
       </button>`;
   } else {
     bodyHTML = `<div class="cal-empty"><span class="cal-empty-label">${isPast ? "-" : "Open"}</span></div>`;
@@ -76,7 +96,7 @@ function boCalRenderCell(week, today, entries) {
       <div class="cal-cell-inner">
         <div class="cal-cell-head">
           <span class="cal-week-no">W${boCalPad(week.index)}</span>
-          <span class="cal-week-range">${range}</span>
+          ${featured && entries.length ? "" : `<span class="cal-week-range">${range}</span>`}
         </div>
         ${bodyHTML}
       </div>
@@ -87,7 +107,7 @@ function boCalRenderCell(week, today, entries) {
 // One floating list for every "N candidates" cell (position: fixed, so the table's horizontal
 // scroll can't clip it). Opens on hover or keyboard focus, and stays open while the pointer is
 // over it so the names in it can be clicked.
-function boCalWirePopover(board, weekEntries) {
+function boCalWirePopover(board, weekEntries, weekOf, mode) {
   let pop = document.getElementById("cal-pop");
   if (!pop) { pop = document.createElement("div"); pop.id = "cal-pop"; pop.className = "cal-pop"; pop.hidden = true; document.body.appendChild(pop); }
   let timer = null;
@@ -99,6 +119,8 @@ function boCalWirePopover(board, weekEntries) {
   function show(btn) {
     keep();
     const list = weekEntries().get(Number(btn.dataset.week)) || [];
+    const week = weekOf(Number(btn.dataset.week));
+    const featured = mode() === "featured" && week;
     pop.innerHTML = list.map(e => `
       <a class="cal-pop-row" href="${boCalHref(e.c)}">
         ${boCandAvatar(e.c.profile, "cal-pop-avatar")}
@@ -106,7 +128,9 @@ function boCalWirePopover(board, weekEntries) {
           <span class="cal-pop-name">${boEscapeHTML(boCalNameOf(e.c))}</span>
           <span class="cal-pop-sub">${boEscapeHTML([e.c.profile.role, e.c.profile.company].filter(Boolean).join(" at ") || "-")}</span>
         </span>
-        <span class="cal-pop-meta">${boCalKindTag(e)}<span class="cal-pop-date">${boEscapeHTML(new Date(`${e.date}T00:00:00`).toLocaleDateString([], { day: "numeric", month: "short" }))}</span></span>
+        <span class="cal-pop-meta">${boCalKindTag(e)}<span class="cal-pop-date">${boEscapeHTML(featured
+            ? `${boCalDayLabel(week.start)} - ${boCalDayLabel(week.end)}`
+            : new Date(`${e.date}T00:00:00`).toLocaleDateString([], { day: "numeric", month: "short" }))}</span></span>
       </a>`).join("");
     pop.hidden = false;
     const r = btn.closest(".cal-cell").getBoundingClientRect();
@@ -134,6 +158,8 @@ async function initBackofficeCalendar() {
   const board = document.getElementById("cal-board");
   const yearsEl = document.getElementById("cal-years");
   const noteEl = document.getElementById("cal-note");
+  const modeEl = document.getElementById("cal-mode");
+  const eyebrowEl = document.getElementById("cal-eyebrow");
 
   const now = new Date();
   const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
@@ -141,6 +167,9 @@ async function initBackofficeCalendar() {
   const years = [thisYear, thisYear + 1, thisYear + 2]; // the current year, always, plus two ahead
   let year = thisYear;
   let shown = new Map(); // week index -> entries, for the year on screen
+  let shownWeeks = [];
+  let mode = "publishing";
+  try { if (localStorage.getItem(BO_CAL_MODE_KEY) in BO_CAL_MODES) mode = localStorage.getItem(BO_CAL_MODE_KEY); } catch (e) { /* storage blocked: default view */ }
 
   let entries = [];
   let undated = 0;
@@ -158,6 +187,11 @@ async function initBackofficeCalendar() {
   const inYear = y => { const weeks = calBuildYearWeeks(y); return entries.filter(e => boCalWeekOf(weeks, y, e.date)); };
 
   function render() {
+    modeEl.innerHTML = Object.entries(BO_CAL_MODES).map(([k, label]) =>
+      `<button type="button" role="radio" aria-checked="${k === mode}" class="cal-mode-btn${k === mode ? " is-active" : ""}" data-mode="${k}">${label}</button>`
+    ).join("");
+    eyebrowEl.textContent = BO_CAL_EYEBROWS[mode];
+    board.dataset.mode = mode;
     yearsEl.innerHTML = years.map(y =>
       `<button type="button" class="bo-chip${y === year ? " is-active" : ""}" data-year="${y}">${y} <span>${inYear(y).length}</span></button>`
     ).join("");
@@ -171,12 +205,20 @@ async function initBackofficeCalendar() {
     byWeek.forEach(list => list.sort((a, b) => a.date.localeCompare(b.date) || boCalNameOf(a.c).localeCompare(boCalNameOf(b.c))));
 
     board.innerHTML = [1, 2, 3, 4].map(q =>
-      calRenderQuarter(weeks.filter(w => w.quarter === q), q, today, byWeek, boCalRenderCell)
+      calRenderQuarter(weeks.filter(w => w.quarter === q), q, today, byWeek, (w, t, list) => boCalRenderCell(w, t, list, mode))
     ).join("");
     shown = byWeek;
+    shownWeeks = weeks;
   }
 
-  boCalWirePopover(board, () => shown);
+  boCalWirePopover(board, () => shown, i => shownWeeks.find(w => w.index === i), () => mode);
+  modeEl.addEventListener("click", e => {
+    const b = e.target.closest("[data-mode]");
+    if (!b || b.dataset.mode === mode) return;
+    mode = b.dataset.mode;
+    try { localStorage.setItem(BO_CAL_MODE_KEY, mode); } catch (err) { /* per-viewer convenience only */ }
+    render();
+  });
   yearsEl.addEventListener("click", e => {
     const b = e.target.closest("[data-year]");
     if (!b) return;
