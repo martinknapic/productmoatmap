@@ -1198,6 +1198,11 @@ footer {
 
 .legal-list strong { color: var(--ink); }
 
+/* Reserve the nav row height the Sign up button gives .nav-right once site.js adds it (53px on
+   desktop, 41px on phones, set below), so the page doesn't jump down when it appears. On a tall
+   page even ~19px of shift is a large layout-shift score. */
+.nav-inner > .logo { min-height: 53px; }
+
 @media (max-width: 760px) {
   .hero-inner { grid-template-columns: 1fr; }
   .hero-main { border-right: none; padding-right: 0; padding-bottom: 32px; }
