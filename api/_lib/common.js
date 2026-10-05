@@ -617,6 +617,7 @@ function toPublicInterview(c) {
     pullQuote: p.pullQuote,
     publishedDate: pub.displayDate || (pub.publishedAt || pub.scheduledPublishAt || new Date().toISOString()).slice(0, 10),
     foreword: pub.foreword || "",
+    featured: pub.featured !== false, // false = published without taking the homepage spotlight
     interview: {
       sections,
       custom: (c.custom || []).filter(x => x.q && x.a)

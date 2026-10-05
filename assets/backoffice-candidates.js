@@ -853,7 +853,7 @@ async function initBackofficePreview() {
     // What the calendar already holds for this article decides the date offered here.
     const estDay = est, dispDay = pub.displayDate || "";
     let featIso = pub.scheduledPublishAt || "", featHelp;
-    if (live) featHelp = "Already live and featured";
+    if (live) featHelp = c.publish.featured === false ? "Live, but not featured on the homepage" : "Already live and featured";
     else if (featIso) featHelp = "Already in the calendar as scheduled. Change the date or publish now";
     else if (dispDay || estDay) { featIso = `${dispDay || estDay}T09:00`; featHelp = "In the calendar as an estimate only. Pick the real date, or publish now"; }
     else featHelp = "Not in the calendar yet. Pick the date it goes live and is featured, or publish now";
@@ -908,8 +908,9 @@ async function initBackofficePreview() {
 
         <div class="pv-actions">
           <button class="btn btn-ghost" id="pv-save">Save changes</button>
-          ${live ? `<button class="btn btn-ghost" id="pv-unpublish">Unpublish → back to preview</button>` : `
+          ${live ? `${c.publish.featured === false ? `<button class="btn btn-primary" id="pv-feature">Feature on homepage now</button>` : ""}<button class="btn btn-ghost" id="pv-unpublish">Unpublish → back to preview</button>` : `
             <button class="btn btn-ghost" id="pv-schedule-btn">${scheduled ? "Update date" : "Schedule for this date"}</button>
+            <button class="btn btn-ghost" id="pv-now-only">Publish only</button>
             <button class="btn btn-primary" id="pv-now">Publish &amp; feature now</button>
             ${scheduled ? `<button class="btn btn-ghost" id="pv-unschedule">Cancel schedule</button>` : ""}`}
           <span class="pv-spacer"></span>
@@ -946,6 +947,7 @@ async function initBackofficePreview() {
     const repl = featuredNow ? `, replacing <strong>${boEscapeHTML(featuredNow.profile.name)}</strong>` : "";
     const showInfo = () => {
       if (!info) return;
+      if (live && c.publish.featured === false) { info.innerHTML = "Published without the homepage spotlight."; return; }
       if (live) { info.innerHTML = `Featured on the homepage${repl ? "" : ""} for the week ${boEscapeHTML(weekRange(c.publish.displayDate || ""))}.`; return; }
       const day = schedInput.value ? schedInput.value.slice(0, 10) : "";
       info.innerHTML = day
@@ -974,6 +976,17 @@ async function initBackofficePreview() {
       if (!(await saveFields())) return;
       await act({ action: "publish", mode: "now" }, "Published and featured");
     });
+    on("#pv-now-only", async () => {
+      const ok = await boConfirm({
+        title: "Publish without featuring?",
+        message: `<strong>${boEscapeHTML(c.profile.name)}</strong>'s interview goes live immediately at /interview/${boEscapeHTML(document.getElementById("pv-category").value)}/${boEscapeHTML(document.getElementById("pv-slug").value)}. The homepage spotlight stays with ${featuredNow ? `<strong>${boEscapeHTML(featuredNow.profile.name)}</strong>` : "the current profile"}; you can feature this one later.`,
+        confirmLabel: "Publish only"
+      });
+      if (!ok) return;
+      if (!(await saveFields())) return;
+      await act({ action: "publish", mode: "now", feature: false }, "Published (not featured)");
+    });
+    on("#pv-feature", () => act({ action: "feature" }, "Now featured on the homepage"));
     on("#pv-unschedule", () => act({ action: "unpublish" }, "Schedule cancelled - back in preview mode"));
     on("#pv-unpublish", () => { if (window.confirm("Take this interview offline and return it to preview? It stays locked, so you can review, edit the details, or reschedule it.")) act({ action: "unpublish" }, "Unpublished - back in preview mode"); });
     on("#pv-delete", () => { if (window.confirm(`Delete ${c.profile.name}'s interview and candidate record permanently? This can't be undone.`)) act({ action: "delete" }); });

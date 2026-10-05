@@ -1057,7 +1057,8 @@ function renderChips(hydrate) {
 // The interview featured on the homepage: the newest one. The hero spotlight, the server's photo
 // preload and the grid below all use this one definition, so the grid always starts with it.
 function featuredInterview() {
-  return [...INTERVIEWS].sort((a, b) => String(b.publishedDate).localeCompare(String(a.publishedDate)))[0] || null;
+  const eligible = INTERVIEWS.filter(p => p.featured !== false); // published-only ones skip the spotlight
+  return [...(eligible.length ? eligible : INTERVIEWS)].sort((a, b) => String(b.publishedDate).localeCompare(String(a.publishedDate)))[0] || null;
 }
 
 function renderGrid() {

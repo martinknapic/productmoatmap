@@ -192,6 +192,7 @@ module.exports = async (req, res) => {
         if (!pub.category) pub.category = C.defaultCategory(c.profile);
         await C.ensureCoords(c); // so the interview also appears on the globe
         if (body.mode === "now") {
+          pub.featured = body.feature !== false;
           pub.publishedAt = new Date().toISOString();
           pub.scheduledPublishAt = null;
           // Going live now makes this the newest interview (the one the homepage features), so a
@@ -200,11 +201,20 @@ module.exports = async (req, res) => {
           if (!pub.displayDate || pub.displayDate > today) pub.displayDate = today;
           if (c.invitation && c.invitation.estimatedPublishDate && c.invitation.estimatedPublishDate > today) c.invitation.estimatedPublishDate = today;
         } else if (body.mode === "schedule") {
+          pub.featured = true;
           if (!pub.scheduledPublishAt) return res.status(400).json({ error: "missing_schedule" });
           if (!pub.displayDate) pub.displayDate = pub.scheduledPublishAt.slice(0, 10);
         } else {
           return res.status(400).json({ error: "invalid_mode" });
         }
+        break;
+      }
+
+      case "feature": {
+        // Promotes an already-live, not-yet-featured interview to the homepage spotlight.
+        if (!c.publish.publishedAt) return res.status(400).json({ error: "not_published" });
+        c.publish.featured = true;
+        c.publish.displayDate = new Date().toISOString().slice(0, 10);
         break;
       }
 
