@@ -808,11 +808,31 @@ async function initBackofficePreview() {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   };
 
+  // Who the homepage features now (newest live interview), to say who a switch would replace.
+  let featuredNow = null;
+  const dayLabel = d => d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+  // The Monday to Sunday week a YYYY-MM-DD date falls in, as "Mon 5 Oct - Sun 11 Oct".
+  function weekRange(dateStr) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr || "")) return "";
+    const d = new Date(dateStr + "T00:00:00Z"), start = new Date(d), end = new Date(d);
+    start.setUTCDate(d.getUTCDate() - ((d.getUTCDay() || 7) - 1));
+    end.setUTCDate(start.getUTCDate() + 6);
+    return `${dayLabel(start)} - ${dayLabel(end)}`;
+  }
+  const localDay = iso => { const d = new Date(iso); const pad = n => String(n).padStart(2, "0"); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+  const shownDate = x => { const p = x.publish || {}; return p.displayDate || String(p.publishedAt || p.scheduledPublishAt || "").slice(0, 10); };
+
   async function load() {
     const resp = await fetch(`/api/candidates?id=${encodeURIComponent(id)}`, { credentials: "same-origin" });
     if (!resp.ok) { bar.innerHTML = `<div class="wrap"><p>Candidate not found. <a href="candidates">Back to the list</a></p></div>`; return; }
     c = await resp.json();
     render();
+    try {
+      const all = await (await fetch("/api/candidates", { credentials: "same-origin" })).json();
+      featuredNow = all.filter(x => x.id !== id && !x.declined && x.status === "published")
+        .sort((a, b) => shownDate(b).localeCompare(shownDate(a)))[0] || null;
+      render();
+    } catch (e) { /* the panel works without it */ }
   }
 
   async function act(payload, msg) {
@@ -830,6 +850,13 @@ async function initBackofficePreview() {
     const pub = c.publish, p = c.preview, live = c.status === "published", scheduled = c.status === "scheduled";
     const est = (c.invitation && c.invitation.estimatedPublishDate) || "";
     document.title = `Preview - ${c.profile.name} - Product Moat`;
+    // What the calendar already holds for this article decides the date offered here.
+    const estDay = est, dispDay = pub.displayDate || "";
+    let featIso = pub.scheduledPublishAt || "", featHelp;
+    if (live) featHelp = "Already live and featured";
+    else if (featIso) featHelp = "Already in the calendar as scheduled. Change the date or publish now";
+    else if (dispDay || estDay) { featIso = `${dispDay || estDay}T09:00`; featHelp = "In the calendar as an estimate only. Pick the real date, or publish now"; }
+    else featHelp = "Not in the calendar yet. Pick the date it goes live and is featured, or publish now";
     bar.innerHTML = `
       <div class="wrap pv-inner">
         <div class="pv-top">
@@ -849,9 +876,10 @@ async function initBackofficePreview() {
             <label class="bo-lbl">Estimated publish date<span class="pv-help">What we told them; informational</span>
               <input class="bo-input" type="date" id="pv-est" value="${boEscapeHTML(est)}" ${c.invitation ? "" : "disabled"}></label>
           </div>
-          <div class="pv-field">
-            <label class="bo-lbl">Publish schedule<span class="pv-help">When it actually goes live</span>
-              <input class="bo-input" type="datetime-local" id="pv-schedule" value="${toLocalInput(pub.scheduledPublishAt)}" ${live ? "disabled" : ""}></label>
+          <div class="pv-field pv-wide pv-feat">
+            <label class="bo-lbl">Homepage featured<span class="pv-help">${featHelp}</span>
+              <input class="bo-input" type="datetime-local" id="pv-schedule" value="${toLocalInput(featIso)}" ${live ? "disabled" : ""}></label>
+            <div class="pv-feat-info" id="pv-feat-info"></div>
           </div>
           <div class="pv-field">
             <label class="bo-lbl">Displayed date<span class="pv-help">The date shown on the article</span>
@@ -881,8 +909,8 @@ async function initBackofficePreview() {
         <div class="pv-actions">
           <button class="btn btn-ghost" id="pv-save">Save changes</button>
           ${live ? `<button class="btn btn-ghost" id="pv-unpublish">Unpublish → back to preview</button>` : `
-            <button class="btn btn-ghost" id="pv-schedule-btn">${scheduled ? "Update schedule" : "Schedule publish"}</button>
-            <button class="btn btn-primary" id="pv-now">Publish now</button>
+            <button class="btn btn-ghost" id="pv-schedule-btn">${scheduled ? "Update date" : "Schedule for this date"}</button>
+            <button class="btn btn-primary" id="pv-now">Publish &amp; feature now</button>
             ${scheduled ? `<button class="btn btn-ghost" id="pv-unschedule">Cancel schedule</button>` : ""}`}
           <span class="pv-spacer"></span>
           <button class="btn btn-ghost bo-delete" id="pv-delete">Delete</button>
@@ -893,12 +921,14 @@ async function initBackofficePreview() {
     wire();
   }
 
+  let forceSched = false;
   function fields() {
     const sched = document.getElementById("pv-schedule").value;
     return {
       action: "setPublishing",
       estimatedPublishDate: document.getElementById("pv-est").value || null,
-      scheduledPublishAt: sched ? new Date(sched).toISOString() : null,
+      // An estimate-prefilled date is only a suggestion until Schedule is pressed.
+      scheduledPublishAt: sched && !(c.publish.scheduledPublishAt == null && !forceSched) ? new Date(sched).toISOString() : null,
       displayDate: document.getElementById("pv-display").value || null,
       category: document.getElementById("pv-category").value,
       slug: document.getElementById("pv-slug").value,
@@ -912,16 +942,37 @@ async function initBackofficePreview() {
     const live = c.status === "published";
     const saveFields = () => { const f = fields(); if (live) { delete f.slug; delete f.category; delete f.scheduledPublishAt; } return act(f); };
 
+    const schedInput = document.getElementById("pv-schedule"), info = document.getElementById("pv-feat-info");
+    const repl = featuredNow ? `, replacing <strong>${boEscapeHTML(featuredNow.profile.name)}</strong>` : "";
+    const showInfo = () => {
+      if (!info) return;
+      if (live) { info.innerHTML = `Featured on the homepage${repl ? "" : ""} for the week ${boEscapeHTML(weekRange(c.publish.displayDate || ""))}.`; return; }
+      const day = schedInput.value ? schedInput.value.slice(0, 10) : "";
+      info.innerHTML = day
+        ? `Goes live and is featured the week <strong>${boEscapeHTML(weekRange(day))}</strong>${featuredNow ? `, after <strong>${boEscapeHTML(featuredNow.profile.name)}</strong>` : ""}.`
+        : "No date picked.";
+    };
+    if (schedInput) { schedInput.addEventListener("input", showInfo); showInfo(); }
+
     on("#pv-save", async () => { if (await saveFields()) boToast("Saved"); });
     on("#pv-schedule-btn", async () => {
-      if (!document.getElementById("pv-schedule").value) return boToast("Pick a schedule date/time first.");
+      if (!schedInput.value) return boToast("Pick a date and time first.");
+      // The featured week follows the date it goes live.
+      forceSched = true;
+      document.getElementById("pv-display").value = localDay(new Date(schedInput.value).toISOString());
       if (!(await saveFields())) return;
+      forceSched = false;
       await act({ action: "publish", mode: "schedule" }, "Scheduled");
     });
     on("#pv-now", async () => {
-      if (!window.confirm(`Publish ${c.profile.name}'s interview now? It goes live immediately at /interview/${document.getElementById("pv-category").value}/${document.getElementById("pv-slug").value}.`)) return;
+      const ok = await boConfirm({
+        title: "Publish and feature now?",
+        message: `<strong>${boEscapeHTML(c.profile.name)}</strong>'s interview goes live immediately at /interview/${boEscapeHTML(document.getElementById("pv-category").value)}/${boEscapeHTML(document.getElementById("pv-slug").value)} and becomes the featured profile on the homepage${repl}, with today as its date.`,
+        confirmLabel: "Publish & feature now"
+      });
+      if (!ok) return;
       if (!(await saveFields())) return;
-      await act({ action: "publish", mode: "now" }, "Published");
+      await act({ action: "publish", mode: "now" }, "Published and featured");
     });
     on("#pv-unschedule", () => act({ action: "unpublish" }, "Schedule cancelled - back in preview mode"));
     on("#pv-unpublish", () => { if (window.confirm("Take this interview offline and return it to preview? It stays locked, so you can review, edit the details, or reschedule it.")) act({ action: "unpublish" }, "Unpublished - back in preview mode"); });

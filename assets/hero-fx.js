@@ -643,8 +643,7 @@ void main(){
    * ---------------------------------------------------------------------------------------- */
   function spotlight(host, hero) {
     const slot = document.getElementById("hero-spot");
-    const list = interviews().slice().sort((a, b) => String(b.publishedDate).localeCompare(String(a.publishedDate)));
-    const p = list[0];
+    const p = featuredInterview(); // site.js: the same one the grid leads with
     if (!slot || !p) return moat(host, hero);
     const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
     const url = typeof interviewURL === "function" ? interviewURL(p) : "#";
