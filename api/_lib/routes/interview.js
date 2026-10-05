@@ -172,6 +172,20 @@ module.exports = async (req, res) => {
       return res.status(200).json({ ok: true, ...view(c) });
     }
 
+    // Round profile picture: the person's own upload (cropped square in their browser). Replaces the
+    // small LinkedIn one on this page and, if they have a member profile / map pin, there too.
+    if (body.profilePhoto && typeof body.profilePhoto === "object") {
+      const img = C.parsePhotoDataUrl(body.profilePhoto.dataUrl);
+      if (!img) return res.status(400).json({ error: "invalid_photo" });
+      if (!(Number(body.profilePhoto.width) >= 200) || !(Number(body.profilePhoto.height) >= 200)) return res.status(400).json({ error: "photo_too_small" });
+      const picture = await C.saveProfilePhoto(img);
+      c.profile.photo = picture;
+      await C.saveCandidate(c);
+      const email = (c.verified && c.verified.email) || c.profile.email;
+      if (email) await C.applyMemberPhoto({ email, sub: "" }, picture, c.id);
+      return res.status(200).json({ ok: true, ...view(c) });
+    }
+
     if (body.profile && typeof body.profile === "object") {
       const allowed = ["name", "role", "company", "location", "yearsExperience", "focusTag", "linkedin", "website", "twitter", "snippet", "pullQuote"];
       const patch = {};

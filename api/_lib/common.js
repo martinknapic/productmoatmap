@@ -167,6 +167,37 @@ async function mirrorProfilePhoto(url) {
   }
 }
 
+// The person's own upload (already cropped square and resized in their browser). Random id, so a
+// replaced picture never shows a stale cached copy. Returns the site path to store on the records.
+async function saveProfilePhoto({ type, buffer }) {
+  const id = crypto.randomBytes(16).toString("hex");
+  await writeJSON(`${PROFILE_PHOTO_PREFIX}${id}.json`, { type, data: buffer.toString("base64"), source: "upload", at: new Date().toISOString() });
+  return `/api/profile-photo?id=${id}`;
+}
+
+// Make `url` the round picture everywhere this person appears: their member record (network, nav,
+// My profile), every interview page of theirs, and their map pin. `exceptCandidateId` is a candidate
+// the caller has already updated and saved itself.
+async function applyMemberPhoto(session, url, exceptCandidateId) {
+  const email = lowerTrim(session && session.email);
+  if (!email) return;
+  const member = await readMember(email);
+  if (member) { member.picture = url; member.updatedAt = new Date().toISOString(); await writeJSON(memberPath(email), member); }
+  for (const c of await findCandidatesByEmail([email], String((session && session.sub) || ""))) {
+    if (c.id === exceptCandidateId) continue;
+    c.profile.photo = url;
+    await saveCandidate(c);
+  }
+  const { blobs } = await list({ prefix: MAP_PREFIX });
+  const sub = String((session && session.sub) || "");
+  for (const b of blobs) {
+    const pin = await readJSON(b.pathname).catch(() => null);
+    if (!pin || !((lowerTrim(pin.email) === email) || (sub && pin.linkedinId === sub))) continue;
+    pin.picture = url;
+    await put(b.pathname, JSON.stringify(pin), { access: "private", addRandomSuffix: false, allowOverwrite: true, contentType: "application/json" });
+  }
+}
+
 async function readProfilePhoto(id) {
   if (!PHOTO_ID_RE.test(id || "")) return null;
   const rec = await readJSON(`${PROFILE_PHOTO_PREFIX}${id}.json`);
@@ -642,6 +673,6 @@ module.exports = {
   upsertMember, readMember, saveMemberDetails, setNetworkOptIn, isNetworkMember, cleanMemberDetails, FOCUS_TAGS, readBank, defaultBank, cleanSections, QUESTION_BANK_PATH,
   requiredProgress, deriveStatus, isLive, blankCandidate, cleanProfile, ID_RE, newId,
   geocodeLocation, ensureCoords, slugify, CATEGORIES, defaultCategory, toPublicInterview, takenSlugs, FOCUS_LABELS,
-  mirrorProfilePhoto, readProfilePhoto, isLinkedInPhotoUrl, parsePhotoDataUrl, savePhoto, readPhoto, deletePhoto, photoView,
+  mirrorProfilePhoto, readProfilePhoto, saveProfilePhoto, applyMemberPhoto, isLinkedInPhotoUrl, parsePhotoDataUrl, savePhoto, readPhoto, deletePhoto, photoView,
   listMembers, syncMemberToList, memberPath
 };

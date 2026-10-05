@@ -58,7 +58,7 @@ module.exports = async (req, res) => {
   return res.status(200).json({
     name: session.name,
     email: session.email,
-    picture: session.picture,
+    picture: (member && member.picture) || session.picture,
     isAdmin,
     newsletter: !!(member && member.newsletter)
   });

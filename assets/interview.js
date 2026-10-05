@@ -180,6 +180,23 @@ function initInterview() {
       </section>
     `;
     wire();
+    pmAvatarWidget(document.getElementById("iv-avatar"), {
+      url: state.profile.photo, name: state.profile.name, readOnly: readOnly(),
+      upload: async (img) => {
+        try {
+          const data = await post(JSON.stringify({ t: token, profilePhoto: img }));
+          return data.profile.photo;
+        } catch (err) {
+          const code = err && err.data && err.data.error;
+          throw err && err.status === 423 ? { code: "locked" } : code === "photo_too_small" ? { code: "small", side: img.width } : {};
+        }
+      },
+      onChange: (url) => {
+        state.profile.photo = url;
+        const slot = document.querySelector(".iv-hero-photo");
+        if (slot) slot.innerHTML = heroPhoto();
+      }
+    });
     refreshAll();
     initRegistration(registeredNow);
   }
@@ -318,6 +335,7 @@ function initInterview() {
             <p>How you'll be introduced. Check they're right - you can edit anything.</p>
           </div>
         </div>
+        <div id="iv-avatar"></div>
         <div class="iv-details">
           ${IV_PROFILE_FIELDS.map(f => {
             const v = state.profile[f.key] == null ? "" : state.profile[f.key];

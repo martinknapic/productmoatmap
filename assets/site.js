@@ -658,6 +658,107 @@ const MEMBER_FOCUS_OPTIONS = [
   ["leadership", "Product Leadership"], ["other", "Other"]
 ];
 
+// ---------- Profile picture upload (My profile, and the interview page) ----------
+// LinkedIn only hands us a 100px thumbnail at sign-in, which looks soft anywhere it is shown large. This
+// widget shows the current picture, says when it's too small to look sharp, and lets the person upload a
+// better one. The file is cropped to a square and resized in the browser (never upscaled, re-encoded
+// as JPEG, which also drops location metadata) before upload; the server stores it and makes it
+// their round picture everywhere.
+const PM_AVATAR_GOOD_PX = 400;   // at or above this the picture is sharp enough at every size we show it
+const PM_AVATAR_MIN_PX = 200;    // below this we refuse the upload
+const PM_AVATAR_MAX_PX = 800;
+
+function pmPrepareAvatar(file) {
+  return new Promise((resolve, reject) => {
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return reject({ code: "type" });
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onerror = () => { URL.revokeObjectURL(url); reject({ code: "unreadable" }); };
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const side = Math.min(img.naturalWidth, img.naturalHeight);
+      if (side < PM_AVATAR_MIN_PX) return reject({ code: "small", side });
+      const out = Math.min(side, PM_AVATAR_MAX_PX);
+      const canvas = document.createElement("canvas");
+      canvas.width = out; canvas.height = out;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, out, out); // transparent PNGs go on white
+      ctx.imageSmoothingQuality = "high";
+      // centre square crop, nudged up a little so faces in portraits aren't cut off
+      const sx = (img.naturalWidth - side) / 2;
+      const sy = (img.naturalHeight - side) * 0.3;
+      ctx.drawImage(img, sx, sy, side, side, 0, 0, out, out);
+      let dataUrl = "";
+      for (const q of [0.9, 0.8, 0.7, 0.55]) {
+        dataUrl = canvas.toDataURL("image/jpeg", q);
+        if (dataUrl.length < 3.6e6) break;
+      }
+      resolve({ dataUrl, width: out, height: out });
+    };
+    img.src = url;
+  });
+}
+
+// opts: { url, name, readOnly, upload(img) -> Promise<new picture url>, onChange(url) }
+function pmAvatarWidget(el, opts) {
+  if (!el) return;
+  const state = { url: opts.url || "", px: 0, status: "", error: false, busy: false };
+  const src = () => (!state.url ? "" : /^https?:\/\//i.test(state.url) ? state.url : `/${state.url.replace(/^\/+/, "")}`);
+  const initials = () => (opts.name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("");
+
+  function note() {
+    if (state.status) return state.status;
+    if (!state.url) return "Add a photo so people recognise you. Square, at least 400 px works best.";
+    if (state.px && state.px < PM_AVATAR_GOOD_PX) return `Your picture is only ${state.px} px wide, so it looks soft when shown large. Upload a sharper one: square, at least ${PM_AVATAR_GOOD_PX} px.`;
+    return state.px ? "Your picture is sharp. Upload a different one any time." : "";
+  }
+
+  function render() {
+    const low = !state.busy && !state.error && (!state.url || (state.px && state.px < PM_AVATAR_GOOD_PX));
+    el.innerHTML = `
+      <div class="pm-avatar${low ? " is-low" : ""}">
+        <div class="pm-avatar-pic"><span>${escapeHTML(initials())}</span>${src() ? `<img src="${escapeAttr(src())}" alt="" referrerpolicy="no-referrer">` : ""}</div>
+        <div class="pm-avatar-body">
+          <strong>Profile picture</strong>
+          <p class="pm-avatar-note${state.error ? " is-error" : ""}" role="status">${escapeHTML(note())}</p>
+          ${opts.readOnly ? "" : `<button type="button" class="btn ${low ? "btn-primary" : "btn-ghost"}" data-avatar-pick${state.busy ? " disabled" : ""}>${state.busy ? "Uploading..." : state.url ? "Upload a sharper picture" : "Upload a picture"}</button>
+          <input type="file" accept="image/jpeg,image/png,image/webp" hidden data-avatar-input>`}
+        </div>
+      </div>`;
+    const img = el.querySelector(".pm-avatar-pic img");
+    if (img) {
+      const measure = () => { if (img.naturalWidth && img.naturalWidth !== state.px) { state.px = img.naturalWidth; if (!state.busy) render(); } };
+      img.addEventListener("error", () => img.remove());
+      if (img.complete) measure(); else img.addEventListener("load", measure);
+    }
+    const input = el.querySelector("[data-avatar-input]");
+    const pick = el.querySelector("[data-avatar-pick]");
+    if (pick) pick.addEventListener("click", () => input.click());
+    if (input) input.addEventListener("change", () => { const f = input.files && input.files[0]; if (f) upload(f); });
+  }
+
+  async function upload(file) {
+    state.busy = true; state.error = false; state.status = "Preparing your picture..."; render();
+    try {
+      const img = await pmPrepareAvatar(file);
+      state.status = "Uploading...";
+      const url = await opts.upload(img);
+      state.url = url; state.px = img.width; state.status = "Saved. This is now your picture everywhere on Product Moat."; state.error = false;
+      if (opts.onChange) opts.onChange(url);
+    } catch (err) {
+      state.error = true;
+      state.status = err && err.code === "type" ? "Please choose a JPG, PNG or WebP image."
+        : err && err.code === "small" ? `That image is only ${err.side} px, too small to look good. Please choose one at least ${PM_AVATAR_MIN_PX} px (400 px or more is best).`
+        : err && err.code === "unreadable" ? "That file couldn't be read as an image."
+        : err && err.code === "locked" ? "This page is locked, so the picture can't be changed here. You can change it from My profile."
+        : "Couldn't upload just now. Please try again.";
+    }
+    state.busy = false; render();
+  }
+
+  render();
+}
+
 function initAccount() {
   const root = document.getElementById("account-root");
   if (!root) return;
@@ -678,6 +779,19 @@ function initAccount() {
         .catch(() => {});
       document.getElementById("account-logout-btn").addEventListener("click", () => {
         window.location.href = "/api/member-logout?next=%2Faccount";
+      });
+      pmAvatarWidget(document.getElementById("account-photo"), {
+        url: data.account.picture, name: data.account.name,
+        upload: async (img) => {
+          const resp = await fetch("/api/member-profile", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ photo: img }) });
+          const out = await resp.json().catch(() => ({}));
+          if (!resp.ok || !out.picture) throw out && out.error === "photo_too_small" ? { code: "small", side: img.width } : {};
+          return out.picture;
+        },
+        onChange: (url) => {
+          const big = document.querySelector(".account-card .avatar-xl");
+          if (big) { big.classList.add("has-photo"); big.innerHTML = `<img src="${escapeAttr(url)}" alt="">`; }
+        }
       });
       if (detailsRoot) initAccountDetails(detailsRoot, data.details, data.network);
     })
@@ -813,7 +927,8 @@ function accountSignedInHTML(profile) {
         <div>
           <h1 class="account-name">${escapeHTML(profile.name || "Product Moat member")}</h1>
           <p class="account-email">${escapeHTML(profile.email || "")}</p>
-          <p class="account-note">Your photo and email come from LinkedIn (signing in again on Apply, Recommend, or Put yourself on the map refreshes them). Everything else below is yours to edit.</p>
+          <p class="account-note">Your name and email come from LinkedIn. Everything else, including your picture, is yours to edit.</p>
+          <div id="account-photo"></div>
           <button class="btn btn-ghost" id="account-logout-btn">Log out</button>
         </div>
       </div>

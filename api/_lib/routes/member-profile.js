@@ -18,7 +18,18 @@ module.exports = async (req, res) => {
     if (req.method === "GET") {
       const member = await C.readMember(session.email);
       const details = (member && member.details) || C.cleanMemberDetails({ name: session.name });
-      return res.status(200).json({ account: { name: session.name, email: session.email, picture: session.picture || null }, details, saved: !!(member && member.details), network: C.isNetworkMember(member) });
+      return res.status(200).json({ account: { name: session.name, email: session.email, picture: (member && member.picture) || session.picture || null }, details, saved: !!(member && member.details), network: C.isNetworkMember(member) });
+    }
+    if (req.method === "POST" && (req.body || {}).photo) {
+      // The member's own picture (cropped square in their browser): becomes the round picture everywhere.
+      const photo = req.body.photo;
+      const img = C.parsePhotoDataUrl(photo.dataUrl);
+      if (!img) return res.status(400).json({ error: "invalid_photo" });
+      if (!(Number(photo.width) >= 200) || !(Number(photo.height) >= 200)) return res.status(400).json({ error: "photo_too_small" });
+      if (!(await C.readMember(session.email))) await C.upsertMember(session, false, "profile");
+      const picture = await C.saveProfilePhoto(img);
+      await C.applyMemberPhoto(session, picture);
+      return res.status(200).json({ ok: true, picture });
     }
     if (req.method === "POST") {
       const details = C.cleanMemberDetails((req.body || {}).details);
