@@ -425,26 +425,33 @@ footer {
   max-width: 640px;
 }
 
-.foreword-inner .label-mono { margin-bottom: 14px; }
+.foreword-inner .label-mono { margin-bottom: 12px; }
 
 @media (min-width: 900px) {
   .foreword-inner { max-width: none; }
-  .foreword-body {
-    column-count: 2;
-    column-gap: 56px;
-  }
 }
 
 .foreword-inner p + p { margin-top: 1em; }
 .foreword-inner p {
-  font-size: 18px;
-  line-height: 1.65;
+  font-size: 16px;
+  line-height: 1.6;
   color: var(--ink-body);
   font-style: italic;
 }
 
+.foreword-byline img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center top;
+}
+
 .foreword-byline {
-  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
   font-family: var(--font-mono);
   font-size: 13px;
   color: var(--ink-dim);

@@ -1222,8 +1222,8 @@ function renderPersonPage(root, p, opts = {}) {
       <div class="wrap">
         <div class="foreword-inner">
           <div class="label-mono">Foreword</div>
+          <div class="foreword-byline"><img src="assets/photos/martin-knapic-linkedin.jpg" alt="Martin Knapic" width="32" height="32"><span>- Martin Knapic, Product Moat</span></div>
           <div class="foreword-body">${p.foreword.split(/\n\s*\n/).map(para => para.trim()).filter(Boolean).map(para => `<p>${escapeHTML(para).replace(/\n/g, "<br>")}</p>`).join("")}</div>
-          <div class="foreword-byline">- Martin Knapic, Product Moat</div>
         </div>
       </div>
     </section>` : ""}
