@@ -1,0 +1,5 @@
+#!/bin/sh
+# Keeps the ?v= cache-busting hashes in sync with the files they point at (see scripts/version-assets.js),
+# so the 1-year asset cache can never serve a stale script. Enabled by `npm install` (prepare script).
+node scripts/version-assets.js >/dev/null || exit 1
+git add -u -- '*.html' 'assets/*.js'

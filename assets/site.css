@@ -1199,6 +1199,9 @@ footer {
   .nav-inner { padding: 14px 20px; flex-wrap: wrap; row-gap: 12px; column-gap: 12px; }
   /* keep logo + Sign up + theme toggle on one row at phone widths */
   .nav-right { gap: 10px; }
+  /* Reserve the row height the Sign up button gives .nav-right once site.js adds it, so the page
+     doesn't jump down ~5px (a large layout shift on a tall page) when it appears. */
+  .nav-inner > .logo { min-height: 41px; }
   .nav-right .nav-cta { padding: 9px 12px; }
   .nav-links {
     position: static;

@@ -280,7 +280,7 @@
       const decode = () => { const bin = atob(window.HERO_LAND_B64); bits = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bits[i] = bin.charCodeAt(i); cb(); };
       if (window.HERO_LAND_B64) return decode();
       const s = document.createElement("script");
-      s.src = "assets/hero-land.js?v=1"; s.onload = decode; document.head.appendChild(s);
+      s.src = "assets/hero-land.js?v=9cb31014"; s.onload = decode; document.head.appendChild(s);
     }
     function land(lat, lng) {
       const col = clamp(Math.floor(lng + 180), 0, 359), row = clamp(Math.floor(90 - lat), 0, 179), i = row * 360 + col;

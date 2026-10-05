@@ -6,6 +6,9 @@
     posthog.init('phc_ooYnkiskTQt3cwarARnhoG9BF6xnqqy9UwkLqYme7KTm', {
         api_host: 'https://eu.i.posthog.com',
         defaults: '2026-05-30',
+        disable_session_recording: true, // no session replay: ~100 KB of script and a privacy cost
+        disable_surveys: true,
+        capture_heatmaps: false,
     })
   </script>
   <meta charset="UTF-8">
@@ -26,9 +29,9 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://www.productmoat.com/#organization","name":"Product Moat","url":"https://www.productmoat.com/","logo":"https://www.productmoat.com/assets/logo-frame.png"},{"@type":"WebSite","@id":"https://www.productmoat.com/#website","name":"Product Moat","url":"https://www.productmoat.com/","inLanguage":"en","publisher":{"@id":"https://www.productmoat.com/#organization"}}]}</script>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=2">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=2">
-  <link rel="stylesheet" href="assets/swiss.css?v=23">
-  <link rel="stylesheet" href="assets/site.css?v=66">
-  <link rel="stylesheet" href="assets/hero-fx.css?v=11">
+  <link rel="stylesheet" href="assets/swiss.css?v=d1f105c0">
+  <link rel="stylesheet" href="assets/site.css?v=9d591ba4">
+  <link rel="stylesheet" href="assets/hero-fx.css?v=176c5c23">
 </head>
 <body class="light">
   <script>try{if(localStorage.getItem("pm-theme")==="dark")document.body.classList.remove("light")}catch(e){}</script>
@@ -99,10 +102,10 @@
     </div>
   </footer>
 
-  <script src="assets/people-data.js?v=17"></script>
+  <script src="assets/people-data.js?v=b0cc316a"></script>
   <script src="/api/published?format=js"></script>
-  <script src="assets/site.js?v=70"></script>
-  <script src="assets/hero-fx.js?v=10"></script>
+  <script src="assets/site.js?v=ba6f8bea"></script>
+  <script src="assets/hero-fx.js?v=6270e0c8"></script>
   <script>
     initTheme();
     initHome();

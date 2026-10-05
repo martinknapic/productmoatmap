@@ -14,3 +14,5 @@ jobs:
         with:
           node-version: 22
       - run: node scripts/check-seo.js
+      # the asset cache is immutable for a year, so every ?v= must match its file's content
+      - run: node scripts/version-assets.js --check

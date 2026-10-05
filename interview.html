@@ -6,6 +6,9 @@
     posthog.init('phc_ooYnkiskTQt3cwarARnhoG9BF6xnqqy9UwkLqYme7KTm', {
         api_host: 'https://eu.i.posthog.com',
         defaults: '2026-05-30',
+        disable_session_recording: true, // no session replay: ~100 KB of script and a privacy cost
+        disable_surveys: true,
+        capture_heatmaps: false,
     })
   </script>
   <meta charset="UTF-8">
@@ -16,9 +19,9 @@
   <meta name="referrer" content="no-referrer">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=2">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=2">
-  <link rel="stylesheet" href="assets/swiss.css?v=23">
-  <link rel="stylesheet" href="assets/site.css?v=66">
-  <link rel="stylesheet" href="assets/interview.css?v=18">
+  <link rel="stylesheet" href="assets/swiss.css?v=d1f105c0">
+  <link rel="stylesheet" href="assets/site.css?v=9d591ba4">
+  <link rel="stylesheet" href="assets/interview.css?v=924191e1">
 </head>
 <body class="light">
   <script>try{if(localStorage.getItem("pm-theme")==="dark")document.body.classList.remove("light")}catch(e){}</script>
@@ -61,10 +64,10 @@
     </div>
   </footer>
 
-  <script src="assets/questions-default.js?v=3"></script>
-  <script src="assets/people-data.js?v=17"></script>
-  <script src="assets/site.js?v=70"></script>
-  <script src="assets/interview.js?v=22"></script>
+  <script src="assets/questions-default.js?v=7b87c867"></script>
+  <script src="assets/people-data.js?v=b0cc316a"></script>
+  <script src="assets/site.js?v=ba6f8bea"></script>
+  <script src="assets/interview.js?v=93e6c070"></script>
   <script>
     initTheme();
     initInterview();

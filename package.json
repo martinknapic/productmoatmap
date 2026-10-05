@@ -2,9 +2,12 @@
   "name": "productmoatmap",
   "version": "1.0.0",
   "private": true,
-  "description": "Static site — this package.json exists only to declare @vercel/functions (middleware.js's Routing Middleware API) and @vercel/blob (JSON-record storage for api/join-map.js and friends). No build step; the site itself stays plain HTML/CSS/JS.",
+  "description": "Static site \u2014 this package.json exists only to declare @vercel/functions (middleware.js's Routing Middleware API) and @vercel/blob (JSON-record storage for api/join-map.js and friends). No build step; the site itself stays plain HTML/CSS/JS.",
   "scripts": {
-    "check:seo": "node scripts/check-seo.js"
+    "check:seo": "node scripts/check-seo.js",
+    "assets:version": "node scripts/version-assets.js",
+    "check:assets": "node scripts/version-assets.js --check",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "dependencies": {
     "@vercel/functions": "^3.9.5",

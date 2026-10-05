@@ -1291,6 +1291,43 @@ function initMiniMap(p) {
 // the real map is handled by the <a> wrapper in the markup, not the map itself.
 function initMiniGlobe(p) {
   const el = document.getElementById("mini-map");
+  if (!el) return;
+  // MapLibre is ~250 KB and the globe is decoration, so it is fetched only once the globe is about
+  // to be seen (and never blocks the interview text from painting).
+  whenNearViewport(el, () => withMapLibre(() => startMiniGlobe(p)));
+}
+
+// Calls run() once `el` is within 300px of the viewport (immediately without IntersectionObserver).
+function whenNearViewport(el, run) {
+  if (!("IntersectionObserver" in window)) return run();
+  const io = new IntersectionObserver(entries => {
+    if (entries.some(e => e.isIntersecting)) { io.disconnect(); run(); }
+  }, { rootMargin: "300px" });
+  io.observe(el);
+}
+
+// Loads the self-hosted MapLibre (pages that already include it, like the main map, skip this).
+let maplibreLoading = null;
+function withMapLibre(cb) {
+  if (typeof maplibregl !== "undefined") return cb();
+  if (!maplibreLoading) {
+    maplibreLoading = new Promise((resolve, reject) => {
+      const css = document.createElement("link");
+      css.rel = "stylesheet";
+      css.href = "/assets/vendor/maplibre-gl-5.6.0.css";
+      document.head.appendChild(css);
+      const js = document.createElement("script");
+      js.src = "/assets/vendor/maplibre-gl-5.6.0.js";
+      js.onload = resolve;
+      js.onerror = reject;
+      document.head.appendChild(js);
+    });
+  }
+  maplibreLoading.then(cb, () => { /* offline: the page works without the globe */ });
+}
+
+function startMiniGlobe(p) {
+  const el = document.getElementById("mini-map");
   if (!el || typeof maplibregl === "undefined") return;
 
   miniMapInstance = new maplibregl.Map({
