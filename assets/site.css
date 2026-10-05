@@ -427,6 +427,7 @@ footer {
 
 .foreword-inner .label-mono { margin-bottom: 14px; }
 
+.foreword-inner p + p { margin-top: 1em; }
 .foreword-inner p {
   font-size: 18px;
   line-height: 1.65;
