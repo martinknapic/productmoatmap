@@ -186,6 +186,26 @@
   padding: 3px 9px;
 }
 
+.card-tags { align-self: flex-start; display: flex; flex-wrap: wrap; gap: 6px; }
+.card-sample { border-style: dashed; color: var(--accent); }
+
+.sample-note {
+  border-bottom: 1px dashed var(--line-soft);
+  background: var(--paper-alt);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--ink-dim);
+  padding: 9px 0;
+}
+.sample-badge {
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--accent);
+  border: 1px dashed currentColor;
+  padding: 1px 7px;
+  margin-right: 8px;
+}
+
 /* ---------- Footer ---------- */
 
 footer {

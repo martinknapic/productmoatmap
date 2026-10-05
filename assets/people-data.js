@@ -545,6 +545,10 @@ const INTERVIEWS = [
   }
 ];
 
+// The built-in interviews are illustrative examples, not real people. Real, published interviews
+// are appended later (api/published) and never carry this flag.
+INTERVIEWS.forEach(p => { p.sample = true; });
+
 function findInterview(slug) {
   return INTERVIEWS.find(p => p.slug === slug);
 }

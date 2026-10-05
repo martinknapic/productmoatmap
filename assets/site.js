@@ -1070,7 +1070,10 @@ function renderGrid() {
       </div>
       <div class="card-meta">${escapeHTML(p.company)} &middot; ${escapeHTML(p.location)}</div>
       <p class="card-snippet">${escapeHTML(p.snippet)}</p>
-      <span class="card-tag">${FOCUS_LABELS[p.focusTag] || p.focusTag}</span>
+      <div class="card-tags">
+        <span class="card-tag">${FOCUS_LABELS[p.focusTag] || p.focusTag}</span>
+        ${p.sample ? `<span class="card-tag card-sample" title="An illustrative example, not a real person">Sample</span>` : ""}
+      </div>
     </a>
   `).join("");
 }
@@ -1325,6 +1328,7 @@ function renderPersonPage(root, p, opts = {}) {
   const hasCoords = typeof p.lat === "number" && typeof p.lng === "number";
 
   const markup = `
+    ${p.sample ? `<div class="sample-note"><div class="wrap"><span class="sample-badge">Sample</span> An example interview to show the format. This is not a real person.</div></div>` : ""}
     <section class="profile-hero">
       <div class="wrap">
         <div class="hero-content">
