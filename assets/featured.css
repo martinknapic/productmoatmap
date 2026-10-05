@@ -1,0 +1,154 @@
+/* ProductMoat backoffice - homepage featured control (backoffice/featured.html) */
+
+.feat-title {
+  margin-top: 14px;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: clamp(30px, 4vw, 46px);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+
+.feat-lede {
+  margin-top: 16px;
+  max-width: 64ch;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink-body);
+}
+
+.feat-wrap { padding-top: 40px; padding-bottom: 96px; }
+
+.feat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.feat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+.feat-card-now { border-color: var(--ink); }
+.feat-card.is-ready { border-color: #2f7d4f; }
+.feat-card-empty { border-style: dashed; }
+
+.feat-slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-dim);
+}
+
+.feat-live-dot { width: 8px; height: 8px; border-radius: 50%; background: #2f7d4f; }
+
+.feat-flag {
+  padding: 1px 6px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 10px;
+}
+
+.feat-person { display: flex; align-items: center; gap: 12px; }
+.feat-person:hover .feat-name { text-decoration: underline; }
+.feat-avatar { width: 48px; height: 48px; font-size: 15px; flex-shrink: 0; }
+.feat-person-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.feat-name { font-size: 17px; font-weight: 700; line-height: 1.2; }
+.feat-sub { font-size: 13px; color: var(--ink-dim); }
+
+.feat-dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border: 1px solid var(--line-soft);
+}
+.feat-dates span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+}
+.feat-dates span + span { border-left: 1px solid var(--line-soft); }
+.feat-dates em {
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-dim);
+}
+
+.feat-note, .feat-hint, .feat-empty {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-dim);
+}
+.feat-warn { font-size: 13px; color: var(--accent); }
+
+.feat-status { display: flex; align-items: center; gap: 10px; }
+.feat-ready {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+.feat-ready.is-ready { color: #2f7d4f; }
+
+.feat-bar-row { display: flex; flex-direction: column; gap: 5px; }
+.feat-bar-head { display: flex; justify-content: space-between; font-size: 13px; }
+.feat-bar-head strong { font-family: var(--font-mono); font-size: 12px; }
+.feat-bar { height: 8px; background: var(--paper-alt); border: 1px solid var(--line-soft); }
+.feat-bar i { display: block; height: 100%; background: var(--ink); }
+.feat-bar-ok i { background: #2f7d4f; }
+
+.feat-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.feat-steps li { display: flex; align-items: center; gap: 10px; font-size: 13.5px; }
+.feat-tick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+.feat-steps li.is-done .feat-tick { background: #2f7d4f; border-color: #2f7d4f; }
+.feat-steps li:not(.is-done) .feat-step-label { color: var(--ink-dim); }
+.feat-step-label { flex: 1; min-width: 0; }
+.feat-step-btn {
+  padding: 3px 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--ink);
+  cursor: pointer;
+}
+.feat-step-btn:hover { background: var(--ink); color: var(--paper); }
+
+.feat-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.feat-actions .btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+
+@media (max-width: 1000px) {
+  .feat-grid { grid-template-columns: 1fr; }
+}

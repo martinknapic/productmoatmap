@@ -22,7 +22,8 @@ export const config = {
     "/backoffice/users.html", "/backoffice/users",
     "/backoffice/profiles.html", "/backoffice/profiles",
     "/backoffice/map-submissions.html", "/backoffice/map-submissions",
-    "/backoffice/calendar.html", "/backoffice/calendar"
+    "/backoffice/calendar.html", "/backoffice/calendar",
+    "/backoffice/featured.html", "/backoffice/featured"
   ]
 };
 

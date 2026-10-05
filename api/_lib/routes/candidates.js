@@ -194,7 +194,11 @@ module.exports = async (req, res) => {
         if (body.mode === "now") {
           pub.publishedAt = new Date().toISOString();
           pub.scheduledPublishAt = null;
-          if (!pub.displayDate) pub.displayDate = pub.publishedAt.slice(0, 10);
+          // Going live now makes this the newest interview (the one the homepage features), so a
+          // missing or still-future display date (left over from a schedule) becomes today.
+          const today = pub.publishedAt.slice(0, 10);
+          if (!pub.displayDate || pub.displayDate > today) pub.displayDate = today;
+          if (c.invitation && c.invitation.estimatedPublishDate && c.invitation.estimatedPublishDate > today) c.invitation.estimatedPublishDate = today;
         } else if (body.mode === "schedule") {
           if (!pub.scheduledPublishAt) return res.status(400).json({ error: "missing_schedule" });
           if (!pub.displayDate) pub.displayDate = pub.scheduledPublishAt.slice(0, 10);
