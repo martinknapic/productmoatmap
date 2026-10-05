@@ -1743,3 +1743,16 @@ body.nl-open { overflow: hidden; }
 .hs-note a { text-decoration: underline; }
 .hs-note.is-error { color: var(--accent); }
 .hs-note.is-ok { color: var(--ink); font-weight: 700; }
+
+@media (max-width: 760px) {
+  .hero-subscribe { max-width: none; margin-top: 28px; }
+  /* 16px stops iOS Safari zooming the page when the field is focused */
+  .hs-row input[type="email"] { font-size: 16px; padding: 14px 14px; }
+  .hs-row .btn { padding: 14px 20px; justify-content: center; }
+  .hero-about { margin-top: 24px; }
+  .hero-about p { font-size: 16px; line-height: 1.6; }
+}
+@media (max-width: 400px) {
+  .hs-row { flex-direction: column; }
+  .hs-row input[type="email"] { border-right: 1px solid var(--ink); border-bottom: none; }
+}
