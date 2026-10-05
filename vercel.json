@@ -80,6 +80,10 @@
       "destination": "/api/site?op=member-me"
     },
     {
+      "source": "/api/subscribe",
+      "destination": "/api/site?op=subscribe"
+    },
+    {
       "source": "/api/member-logout",
       "destination": "/api/site?op=member-logout"
     },

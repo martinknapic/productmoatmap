@@ -2408,3 +2408,27 @@ function initCalendar() {
 
   el.innerHTML = quartersHTML;
 }
+
+// Homepage hero: email-only newsletter signup (POST /api/subscribe).
+(function () {
+  const form = document.getElementById("hero-subscribe");
+  if (!form) return;
+  const note = document.getElementById("hs-note");
+  const btn = form.querySelector("button");
+  const say = (msg, cls) => { note.textContent = msg; note.className = "hs-note" + (cls ? " " + cls : ""); };
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const email = form.email.value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return say("Please enter a valid email address.", "is-error");
+    btn.disabled = true;
+    try {
+      const r = await fetch("/api/subscribe", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, website: form.website.value })
+      });
+      if (r.ok) { form.reset(); say("Thanks! Check your inbox - you may need to confirm your address.", "is-ok"); }
+      else say(r.status === 429 ? "Too many attempts. Please try again later." : "Something went wrong. Please try again.", "is-error");
+    } catch (err) { say("Network problem. Please try again.", "is-error"); }
+    btn.disabled = false;
+  });
+})();

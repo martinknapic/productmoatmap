@@ -30,7 +30,7 @@
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=2">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=2">
   <link rel="stylesheet" href="assets/swiss.css?v=d1f105c0">
-  <link rel="stylesheet" href="assets/site.css?v=138c3e1c">
+  <link rel="stylesheet" href="assets/site.css?v=1c96ae67">
   <link rel="stylesheet" href="assets/hero-fx.css?v=14a3cea0">
 </head>
 <body class="light">
@@ -55,12 +55,16 @@
         <div class="hero-main">
           <div class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span>New interview every week</div>
           <h1>Product people,<br>in the age of AI.</h1>
-          <div class="hero-cta">
-            <a class="btn btn-primary" href="#directory">Browse interviews</a>
-            <a class="btn btn-ghost" href="map">Explore the map</a>
-          </div>
+          <form class="hero-subscribe" id="hero-subscribe" novalidate>
+            <label class="label-mono" for="hs-email">Get each new interview by email</label>
+            <div class="hs-row">
+              <input id="hs-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" required>
+              <input class="hs-trap" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+              <button class="btn btn-primary" type="submit">Subscribe</button>
+            </div>
+            <p class="hs-note" id="hs-note" role="status" aria-live="polite">One email per interview. Unsubscribe any time. <a href="privacy">Privacy</a></p>
+          </form>
           <div class="hero-about">
-            <div class="label-mono">About this issue</div>
             <p>
               Conversations with product managers and product people around the world - how
               they think, what they've shipped, and how AI is reshaping the craft of building
@@ -104,7 +108,7 @@
 
   <script defer src="assets/people-data.js?v=de7ecee9"></script>
   <script defer src="/api/published?format=js"></script>
-  <script defer src="assets/site.js?v=c1543c33"></script>
+  <script defer src="assets/site.js?v=f5794c83"></script>
   <script defer src="assets/hero-fx.js?v=9f24a7e2"></script>
   <script>
     // Deferred scripts have all run by DOMContentLoaded; the grid is already server-rendered.

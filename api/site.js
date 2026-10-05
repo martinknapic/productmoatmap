@@ -24,6 +24,7 @@ const routes = {
   "member-profile": require("./_lib/routes/member-profile"),
   "member-network": require("./_lib/routes/member-network"),
   "member-map": require("./_lib/routes/member-map"),
+  "subscribe": require("./_lib/routes/subscribe"),
   "member-logout": require("./_lib/routes/member-logout"),
   "backoffice-me": require("./_lib/routes/backoffice-me"),
   "backoffice-users": require("./_lib/routes/backoffice-users"),

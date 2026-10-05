@@ -1726,3 +1726,20 @@ body.nl-open { overflow: hidden; }
 .pm-avatar-body { min-width: 0; }
 .pm-avatar-note { margin: 4px 0 10px; font-size: 14px; opacity: 0.8; }
 .pm-avatar-note.is-error { color: #c0392b; opacity: 1; }
+
+/* ---------- Homepage hero: email signup ---------- */
+.hero-subscribe { margin-top: 40px; max-width: 460px; }
+.hero-subscribe .label-mono { display: block; margin-bottom: 10px; }
+.hs-row { display: flex; }
+.hs-row input[type="email"] {
+  flex: 1; min-width: 0; padding: 15px 16px; font: inherit; font-size: 15px;
+  color: var(--ink); background: var(--paper); border: 1px solid var(--ink); border-right: none; border-radius: 0;
+}
+.hs-row input[type="email"]:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.hs-trap { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.hs-row .btn { cursor: pointer; }
+.hs-row .btn[disabled] { opacity: 0.6; cursor: default; }
+.hs-note { margin-top: 10px; font-size: 13px; color: var(--ink-dim); max-width: none; }
+.hs-note a { text-decoration: underline; }
+.hs-note.is-error { color: var(--accent); }
+.hs-note.is-ok { color: var(--ink); font-weight: 700; }
