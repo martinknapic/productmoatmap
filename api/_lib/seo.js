@@ -211,7 +211,7 @@ function renderPerson(slug, published) {
 function renderHome(published) {
   const { ctx, captured } = createSandbox(published);
   vm.runInContext("renderChips(); renderGrid();", ctx);
-  const latest = vm.runInContext("INTERVIEWS.slice().sort(function (a, b) { return String(b.publishedDate).localeCompare(String(a.publishedDate)); })[0] || null", ctx);
+  const latest = vm.runInContext("featuredInterview()", ctx);
   ctx.__p = latest;
   const photo = latest ? vm.runInContext("spotlightPhoto(__p)", ctx) : { src: null };
   let html = inlineCss(read(path.join(ROOT, "api/_lib/templates/home.html")));
