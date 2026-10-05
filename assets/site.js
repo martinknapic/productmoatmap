@@ -1280,6 +1280,7 @@ function initMiniMap(p) {
   miniMapInstance.on("load", () => {
     const dot = document.createElement("div");
     dot.className = "mini-map-pin";
+    dot.setAttribute("role", "img"); // MapLibre adds an aria-label, which needs a role
     new maplibregl.Marker({ element: dot }).setLngLat([p.lng, p.lat]).addTo(miniMapInstance);
   });
 }
@@ -1321,6 +1322,7 @@ function initMiniGlobe(p) {
   miniMapInstance.on("load", () => {
     const dot = document.createElement("div");
     dot.className = "mini-map-pin";
+    dot.setAttribute("role", "img"); // MapLibre adds an aria-label, which needs a role
     new maplibregl.Marker({ element: dot }).setLngLat([p.lng, p.lat]).addTo(miniMapInstance);
 
     idleSpin();

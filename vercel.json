@@ -25,7 +25,15 @@
   "rewrites": [
     {
       "source": "/interview/:category(productmanagement|productux)/:slug",
-      "destination": "/person"
+      "destination": "/api/site?op=person&category=:category&slug=:slug"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/site?op=sitemap"
+    },
+    {
+      "source": "/indexnow.txt",
+      "destination": "/api/site?op=indexnow-key"
     },
     {
       "source": "/api/apply",
@@ -94,7 +102,7 @@
   ],
   "functions": {
     "api/site.js": {
-      "includeFiles": "assets/{people-data,questions-default}.js"
+      "includeFiles": "{assets/{people-data,questions-default,site}.js,person.html}"
     }
   }
 }

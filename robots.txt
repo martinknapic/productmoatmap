@@ -1,0 +1,10 @@
+# Product Moat. Crawling is allowed everywhere except the API and the (login-gated) backoffice.
+# Private pages (my interview, my map, account, network, signup) are kept out of search with a
+# noindex meta tag instead of a Disallow here, because crawlers must be able to fetch a page to see
+# its noindex.
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /backoffice/
+
+Sitemap: https://www.productmoat.com/sitemap.xml

@@ -70,6 +70,13 @@ http.createServer(async (req, res) => {
     return res.end();
   }
 
+  // Pretty URLs that production rewrites to the api/site.js dispatcher (vercel.json): the
+  // server-rendered interview pages, the sitemap and the IndexNow key.
+  const iv = /^\/interview\/(productmanagement|productux)\/([^/]+)\/?$/.exec(url.pathname);
+  if (iv) { url.pathname = "/api/site"; url.searchParams.set("op", "person"); url.searchParams.set("category", iv[1]); url.searchParams.set("slug", decodeURIComponent(iv[2])); }
+  else if (url.pathname === "/sitemap.xml") { url.pathname = "/api/site"; url.searchParams.set("op", "sitemap"); }
+  else if (url.pathname === "/indexnow.txt") { url.pathname = "/api/site"; url.searchParams.set("op", "indexnow-key"); }
+
   if (url.pathname.startsWith("/api/")) {
     // same /api rewrites as vercel.json (e.g. /api/apply -> /api/site?op=apply)
     let apiPath = url.pathname;
@@ -108,7 +115,6 @@ http.createServer(async (req, res) => {
     return res.end();
   }
 
-  if (/^\/interview\/(productmanagement|productux)\/[^/]+\/?$/.test(pathname)) pathname = "/person.html"; // vercel.json rewrite
   let file = path.join(ROOT, pathname);
   if (!file.startsWith(ROOT)) { res.writeHead(403); return res.end(); }
   if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, "index.html");

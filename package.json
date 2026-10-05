@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "description": "Static site — this package.json exists only to declare @vercel/functions (middleware.js's Routing Middleware API) and @vercel/blob (JSON-record storage for api/join-map.js and friends). No build step; the site itself stays plain HTML/CSS/JS.",
+  "scripts": {
+    "check:seo": "node scripts/check-seo.js"
+  },
   "dependencies": {
     "@vercel/functions": "^3.9.5",
     "@vercel/blob": "^2.8.0"

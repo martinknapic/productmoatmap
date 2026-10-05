@@ -44,7 +44,9 @@ module.exports = async (req, res) => {
   const session = secret ? verify(cookies[SESSION_COOKIE], secret) : null;
 
   if (!session) {
-    return res.status(401).json({ error: "not_authenticated" });
+    // 200 + null rather than 401: being signed out is normal, and a 401 shows up as a console error
+    // (and a Lighthouse Best Practices failure) on every page view of every anonymous visitor.
+    return res.status(200).json(null);
   }
 
   // Lets the nav show a "Backoffice" link to admins only. It's a UI hint: the backoffice pages

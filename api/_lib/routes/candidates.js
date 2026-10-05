@@ -218,6 +218,11 @@ module.exports = async (req, res) => {
     }
 
     await C.saveCandidate(c);
+    // Going live (or coming down) is announced to IndexNow search engines automatically; the
+    // sitemap and the page's SEO tags need nothing, they are generated from this same data.
+    if ((action === "publish" && body.mode === "now") || action === "unpublish") {
+      await require("../indexnow").ping([`/interview/${c.publish.category || C.defaultCategory(c.profile)}/${c.publish.slug}`, "/sitemap.xml"]);
+    }
     const member = await C.readMember(candidateEmail(c));
     return res.status(200).json({ ok: true, candidate: withPreview(withNetwork(c, member)) });
   } catch (err) {

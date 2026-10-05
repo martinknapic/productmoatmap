@@ -1,0 +1,16 @@
+name: SEO check
+# Fails the build if a page loses its title, description, canonical or social tags, or if the
+# server-rendered interview template stops emitting them. Interviews published later from the
+# backoffice use the same renderer, so this is what keeps them covered.
+on:
+  push:
+  pull_request:
+jobs:
+  seo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/check-seo.js
