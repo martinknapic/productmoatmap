@@ -1,4 +1,4 @@
-// ProductMoat Backoffice - All users (users.html)
+// Product Moat Backoffice - All users (users.html)
 //
 // One row per person the site knows about (members, candidates, map pins), with their newsletter
 // opt-in and the double opt-in status read back from the newsletter service (SendFox).

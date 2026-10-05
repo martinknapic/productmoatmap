@@ -1,4 +1,4 @@
-# ProductMoat
+# Product Moat
 
 An interview portal for productmoat.com: conversations with product managers and product
 people around the world, on building product at the intersection of AI. Plus a secondary

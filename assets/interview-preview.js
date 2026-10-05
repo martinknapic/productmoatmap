@@ -1,4 +1,4 @@
-// ProductMoat - private preview of a personal interview (interview-preview.html?t=<token>)
+// Product Moat - private preview of a personal interview (interview-preview.html?t=<token>)
 //
 // Shows the interview exactly as it would look once published, but it isn't live. The API only
 // returns it to the signed-in person the interview is for, and to admins; anyone else gets a
@@ -35,19 +35,19 @@ function initInterviewPreview() {
   }
 
   function render() {
-    const heading = data.asAdmin ? "PRIVATE PREVIEW - VIEWING AS PRODUCTMOAT ADMIN" : "PRIVATE PREVIEW - NOT PUBLISHED";
+    const heading = data.asAdmin ? "PRIVATE PREVIEW - VIEWING AS PRODUCT MOAT ADMIN" : "PRIVATE PREVIEW - NOT PUBLISHED";
     top.innerHTML = `
       <div class="wrap ivp-inner">
         <div>
           <div class="ivp-tag">${heading}</div>
-          <p>This is how your interview will look once it's published. It isn't live: only you and the ProductMoat team can see this page.</p>
+          <p>This is how your interview will look once it's published. It isn't live: only you and the Product Moat team can see this page.</p>
         </div>
         <div class="iv-actions">${actionButtons()}</div>
       </div>`;
     bottom.hidden = false;
     bottom.innerHTML = `<div class="wrap ivp-inner"><p>Happy with how it looks? Tell us - or go back and keep editing.</p><div class="iv-actions">${actionButtons()}</div></div>`;
     renderPersonPage(root, data.preview, { preview: true });
-    document.title = `Preview - ${data.preview.name} - ProductMoat`;
+    document.title = `Preview - ${data.preview.name} - Product Moat`;
   }
 
   document.addEventListener("click", async (e) => {
@@ -77,7 +77,7 @@ function initInterviewPreview() {
       }
       if (resp.status === 403) {
         return message("This preview isn't available to this account.",
-          "Only the person the interview is for, and the ProductMoat team, can see the preview. If that's you, sign in with the LinkedIn account tied to it.",
+          "Only the person the interview is for, and the Product Moat team, can see the preview. If that's you, sign in with the LinkedIn account tied to it.",
           `<a class="btn btn-ghost" href="${back}">Back to the interview page</a>`);
       }
       if (!resp.ok) return message("This link isn't working.", "It may have expired or been replaced. Reply to the message we sent you and we'll get you a fresh one.");

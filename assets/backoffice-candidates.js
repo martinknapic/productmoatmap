@@ -1,4 +1,4 @@
-// ProductMoat Backoffice - the candidate pipeline
+// Product Moat Backoffice - the candidate pipeline
 //
 //   candidates.html      list of everyone who applied, was recommended, or was added by hand
 //   candidate.html?id=   one person: profile, invitation, their questionnaire, answers, lock
@@ -403,7 +403,7 @@ async function initBackofficeCandidates() {
       }
       case "unlock": return call({ action: "lock", locked: false }, "Unlocked, they can edit again");
       case "networkIn":
-        if (!(await boConfirm({ title: "Check into the alumni network?", message: `<strong>${name}</strong> is added to the ProductMoat alumni network - visible to other members once they've been interviewed, and with access to the directory right away.`, confirmLabel: "Check in" }))) return;
+        if (!(await boConfirm({ title: "Check into the alumni network?", message: `<strong>${name}</strong> is added to the Product Moat alumni network - visible to other members once they've been interviewed, and with access to the directory right away.`, confirmLabel: "Check in" }))) return;
         return call({ action: "setNetwork", optedIn: true }, "Checked into the alumni network");
       case "networkOut":
         if (!(await boConfirm({ title: "Kick out of the alumni network?", message: `<strong>${name}</strong> loses access to the alumni network directory and disappears from it immediately.`, confirmLabel: "Kick out", danger: true }))) return;
@@ -478,12 +478,12 @@ function boInviteMessage(c, channel, link, estimated) {
 
   let opening;
   if (c.source === "applied") {
-    opening = `Thank you for applying to be featured on ProductMoat - we read every application ourselves, and we'd love to interview you.`;
+    opening = `Thank you for applying to be featured on Product Moat - we read every application ourselves, and we'd love to interview you.`;
   } else if (c.source === "recommended") {
-    const who = rec.stayAnonymous || !rec.recommenderName ? "Someone in the ProductMoat community" : rec.recommenderName;
-    opening = `${who} recommended you for ProductMoat, an interview series about how product people think and work in the age of AI - and we'd love to feature you.`;
+    const who = rec.stayAnonymous || !rec.recommenderName ? "Someone in the Product Moat community" : rec.recommenderName;
+    opening = `${who} recommended you for Product Moat, an interview series about how product people think and work in the age of AI - and we'd love to feature you.`;
   } else {
-    opening = `I'm Martin, and I run ProductMoat, an interview series about how product people think and work in the age of AI. I'd love to feature you.`;
+    opening = `I'm Martin, and I run Product Moat, an interview series about how product people think and work in the age of AI. I'd love to feature you.`;
   }
 
   if (channel === "linkedin") {
@@ -493,7 +493,7 @@ function boInviteMessage(c, channel, link, estimated) {
     };
   }
   return {
-    subject: "Your ProductMoat interview",
+    subject: "Your Product Moat interview",
     body: `Hi ${first},\n\n${opening}\n\nHere's your personal, private interview page - only you (and I) can open it:\n${link}\n\n${how}${signupLine}${estLine}\n\nIf it's not for you, no problem at all - just reply and let me know.\n\nWarm regards,\nMartin`
   };
 }
@@ -829,7 +829,7 @@ async function initBackofficePreview() {
   function render() {
     const pub = c.publish, p = c.preview, live = c.status === "published", scheduled = c.status === "scheduled";
     const est = (c.invitation && c.invitation.estimatedPublishDate) || "";
-    document.title = `Preview - ${c.profile.name} - ProductMoat`;
+    document.title = `Preview - ${c.profile.name} - Product Moat`;
     bar.innerHTML = `
       <div class="wrap pv-inner">
         <div class="pv-top">

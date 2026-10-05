@@ -1,4 +1,4 @@
-// ProductMoat Backoffice - login gate + shared table helpers and map submissions
+// Product Moat Backoffice - login gate + shared table helpers and map submissions
 // (the candidate pipeline lives in backoffice-candidates.js)
 //
 // Login is real LinkedIn OAuth (same app as the public Apply form's verification

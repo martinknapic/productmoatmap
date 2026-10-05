@@ -1,6 +1,6 @@
-// ProductMoat - the alumni network (network.html)
+// Product Moat - the alumni network (network.html)
 //
-// A members-only directory of the product people ProductMoat has interviewed. It's reciprocal and
+// A members-only directory of the product people Product Moat has interviewed. It's reciprocal and
 // explicit: a member ticks the consent box (here, on Apply, or on My profile) to be visible to the
 // other members - once they've been interviewed - and in return gets access to the directory.
 // GET /api/member-network only returns people to members who have opted in.
@@ -40,7 +40,7 @@ function initNetwork() {
   function show(html) { root.innerHTML = html; }
 
   function renderJoin() {
-    show(hero("The people we've interviewed.", "A members-only network of the product people featured on ProductMoat - for those who've agreed to be visible to each other.") + consentCard);
+    show(hero("The people we've interviewed.", "A members-only network of the product people featured on Product Moat - for those who've agreed to be visible to each other.") + consentCard);
     const box = document.getElementById("net-agree"), btn = document.getElementById("net-join"), wrap = document.getElementById("net-join-wrap");
     box.addEventListener("change", () => {
       btn.toggleAttribute("aria-disabled", !box.checked);
@@ -88,7 +88,7 @@ function initNetwork() {
 
   function renderDirectory(people) {
     const tags = [...new Set(people.flatMap(p => p.focusTags))];
-    show(hero("The people we've interviewed.", `Everyone here has been featured on ProductMoat and agreed to be visible to fellow members. Please use these details respectfully - they're shared for genuine peer-to-peer connection, not outreach at scale.`,
+    show(hero("The people we've interviewed.", `Everyone here has been featured on Product Moat and agreed to be visible to fellow members. Please use these details respectfully - they're shared for genuine peer-to-peer connection, not outreach at scale.`,
       `<div class="net-count">${people.length} member${people.length === 1 ? "" : "s"}</div>`) + `
       <section class="wrap net-body">
         <div class="net-filters">

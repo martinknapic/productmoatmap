@@ -1,4 +1,4 @@
-# ProductMoat Globe — Project Context
+# Product Moat Globe — Project Context
 
 Paste this into the Claude Project's knowledge base. It's the full context needed to
 write Claude Code terminal prompts that continue this build without re-deriving

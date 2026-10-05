@@ -1,4 +1,4 @@
-// ProductMoat - interview portal data (placeholder set)
+// Product Moat - interview portal data (placeholder set)
 // Replace/extend with real interviewees. Shape:
 // {
 //   slug, name, role, company, location, focus, focusTag, yearsExperience,

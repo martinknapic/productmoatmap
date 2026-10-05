@@ -1,4 +1,4 @@
-// ProductMoat - shared portal logic (theme, avatars, homepage grid, person page)
+// Product Moat - shared portal logic (theme, avatars, homepage grid, person page)
 // Avatars are flat ink-on-paper medallions (see .avatar rules in swiss.css) by default -
 // no per-person color. A person with a `photo` field gets that photo instead.
 
@@ -639,7 +639,7 @@ function initMyInterview() {
           `<a class="btn btn-primary" href="signup">Sign up with LinkedIn</a>`) + pitch);
       } else {
         show(hero("You haven't been interviewed yet.",
-          "ProductMoat is an interview series with product people around the world. If you'd like to be featured, apply - if it's a fit, your personal interview page will appear right here.",
+          "Product Moat is an interview series with product people around the world. If you'd like to be featured, apply - if it's a fit, your personal interview page will appear right here.",
           cta, { hasRecord: false }) + pitch);
       }
     })
@@ -811,7 +811,7 @@ function accountSignedInHTML(profile) {
       <div class="account-card">
         <div class="avatar-xl${profile.picture ? " has-photo" : ""}">${avatarInner}</div>
         <div>
-          <h1 class="account-name">${escapeHTML(profile.name || "ProductMoat member")}</h1>
+          <h1 class="account-name">${escapeHTML(profile.name || "Product Moat member")}</h1>
           <p class="account-email">${escapeHTML(profile.email || "")}</p>
           <p class="account-note">Your photo and email come from LinkedIn (signing in again on Apply, Recommend, or Put yourself on the map refreshes them). Everything else below is yours to edit.</p>
           <button class="btn btn-ghost" id="account-logout-btn">Log out</button>
@@ -827,7 +827,7 @@ function accountSignedOutHTML() {
     <div class="eyebrow">My profile</div>
     <h1>You're not signed in.</h1>
     <p class="about-lede">
-      ProductMoat doesn't have a standalone sign-in - verifying with LinkedIn on the
+      Product Moat doesn't have a standalone sign-in - verifying with LinkedIn on the
       <a class="bracket-link" href="apply">Apply</a>,
       <a class="bracket-link" href="recommend">Recommend</a>, or
       <a class="bracket-link" href="join-map">Put yourself on the map</a>
@@ -1168,7 +1168,7 @@ function initPerson() {
 // Renders the full interview page for `p` into `root`. Also used by the backoffice preview
 // (backoffice/preview.html) so the preview is byte-for-byte what gets published.
 function renderPersonPage(root, p, opts = {}) {
-  if (!opts.preview) document.title = `${p.name} - ProductMoat`;
+  if (!opts.preview) document.title = `${p.name} - Product Moat`;
 
   const hasCoords = typeof p.lat === "number" && typeof p.lng === "number";
 
@@ -1605,7 +1605,7 @@ function sessionGateHTML(profile) {
   return `${badge}
     <div class="form-checkbox-row li-newsletter-row newsletter-checkbox-row">
       <input type="checkbox" id="li-newsletter">
-      <label for="li-newsletter" id="li-newsletter-label">Subscribe me to the ProductMoat newsletter <span class="li-optional">(optional)</span>.</label>
+      <label for="li-newsletter" id="li-newsletter-label">Subscribe me to the Product Moat newsletter <span class="li-optional">(optional)</span>.</label>
     </div>`;
 }
 

@@ -1,4 +1,4 @@
-// ProductMoat - a person's personal interview page (interview.html?t=<token>)
+// Product Moat - a person's personal interview page (interview.html?t=<token>)
 //
 // The admin invites someone from the backoffice; that creates this questionnaire (a copy of
 // the standard questions the admin can still edit). The page loads it from /api/interview,
@@ -147,7 +147,7 @@ function initInterview() {
 
   function render(registeredNow) {
     const first = (state.profile.name || "").split(/\s+/)[0] || "there";
-    document.title = `${first}'s interview - ProductMoat`;
+    document.title = `${first}'s interview - Product Moat`;
     root.innerHTML = `
       <div class="iv-steps-wrap"><div class="wrap"><ol class="iv-steps" id="iv-steps" aria-label="Your progress"></ol></div></div>
       <section class="why-hero iv-hero">
@@ -258,14 +258,14 @@ function initInterview() {
           <div class="wrap">
             <div class="eyebrow">Your interview</div>
             <h1>Sign in to open your interview.</h1>
-            <p class="about-lede">This questionnaire is private: it can only be opened by the person it was created for. Sign in with the LinkedIn account you use with ProductMoat - it takes one click, and you come straight back to this page.</p>
+            <p class="about-lede">This questionnaire is private: it can only be opened by the person it was created for. Sign in with the LinkedIn account you use with Product Moat - it takes one click, and you come straight back to this page.</p>
             <div class="iv-register">
               <div class="iv-register-text">
-                <p>Signing in creates your <strong>private ProductMoat profile</strong> (name, email, photo), which is never published, and puts your avatar in the site menu.</p>
+                <p>Signing in creates your <strong>private Product Moat profile</strong> (name, email, photo), which is never published, and puts your avatar in the site menu.</p>
                 ${back && back.error ? `<p class="hint-inline li-error">LinkedIn sign-in didn't go through - try again.</p>` : ""}
               </div>
               <div class="iv-register-actions">
-                <div class="form-checkbox-row"><input type="checkbox" id="iv-reg-newsletter"><label for="iv-reg-newsletter">Subscribe me to the ProductMoat newsletter <span class="li-optional">(optional)</span>.</label></div>
+                <div class="form-checkbox-row"><input type="checkbox" id="iv-reg-newsletter"><label for="iv-reg-newsletter">Subscribe me to the Product Moat newsletter <span class="li-optional">(optional)</span>.</label></div>
                 ${LI_BUTTON}
               </div>
             </div>
@@ -289,16 +289,16 @@ function initInterview() {
     const el = document.getElementById("iv-register");
     if (!el) return;
     if (state.member) {
-      el.innerHTML = `<div class="iv-register is-done"><span class="li-badge-check">&check;</span> You're signed in as <strong>${escapeHTML(state.member.name || "a LinkedIn member")}</strong>${state.registered ? " - this page is linked to your ProductMoat profile." : "."}</div>`;
+      el.innerHTML = `<div class="iv-register is-done"><span class="li-badge-check">&check;</span> You're signed in as <strong>${escapeHTML(state.member.name || "a LinkedIn member")}</strong>${state.registered ? " - this page is linked to your Product Moat profile." : "."}</div>`;
     } else if (state.asAdmin) {
-      el.innerHTML = `<div class="iv-register is-done"><span class="li-badge-check">&check;</span> Viewing as a ProductMoat admin.</div>`;
+      el.innerHTML = `<div class="iv-register is-done"><span class="li-badge-check">&check;</span> Viewing as a Product Moat admin.</div>`;
     }
   }
 
   async function initRegistration(registeredNow) {
     state.member = await fetchMemberProfile();
     renderRegisterBox();
-    if (registeredNow) setToast("You're registered - welcome to ProductMoat!", true);
+    if (registeredNow) setToast("You're registered - welcome to Product Moat!", true);
   }
 
   // Large portrait of the person (photo set by the admin / from LinkedIn); initials if there's none or it fails to load.
@@ -754,7 +754,7 @@ function initInterview() {
     } else if (state.locked) {
       el.innerHTML = `<div class="iv-note is-locked"><strong>Locked.</strong> This version is being prepared for publishing, so it can't be edited any more. Need a change? Just reply to us and we'll reopen it.</div>`;
     } else if (state.approval.approved) {
-      const who = state.approval.by === "admin" ? "ProductMoat marked this version as final on your behalf" : "You marked this version as final";
+      const who = state.approval.by === "admin" ? "Product Moat marked this version as final on your behalf" : "You marked this version as final";
       el.innerHTML = `<div class="iv-note is-approved"><strong>&check; ${who}</strong> on ${escapeHTML(formatWhen(state.approval.at))}. If you change anything, it goes back to draft and you can mark it final again.</div>`;
     } else {
       el.innerHTML = `<div class="iv-note is-draft"><strong>Draft.</strong> You're still working on this version - nothing is final until you say so at the bottom.</div>`;

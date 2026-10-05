@@ -1,4 +1,4 @@
-// ProductMoat - people data
+// Product Moat - people data
 // Each person: name, role, city, country, company, snippet, photo (optional URL),
 // and optional lat/lng override. If lat/lng are missing the app resolves them
 // from CITY_COORDS, then COMPANY_HQ, then COUNTRY_COORDS (see below).

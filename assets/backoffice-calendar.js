@@ -1,4 +1,4 @@
-// ProductMoat Backoffice - the publishing calendar (backoffice/calendar.html)
+// Product Moat Backoffice - the publishing calendar (backoffice/calendar.html)
 //
 // One column per week, four quarters per year, filled from the live candidate pipeline
 // (/api/candidates): a candidate lands on the week of their publish date - the date it went

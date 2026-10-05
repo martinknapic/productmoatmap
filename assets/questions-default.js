@@ -1,4 +1,4 @@
-// ProductMoat - the default interview questions.
+// Product Moat - the default interview questions.
 //
 // This is the built-in starting point for the question bank. The live, admin-editable copy
 // is stored by api/question-bank.js (backoffice → Questions); this file is what it falls

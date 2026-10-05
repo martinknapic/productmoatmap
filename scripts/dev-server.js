@@ -116,4 +116,4 @@ http.createServer(async (req, res) => {
   if (!fs.existsSync(file)) { res.writeHead(404); return res.end("Not found"); }
   res.writeHead(200, { "Content-Type": types[path.extname(file)] || "application/octet-stream", "Cache-Control": "no-store" });
   fs.createReadStream(file).pipe(res);
-}).listen(PORT, () => console.log(`ProductMoat dev server on http://localhost:${PORT}  (admin: /dev-login, member: /dev-member-login)`));
+}).listen(PORT, () => console.log(`Product Moat dev server on http://localhost:${PORT}  (admin: /dev-login, member: /dev-member-login)`));

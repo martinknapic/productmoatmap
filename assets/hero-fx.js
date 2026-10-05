@@ -1,4 +1,4 @@
-/* ProductMoat - above-the-fold hero graphics.
+/* Product Moat - above-the-fold hero graphics.
  *
  * Five interchangeable concepts, all drawn from the site's own vocabulary: the open square frame
  * and orange → magenta → violet → blue gradient of the logo, hairline rules, square "pixels",

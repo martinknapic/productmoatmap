@@ -1,4 +1,4 @@
-/* ProductMoat - interactive globe of product managers */
+/* Product Moat - interactive globe of product managers */
 
 // ---------- Geocoding ----------
 
