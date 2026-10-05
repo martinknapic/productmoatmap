@@ -401,3 +401,15 @@
 }
 
 .cal-feat-lbl { font-size: 8px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ---------- Backoffice calendar: drag a candidate to another week ---------- */
+
+[data-drag-id] { cursor: grab; }
+[data-drag-id]:active { cursor: grabbing; }
+
+#cal-board.is-dragging .cal-cell[data-droppable] .cal-cell-inner { outline: 1px dashed var(--line); outline-offset: -3px; }
+#cal-board.is-dragging .cal-hover { display: none; }
+#cal-board .cal-cell.is-drop-target { background: var(--paper-alt); box-shadow: inset 0 0 0 2px var(--accent); }
+#cal-board.is-saving { opacity: 0.6; pointer-events: none; }
+
+.cal-pop.is-dragging { opacity: 0; pointer-events: none; }

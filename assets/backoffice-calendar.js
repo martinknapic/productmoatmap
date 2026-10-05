@@ -10,6 +10,11 @@
 // from-to dates). The homepage features the newest interview, so a candidate is featured for the
 // full Monday to Sunday week of their publish date.
 //
+// Candidates that are not live yet can be dragged to another week (cards, or the rows of the
+// "N candidates" list). That moves every date the person is placed by - the estimated date they
+// were told, and for a scheduled interview its go-live time and display date - by whole weeks,
+// keeping the weekday. Published interviews stay where they are.
+//
 // Reuses the week maths and quarter table from site.js (calBuildYearWeeks, calRenderQuarter)
 // and the avatar / escaping helpers from backoffice-candidates.js and backoffice.js.
 
@@ -52,6 +57,8 @@ const boCalDayLabel = d => d.toLocaleDateString("en-GB", { weekday: "short", day
 
 const boCalNameOf = c => c.profile.name || "(name not known yet)";
 const boCalHref = c => `candidate?id=${encodeURIComponent(c.id)}`;
+// Anything not live yet can be picked up and dropped on another week.
+const boCalDragAttrs = e => (e.kind === "published" ? "" : ` draggable="true" data-drag-id="${boEscapeHTML(e.c.id)}"`);
 const boCalKindTag = e => `<span class="cal-kind cal-kind-${e.kind}">${BO_CAL_KIND_LABELS[e.kind]}</span>`;
 
 // The from-to block on a featured card: the week the candidate holds the homepage, Monday to Sunday.
@@ -73,7 +80,7 @@ function boCalRenderCell(week, today, entries, mode) {
   if (entries.length === 1) {
     const e = entries[0];
     bodyHTML = `
-      <a class="cal-card" href="${boCalHref(e.c)}" title="${boEscapeHTML(boCalNameOf(e.c))}">
+      <a class="cal-card" href="${boCalHref(e.c)}" title="${boEscapeHTML(boCalNameOf(e.c))}${e.kind === "published" ? "" : " - drag to another week to move"}"${boCalDragAttrs(e)}>
         ${boCandAvatar(e.c.profile, "cal-card-avatar")}
         <span class="cal-card-name">${boEscapeHTML(boCalNameOf(e.c))}</span>
         ${featured ? boCalFeaturedDates(week) : boCalKindTag(e)}
@@ -92,7 +99,7 @@ function boCalRenderCell(week, today, entries, mode) {
   const hoverHTML = isPast ? "" : `<div class="cal-hover"><a class="cal-hover-btn" href="/recommend" target="_blank" rel="noopener">Recommend</a></div>`;
 
   return `
-    <td class="cal-cell" data-status="${status}"${isCurrent ? ' data-current="true"' : ""}>
+    <td class="cal-cell" data-status="${status}" data-week="${week.index}"${isPast ? "" : ' data-droppable="true"'}${isCurrent ? ' data-current="true"' : ""}>
       <div class="cal-cell-inner">
         <div class="cal-cell-head">
           <span class="cal-week-no">W${boCalPad(week.index)}</span>
@@ -112,7 +119,7 @@ function boCalWirePopover(board, weekEntries, weekOf, mode) {
   if (!pop) { pop = document.createElement("div"); pop.id = "cal-pop"; pop.className = "cal-pop"; pop.hidden = true; document.body.appendChild(pop); }
   let timer = null;
 
-  const hide = () => { pop.hidden = true; };
+  const hide = () => { if (!pop.classList.contains("is-dragging")) pop.hidden = true; };
   const hideSoon = () => { clearTimeout(timer); timer = setTimeout(hide, 120); };
   const keep = () => clearTimeout(timer);
 
@@ -122,7 +129,7 @@ function boCalWirePopover(board, weekEntries, weekOf, mode) {
     const week = weekOf(Number(btn.dataset.week));
     const featured = mode() === "featured" && week;
     pop.innerHTML = list.map(e => `
-      <a class="cal-pop-row" href="${boCalHref(e.c)}">
+      <a class="cal-pop-row" href="${boCalHref(e.c)}"${boCalDragAttrs(e)}>
         ${boCandAvatar(e.c.profile, "cal-pop-avatar")}
         <span class="cal-pop-main">
           <span class="cal-pop-name">${boEscapeHTML(boCalNameOf(e.c))}</span>
@@ -219,6 +226,92 @@ async function initBackofficeCalendar() {
     try { localStorage.setItem(BO_CAL_MODE_KEY, mode); } catch (err) { /* per-viewer convenience only */ }
     render();
   });
+  // ---- drag and drop: move a not-yet-live candidate to another week ----
+  let dragId = null, overCell = null, saving = false;
+  const clearDrag = () => {
+    dragId = null;
+    if (overCell) overCell.classList.remove("is-drop-target");
+    overCell = null;
+    board.classList.remove("is-dragging");
+    const pop = document.getElementById("cal-pop");
+    if (pop) { pop.classList.remove("is-dragging"); pop.hidden = true; }
+  };
+  const dayStr = d => d.toISOString().slice(0, 10);
+
+  async function moveTo(id, weekIndex) {
+    const entry = entries.find(x => x.c.id === id);
+    const target = shownWeeks.find(w => w.index === weekIndex);
+    const fromIndex = entry && boCalWeekOf(shownWeeks, year, entry.date);
+    const source = shownWeeks.find(w => w.index === fromIndex);
+    if (!entry || !target || !source || entry.kind === "published" || fromIndex === weekIndex || saving) return;
+
+    // Same weekday in the target week, but never earlier than today (the current week is allowed).
+    const offset = Math.min(6, Math.max(0, Math.round((calDateUTC(entry.date) - source.start) / 864e5)));
+    let next = new Date(target.start);
+    next.setUTCDate(next.getUTCDate() + offset);
+    if (next < today) next = new Date(today);
+    const newDay = dayStr(next);
+
+    const payload = { action: "setPublishing", id };
+    if (entry.kind === "estimated") {
+      payload.estimatedPublishDate = newDay;
+    } else {
+      // Scheduled: shift the go-live moment by the same number of days (keeps the time of day).
+      const shift = Math.round((calDateUTC(newDay) - calDateUTC(entry.date)) / 864e5);
+      const when = new Date(entry.c.publish.scheduledPublishAt);
+      when.setDate(when.getDate() + shift);
+      if (when.getTime() <= Date.now()) { boToast("That would be in the past. Pick a later week."); return; }
+      payload.scheduledPublishAt = when.toISOString();
+      payload.displayDate = newDay;
+      payload.estimatedPublishDate = newDay;
+    }
+
+    saving = true;
+    board.classList.add("is-saving");
+    try {
+      const resp = await boCandApi(payload);
+      const moved = boCalEntry(resp.candidate);
+      entries = entries.map(x => (x.c.id === id ? (moved || x) : x));
+      render();
+      boToast(`${boCalNameOf(entry.c)} moved to W${boCalPad(weekIndex)} (${boCalDayLabel(target.start)} - ${boCalDayLabel(target.end)})`);
+    } catch (err) {
+      boToast(`Couldn't move ${boCalNameOf(entry.c)}. Nothing was changed.`);
+    } finally {
+      saving = false;
+      board.classList.remove("is-saving");
+    }
+  }
+
+  document.addEventListener("dragstart", e => {
+    const el = e.target.closest && e.target.closest("[data-drag-id]");
+    if (!el || saving) return;
+    dragId = el.dataset.dragId;
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", dragId);
+    board.classList.add("is-dragging");
+    // The hover list sits over the board: fade it (after the browser has taken the drag image)
+    // so the weeks underneath can be dropped on.
+    setTimeout(() => { const pop = document.getElementById("cal-pop"); if (pop && dragId) pop.classList.add("is-dragging"); }, 0);
+  });
+  document.addEventListener("dragend", clearDrag);
+  board.addEventListener("dragover", e => {
+    const cell = dragId && e.target.closest("[data-droppable]");
+    if (overCell && overCell !== cell) overCell.classList.remove("is-drop-target");
+    overCell = cell || null;
+    if (!cell) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    cell.classList.add("is-drop-target");
+  });
+  board.addEventListener("drop", e => {
+    const cell = dragId && e.target.closest("[data-droppable]");
+    if (!cell) return;
+    e.preventDefault();
+    const id = dragId, week = Number(cell.dataset.week);
+    clearDrag();
+    moveTo(id, week);
+  });
+
   yearsEl.addEventListener("click", e => {
     const b = e.target.closest("[data-year]");
     if (!b) return;
