@@ -38,7 +38,7 @@ function process_(rel) {
 
 const list = dir => fs.readdirSync(path.join(ROOT, dir)).filter(f => !fs.statSync(path.join(ROOT, dir, f)).isDirectory()).map(f => path.join(dir, f));
 list("assets").filter(f => f.endsWith(".js")).forEach(process_);
-[...list("."), ...list("backoffice")].filter(f => f.endsWith(".html")).forEach(process_);
+[...list("."), ...list("backoffice"), ...list("api/_lib/templates")].filter(f => f.endsWith(".html")).forEach(process_);
 
 if (CHECK && stale) { console.error(`\n${stale} file(s) reference stale asset versions. Run: node scripts/version-assets.js`); process.exit(1); }
 console.log(stale ? `${stale} file(s) ${CHECK ? "stale" : "updated"}` : "asset versions up to date");

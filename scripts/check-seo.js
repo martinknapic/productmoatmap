@@ -23,7 +23,7 @@ const fail = (where, msg) => { failures++; console.error(`  FAIL  ${where}: ${ms
 const warn = (where, msg) => { warnings++; console.warn(`  warn  ${where}: ${msg}`); };
 
 // ---- static pages --------------------------------------------------------------------------------
-const PUBLIC = { "index.html": "/", "about.html": "/about", "map.html": "/map", "apply.html": "/apply", "process.html": "/process", "questions.html": "/questions", "why-apply.html": "/why-apply", "privacy.html": "/privacy", "recommend.html": "/recommend", "join-map.html": "/join-map" };
+const PUBLIC = { "api/_lib/templates/home.html": "/", "about.html": "/about", "map.html": "/map", "apply.html": "/apply", "process.html": "/process", "questions.html": "/questions", "why-apply.html": "/why-apply", "privacy.html": "/privacy", "recommend.html": "/recommend", "join-map.html": "/join-map" };
 const PRIVATE = ["account.html", "network.html", "my-interview.html", "my-map.html", "interview.html", "interview-preview.html", "signup.html"];
 const NO_MAIN = new Set(["map.html"]); // full-screen globe layout, no page body to wrap
 const NO_H1 = new Set(["map.html"]);
@@ -69,6 +69,16 @@ for (const p of interviews) {
 }
 console.log(`  ${interviews.length} interviews rendered`);
 
+// ---- homepage ------------------------------------------------------------------------------------
+console.log("Homepage");
+{
+  const html = S.renderHome([]);
+  for (const p of interviews) if (!html.includes(`href="${S.urlPath(p)}"`)) fail("home", `grid has no link to ${p.slug}`);
+  if (html.includes('<link rel="stylesheet"')) fail("home", "stylesheet is not inlined (render-blocking)");
+  if (!/class="hero-stage fx-spotlight"/.test(html)) fail("home", "hero-stage must start with fx-spotlight (reserves the spotlight's space)");
+  if (!/<link rel="preload" as="image"/.test(html)) warn("home", "spotlight photo is not preloaded");
+}
+
 // ---- plumbing ------------------------------------------------------------------------------------
 console.log("Site plumbing");
 const robots = read("robots.txt");
@@ -76,9 +86,9 @@ if (!robots.includes(`Sitemap: ${S.SITE_URL}/sitemap.xml`)) fail("robots.txt", "
 if (/^Disallow:\s*\/\s*$/m.test(robots)) fail("robots.txt", "blocks the whole site");
 const vercel = JSON.parse(read("vercel.json"));
 const rewrites = (vercel.rewrites || []).map(r => `${r.source} -> ${r.destination}`).join("\n");
-for (const need of ["/sitemap.xml", "op=person", "/indexnow.txt"]) if (!rewrites.includes(need)) fail("vercel.json", `missing rewrite for ${need}`);
+for (const need of ["/sitemap.xml", "op=person", "op=home", "/indexnow.txt"]) if (!rewrites.includes(need)) fail("vercel.json", `missing rewrite for ${need}`);
 const include = (vercel.functions && vercel.functions["api/site.js"] && vercel.functions["api/site.js"].includeFiles) || "";
-for (const need of ["site", "person.html", "people-data", "questions-default"]) if (!include.includes(need)) fail("vercel.json", `api/site.js includeFiles must bundle ${need}`);
+for (const need of ["assets/*.js", "assets/*.css", "person.html", "templates"]) if (!include.includes(need)) fail("vercel.json", `api/site.js includeFiles must bundle ${need}`);
 
 console.log(`\n${failures} failure(s), ${warnings} warning(s)`);
 process.exit(failures ? 1 : 0);

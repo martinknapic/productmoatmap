@@ -649,9 +649,8 @@ void main(){
     const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
     const url = typeof interviewURL === "function" ? interviewURL(p) : "#";
     const initials = String(p.name || "").split(/\s+/).map(x => x[0]).slice(0, 2).join("");
-    const useFeatured = p.slug === "grega-pusnik" && p.featuredPhoto && p.featuredPhoto.url; // only this interview shows the uploaded photo
-    const src = useFeatured ? p.featuredPhoto.url : p.photo;
-    const photo = src ? `<img src="${esc(src)}" alt="Portrait of ${esc(p.name)}" draggable="false"${useFeatured ? ' style="object-position:center 30%"' : ""}>` : `<span class="spot-initials">${esc(initials)}</span>`;
+    const { src, featured: useFeatured } = spotlightPhoto(p); // site.js: shared with the server's preload
+    const photo = src ? `<img src="${esc(src)}" alt="Portrait of ${esc(p.name)}" draggable="false" fetchpriority="high"${useFeatured ? ' style="object-position:center 30%"' : ""}>` : `<span class="spot-initials">${esc(initials)}</span>`;
     const ring = "READ THE INTERVIEW \u2022 READ THE INTERVIEW \u2022 ";
     const month = p.publishedDate ? new Date(p.publishedDate + "T00:00").toLocaleDateString("en", { month: "short", year: "numeric" }).toUpperCase() : "";
     slot.innerHTML = `

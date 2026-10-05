@@ -44,8 +44,8 @@ function createSandbox(published) {
     },
     // Only the elements renderPersonPage/renderProfileNav write into are captured.
     getElementById(id) {
-      if (id !== "profile-nav") return null;
-      return captured[id] || (captured[id] = { set innerHTML(v) { this.html = v; } });
+      if (!["profile-nav", "chip-row", "grid"].includes(id)) return null;
+      return captured[id] || (captured[id] = { set innerHTML(v) { this.html = v; }, querySelectorAll: () => [] });
     },
     querySelector: () => null,
     querySelectorAll: () => [],
@@ -176,7 +176,7 @@ function headTags(p) {
 // round trip before anything shows. The server inlines them into the page instead. Relative url()s
 // are rooted because the CSS no longer lives next to its images.
 function inlineCss(html) {
-  return html.replace(/<link rel="stylesheet" href="assets\/(swiss|site)\.css[^"]*">/g, (m, name) => {
+  return html.replace(/<link rel="stylesheet" href="assets\/(swiss|site|hero-fx)\.css[^"]*">/g, (m, name) => {
     const css = read(path.join(ASSETS, `${name}.css`)).replace(/url\((["']?)(?!data:|https?:|\/)([^"')]+)\1\)/g, 'url($1/assets/$2$1)');
     return `<style>${css}</style>`;
   });
@@ -203,6 +203,22 @@ function renderPerson(slug, published) {
     .replace('<div id="person-root"></div>', `<main id="main"><div id="person-root" data-ssr="${attr(p.slug)}">${root.html}</div>`)
     .replace('<div class="profile-nav" id="profile-nav"></div>', `<div class="profile-nav" id="profile-nav">${(captured["profile-nav"] && captured["profile-nav"].html) || ""}</div></main>`);
   return { html, person: p };
+}
+
+// The homepage: templates/home.html with the interview grid and focus chips already rendered (so
+// crawlers see a link to every interview and nothing below the hero shifts), the stylesheets inlined,
+// and the spotlight photo preloaded. The animated hero itself is still drawn by assets/hero-fx.js.
+function renderHome(published) {
+  const { ctx, captured } = createSandbox(published);
+  vm.runInContext("renderChips(); renderGrid();", ctx);
+  const latest = vm.runInContext("INTERVIEWS.slice().sort(function (a, b) { return String(b.publishedDate).localeCompare(String(a.publishedDate)); })[0] || null", ctx);
+  ctx.__p = latest;
+  const photo = latest ? vm.runInContext("spotlightPhoto(__p)", ctx) : { src: null };
+  let html = inlineCss(read(path.join(ROOT, "api/_lib/templates/home.html")));
+  if (photo.src) html = html.replace('<link rel="icon"', `<link rel="preload" as="image" href="${attr(photo.src)}" fetchpriority="high">\n  <link rel="icon"`);
+  return html
+    .replace('<div class="chip-row" id="chip-row"></div>', `<div class="chip-row" id="chip-row">${(captured["chip-row"] && captured["chip-row"].html) || ""}</div>`)
+    .replace('<div class="grid" id="grid"></div>', `<div class="grid" id="grid">${(captured["grid"] && captured["grid"].html) || ""}</div>`);
 }
 
 function renderNotFound() {
@@ -233,4 +249,4 @@ function auditPerson(p, html) {
   return issues;
 }
 
-module.exports = { auditPerson, SITE_URL, SITE_NAME, allInterviews, renderPerson, renderNotFound, urlPath, categoryOf, titleFor, descriptionFor, headTags, createSandbox };
+module.exports = { renderHome, auditPerson, SITE_URL, SITE_NAME, allInterviews, renderPerson, renderNotFound, urlPath, categoryOf, titleFor, descriptionFor, headTags, createSandbox };

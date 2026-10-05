@@ -15,6 +15,7 @@ const routes = {
   "profile-photo": require("./_lib/routes/profile-photo"),
   "my-interview": require("./_lib/routes/my-interview"),
   "published": require("./_lib/routes/published"),
+  "home": require("./_lib/routes/home"),
   "person": require("./_lib/routes/person"),
   "sitemap": require("./_lib/routes/sitemap"),
   "indexnow-key": require("./_lib/routes/indexnow-key"),

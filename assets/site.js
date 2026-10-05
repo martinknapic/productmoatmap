@@ -24,7 +24,8 @@ function avatarHTML(person, cls) {
   const src = avatarSrc(person, cls);
   if (src) {
     // The big avatar on an interview page is the LCP element: fetch it first.
-    return `<div class="${cls}"><img src="${src}" alt="${escapeHTML(person.name)}"${/avatar-xl/.test(cls) ? ' fetchpriority="high"' : ""}></div>`;
+    // Small avatars (cards, calendar) are mostly below the fold: don't let them compete with what is on screen.
+    return `<div class="${cls}"><img src="${src}" alt="${escapeHTML(person.name)}"${/avatar-xl/.test(cls) ? ' fetchpriority="high"' : ' loading="lazy" decoding="async"'}></div>`;
   }
   return `<div class="${cls}">${initials(person.name)}</div>`;
 }
@@ -1037,11 +1038,11 @@ const FOCUS_LABELS = {
 
 let activeFilter = "all";
 
-function renderChips() {
+function renderChips(hydrate) {
   const el = document.getElementById("chip-row");
   if (!el) return;
   const tags = ["all", ...new Set(INTERVIEWS.map(p => p.focusTag))];
-  el.innerHTML = tags.map(tag =>
+  if (!hydrate) el.innerHTML = tags.map(tag =>
     `<button class="chip${tag === activeFilter ? " active" : ""}" data-tag="${tag}">${FOCUS_LABELS[tag] || tag}</button>`
   ).join("");
   el.querySelectorAll(".chip").forEach(chip => {
@@ -1074,9 +1075,26 @@ function renderGrid() {
   `).join("");
 }
 
+// The photo the homepage spotlight shows for the latest interview, as { src, featured }. Shared by
+// assets/hero-fx.js (which draws the spotlight) and the server (which preloads this exact image so
+// the browser starts fetching it before any script runs). Photos from our own API are requested
+// resized (?w=): the spotlight is shown at about 340 px wide.
+function spotlightPhoto(p) {
+  const featured = !!(p.slug === "grega-pusnik" && p.featuredPhoto && p.featuredPhoto.url); // only this interview shows the uploaded photo
+  const raw = featured ? p.featuredPhoto.url : p.photo;
+  if (!raw) return { src: null, featured: false };
+  const src = /^https?:\/\//i.test(raw) ? raw : `/${raw.replace(/^\/+/, "")}`;
+  return { src: /^\/api\/(profile|interview)-photo\?id=/.test(src) ? `${src}&w=800` : src, featured };
+}
+
 function initHome() {
-  renderChips();
-  renderGrid();
+  // The server already rendered the chips and the grid (api/_lib/seo.js renderHome). Rebuilding them
+  // would replace the painted elements (resetting the page's LCP and flashing), so keep them and only
+  // attach behaviour, unless the list changed in the meantime (a cached page, a just-published one).
+  const chips = document.getElementById("chip-row"), grid = document.getElementById("grid");
+  const inSync = chips && grid && chips.children.length && grid.children.length === INTERVIEWS.length;
+  renderChips(inSync);
+  if (!inSync) renderGrid();
 }
 
 // ---------- Person page ----------

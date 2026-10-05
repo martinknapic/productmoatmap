@@ -11,7 +11,7 @@
 //                      pick who with ?email=jane@example.com&name=Jane
 //   /dev-logout        clears both dev sessions
 
-const http = require("http"), fs = require("fs"), path = require("path"), crypto = require("crypto"), Module = require("module");
+const http = require("http"), fs = require("fs"), path = require("path"), crypto = require("crypto"), zlib = require("zlib"), Module = require("module");
 
 const ROOT = path.join(__dirname, "..");
 const PORT = Number(process.env.PORT) || 8766;
@@ -71,9 +71,10 @@ http.createServer(async (req, res) => {
   }
 
   // Pretty URLs that production rewrites to the api/site.js dispatcher (vercel.json): the
-  // server-rendered interview pages, the sitemap and the IndexNow key.
+  // server-rendered homepage and interview pages, the sitemap and the IndexNow key.
   const iv = /^\/interview\/(productmanagement|productux)\/([^/]+)\/?$/.exec(url.pathname);
   if (iv) { url.pathname = "/api/site"; url.searchParams.set("op", "person"); url.searchParams.set("category", iv[1]); url.searchParams.set("slug", decodeURIComponent(iv[2])); }
+  else if (url.pathname === "/") { url.pathname = "/api/site"; url.searchParams.set("op", "home"); }
   else if (url.pathname === "/sitemap.xml") { url.pathname = "/api/site"; url.searchParams.set("op", "sitemap"); }
   else if (url.pathname === "/indexnow.txt") { url.pathname = "/api/site"; url.searchParams.set("op", "indexnow-key"); }
 
@@ -97,7 +98,15 @@ http.createServer(async (req, res) => {
       setHeader: (k, v) => res.setHeader(k, v),
       status(c) { res.statusCode = c; return out; },
       json(o) { res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify(o)); },
-      send(s) { res.end(s); },
+      send(s) {
+        // gzip text like Vercel does, so local Lighthouse numbers resemble production
+        const type = String(res.getHeader("Content-Type") || "");
+        if (/gzip/.test(req.headers["accept-encoding"] || "") && /text|javascript|json|xml|svg/.test(type) && String(s).length > 1024) {
+          res.setHeader("Content-Encoding", "gzip"); res.setHeader("Vary", "Accept-Encoding");
+          return res.end(zlib.gzipSync(Buffer.from(String(s))));
+        }
+        res.end(s);
+      },
       set statusCode(c) { res.statusCode = c; },
       get statusCode() { return res.statusCode; },
       end(body) { res.end(body); }
@@ -120,6 +129,12 @@ http.createServer(async (req, res) => {
   if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, "index.html");
   else if (!fs.existsSync(file) && fs.existsSync(`${file}.html`)) file = `${file}.html`; // cleanUrls: /about -> about.html
   if (!fs.existsSync(file)) { res.writeHead(404); return res.end("Not found"); }
-  res.writeHead(200, { "Content-Type": types[path.extname(file)] || "application/octet-stream", "Cache-Control": "no-store" });
+  const type = types[path.extname(file)] || "application/octet-stream";
+  const headers = { "Content-Type": type, "Cache-Control": "no-store" };
+  if (/gzip/.test(req.headers["accept-encoding"] || "") && /text|javascript|json|svg/.test(type)) {
+    res.writeHead(200, { ...headers, "Content-Encoding": "gzip", "Vary": "Accept-Encoding" });
+    return fs.createReadStream(file).pipe(zlib.createGzip()).pipe(res);
+  }
+  res.writeHead(200, headers);
   fs.createReadStream(file).pipe(res);
 }).listen(PORT, () => console.log(`Product Moat dev server on http://localhost:${PORT}  (admin: /dev-login, member: /dev-member-login)`));

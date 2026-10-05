@@ -24,6 +24,10 @@
   ],
   "rewrites": [
     {
+      "source": "/",
+      "destination": "/api/site?op=home"
+    },
+    {
       "source": "/interview/:category(productmanagement|productux)/:slug",
       "destination": "/api/site?op=person&category=:category&slug=:slug"
     },
@@ -106,7 +110,7 @@
   ],
   "functions": {
     "api/site.js": {
-      "includeFiles": "{assets/{people-data,questions-default,site}.js,person.html}"
+      "includeFiles": "{assets/*.js,assets/*.css,person.html,api/_lib/templates/*.html}"
     }
   },
   "headers": [

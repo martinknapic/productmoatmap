@@ -247,6 +247,9 @@
   .hero-fx { position: relative; inset: auto; height: 280px; overflow: hidden; border-bottom: 1px solid var(--line-soft); }
   .hero-stage .hero-inner { min-height: 0; padding-top: 36px; }
   .hero-stage .hero-side { padding: 8px 0 44px; }
+  /* The spotlight is drawn by hero-fx.js after load. Reserve its final height (its own --spot-h clamp
+     + frame margins 32 + caption/badge 80 + this padding 56) so nothing below jumps when it appears. */
+  .hero-stage.fx-spotlight .hero-side { min-height: calc(clamp(290px, calc(100svh - 352px), 480px) + 168px); }
   .hero-stage:not(.fx-spotlight) .hero-side:empty { display: none; }
   .hero-stage .hero-main { padding-bottom: 32px; }
   .hero-stage.fx-moat .hero-fx,
