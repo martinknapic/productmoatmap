@@ -172,6 +172,16 @@ function headTags(p) {
   ].filter(Boolean).join("\n  ");
 }
 
+// The two stylesheets are small (about 11 KB compressed) and block the first paint, so each costs a
+// round trip before anything shows. The server inlines them into the page instead. Relative url()s
+// are rooted because the CSS no longer lives next to its images.
+function inlineCss(html) {
+  return html.replace(/<link rel="stylesheet" href="assets\/(swiss|site)\.css[^"]*">/g, (m, name) => {
+    const css = read(path.join(ASSETS, `${name}.css`)).replace(/url\((["']?)(?!data:|https?:|\/)([^"')]+)\1\)/g, 'url($1/assets/$2$1)');
+    return `<style>${css}</style>`;
+  });
+}
+
 // Renders the full page HTML for one interview. Returns null when the slug is unknown.
 function renderPerson(slug, published) {
   const { ctx, captured } = createSandbox(published);
@@ -184,10 +194,12 @@ function renderPerson(slug, published) {
   ctx.__p = p;
   vm.runInContext("renderPersonPage(__root, __p)", ctx); // also fills #profile-nav (prev / next links)
 
-  let html = read(path.join(ROOT, "person.html"));
+  let html = inlineCss(read(path.join(ROOT, "person.html")));
   const title = titleFor(p);
+  ctx.__cls = "avatar-xl";
+  const avatar = vm.runInContext("avatarSrc(__p, __cls)", ctx);
   html = html
-    .replace(/<title>[^<]*<\/title>/, `<title>${domEscape(title)}</title>\n  ${headTags(p)}`)
+    .replace(/<title>[^<]*<\/title>/, `<title>${domEscape(title)}</title>\n  ${headTags(p)}${avatar ? `\n  <link rel="preload" as="image" href="${attr(avatar)}" fetchpriority="high">` : ""}`)
     .replace('<div id="person-root"></div>', `<main id="main"><div id="person-root" data-ssr="${attr(p.slug)}">${root.html}</div>`)
     .replace('<div class="profile-nav" id="profile-nav"></div>', `<div class="profile-nav" id="profile-nav">${(captured["profile-nav"] && captured["profile-nav"].html) || ""}</div></main>`);
   return { html, person: p };

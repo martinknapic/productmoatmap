@@ -6,6 +6,7 @@
 // A photo that has since been replaced or removed is a 404.
 
 const C = require("../common");
+const { sized } = require("../image");
 
 const norm = e => String(e || "").trim().toLowerCase();
 
@@ -27,14 +28,16 @@ module.exports = async (req, res) => {
       if (!C.isAdminRequest(req) && !owner) { console.error("[interview-photo] not live and requester is neither owner nor admin"); return res.status(404).json({ error: "not_found" }); }
     }
 
-    res.setHeader("Content-Type", photo.meta.type);
+    const out = await sized(req, photo.meta.type, photo.buffer); // ?w=<px> returns a smaller WebP
+    if (out.varyAccept) res.setHeader("Vary", "Accept");
+    res.setHeader("Content-Type", out.type);
     res.setHeader("X-Content-Type-Options", "nosniff");
     // Cached for a while (a photo never changes under its id), but not "forever": if the person removes
     // it, it stops being served from browsers within the hour and from the CDN within minutes.
     res.setHeader("Cache-Control", live ? "public, max-age=3600, s-maxage=300" : "private, no-store");
-    res.setHeader("Content-Length", String(photo.buffer.length));
+    res.setHeader("Content-Length", String(out.buffer.length));
     res.statusCode = 200;
-    return res.end(photo.buffer);
+    return res.end(out.buffer);
   } catch (err) {
     console.error("[interview-photo] failed:", (err && err.stack) || err);
     return res.status(500).json({ error: "storage_failed" });

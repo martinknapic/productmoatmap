@@ -10,7 +10,8 @@
     "prepare": "git config core.hooksPath .githooks || true"
   },
   "dependencies": {
+    "@vercel/blob": "^2.8.0",
     "@vercel/functions": "^3.9.5",
-    "@vercel/blob": "^2.8.0"
+    "sharp": "^0.35.5"
   }
 }

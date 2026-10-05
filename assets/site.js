@@ -10,12 +10,21 @@ function initials(name) {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("");
 }
 
+// Where a person's avatar image comes from. Photos served by our own API can be resized on the fly
+// (?w=), and an avatar is shown at 40-135 px, so ask for ~2x that instead of the full-size original.
+function avatarSrc(person, cls) {
+  if (!person.photo) return null;
+  // Site-relative paths (e.g. "assets/photos/x.jpg") are stored without a leading slash;
+  // root them so pages outside the site root (like backoffice/calendar.html) still resolve them.
+  const src = /^https?:\/\//i.test(person.photo) ? person.photo : `/${person.photo.replace(/^\/+/, "")}`;
+  return /^\/api\/(profile|interview)-photo\?id=/.test(src) ? `${src}&w=${/avatar-xl/.test(cls) ? 320 : 160}` : src;
+}
+
 function avatarHTML(person, cls) {
-  if (person.photo) {
-    // Site-relative paths (e.g. "assets/photos/x.jpg") are stored without a leading slash;
-    // root them so pages outside the site root (like backoffice/calendar.html) still resolve them.
-    const src = /^https?:\/\//i.test(person.photo) ? person.photo : `/${person.photo.replace(/^\/+/, "")}`;
-    return `<div class="${cls}"><img src="${src}" alt="${escapeHTML(person.name)}"></div>`;
+  const src = avatarSrc(person, cls);
+  if (src) {
+    // The big avatar on an interview page is the LCP element: fetch it first.
+    return `<div class="${cls}"><img src="${src}" alt="${escapeHTML(person.name)}"${/avatar-xl/.test(cls) ? ' fetchpriority="high"' : ""}></div>`;
   }
   return `<div class="${cls}">${initials(person.name)}</div>`;
 }
@@ -1091,7 +1100,10 @@ function interviewFacts(p) {
 // Fits the text width, but is never stretched beyond its own pixel size (max-width = real width).
 function renderFeaturedPhoto(photo, name) {
   const w = Number(photo.width) || 0, h = Number(photo.height) || 0;
-  return `<figure class="qa-photo"><img src="${escapeHTML(photo.url)}" alt="Photo of ${escapeHTML(name)}"${w && h ? ` width="${w}" height="${h}" style="max-width:${w}px"` : ""} loading="lazy" decoding="async" onerror="this.closest('figure').remove()"></figure>`;
+  // Our own photo route can resize (?w=): offer sizes so a phone doesn't download the 1600 px original.
+  const resizable = /^\/api\/interview-photo\?id=/.test(photo.url || "");
+  const responsive = resizable ? ` srcset="${escapeHTML(photo.url)}&amp;w=700 700w, ${escapeHTML(photo.url)}&amp;w=1400 1400w" sizes="(max-width: 700px) 100vw, 648px"` : "";
+  return `<figure class="qa-photo"><img src="${escapeHTML(photo.url)}${resizable ? "&amp;w=1000" : ""}"${responsive} alt="Photo of ${escapeHTML(name)}"${w && h ? ` width="${w}" height="${h}" style="max-width:${w}px"` : ""} loading="lazy" decoding="async" onerror="this.closest('figure').remove()"></figure>`;
 }
 
 function renderQA(num, question, answer) {
