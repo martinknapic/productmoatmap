@@ -24,7 +24,7 @@ const warn = (where, msg) => { warnings++; console.warn(`  warn  ${where}: ${msg
 
 // ---- static pages --------------------------------------------------------------------------------
 const PUBLIC = { "api/_lib/templates/home.html": "/", "about.html": "/about", "map.html": "/map", "apply.html": "/apply", "process.html": "/process", "questions.html": "/questions", "why-apply.html": "/why-apply", "privacy.html": "/privacy", "recommend.html": "/recommend", "join-map.html": "/join-map" };
-const PRIVATE = ["account.html", "network.html", "my-interview.html", "my-map.html", "interview.html", "interview-preview.html", "signup.html"];
+const PRIVATE = ["account.html", "network.html", "my-interview.html", "my-map.html", "interview.html", "interview-preview.html", "signup.html", "newsletter-subscription-confirmed.html"];
 const NO_MAIN = new Set(["map.html"]); // full-screen globe layout, no page body to wrap
 const NO_H1 = new Set(["map.html"]);
 
