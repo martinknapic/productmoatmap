@@ -101,9 +101,10 @@ function descriptionFor(p) {
 // Interview photos are served as a 1200x630 crop for previews (see ?og=1 in image.js).
 function imageFor(p) {
   const u = (p.featuredPhoto && p.featuredPhoto.url) || p.photo || DEFAULT_IMAGE;
-  return abs(/^\/api\/interview-photo\?/.test(u) ? `${u}&og=1` : u);
+  const m = /^\/api\/interview-photo\?id=([0-9a-f]{32})$/.exec(u);
+  return abs(m ? `/share/${m[1]}.jpg` : u);
 }
-const hasOgCrop = p => /\/api\/interview-photo\?/.test(imageFor(p));
+const hasOgCrop = p => /\/share\/[0-9a-f]{32}\.jpg$/.test(imageFor(p));
 
 function jsonLd(obj) {
   // "<" escaped so a stray "</script>" in interview text can never break out of the tag.

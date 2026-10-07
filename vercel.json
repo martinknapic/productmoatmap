@@ -32,6 +32,10 @@
       "destination": "/api/site?op=person&category=:category&slug=:slug"
     },
     {
+      "source": "/share/:id([0-9a-f]{32}).jpg",
+      "destination": "/api/site?op=interview-photo&id=:id&og=1"
+    },
+    {
       "source": "/sitemap.xml",
       "destination": "/api/site?op=sitemap"
     },
