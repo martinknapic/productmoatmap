@@ -54,6 +54,14 @@ const boFeatShownDate = c => {
   return pub.displayDate || String(pub.publishedAt || pub.scheduledPublishAt || "").slice(0, 10);
 };
 
+// Who the homepage features: the newest live interview, skipping ones published without the
+// spotlight (same rule as featuredInterview() in assets/site.js, which falls back to everyone live).
+function boFeatCurrent(all) {
+  const live = all.filter(boFeatIsLive).sort((a, b) =>
+    boFeatShownDate(b).localeCompare(boFeatShownDate(a)) || String((b.publish || {}).publishedAt || "").localeCompare(String((a.publish || {}).publishedAt || "")));
+  return live.find(c => (c.publish || {}).featured !== false) || live[0] || null;
+}
+
 // The Monday to Sunday week a date falls in, as UTC midnights (same convention as the calendar).
 function boFeatWeek(dateStr) {
   const d = calDateUTC(dateStr);
@@ -185,9 +193,7 @@ async function initBackofficeFeatured() {
   }
 
   function render() {
-    const live = all.filter(boFeatIsLive).sort((a, b) =>
-      boFeatShownDate(b).localeCompare(boFeatShownDate(a)) || String((b.publish || {}).publishedAt || "").localeCompare(String((a.publish || {}).publishedAt || "")));
-    const current = live[0] || null;
+    const current = boFeatCurrent(all);
 
     // The queue: everyone not live and not declined that has a planned date, soonest first.
     const queue = all.filter(c => !boFeatIsLive(c)).map(boCalEntry).filter(e => e && e.kind !== "published")
@@ -233,7 +239,7 @@ async function initBackofficeFeatured() {
       const ok = await boConfirm({ title: "Lock this interview?", message: `<strong>${name}</strong> can no longer edit their answers. You can still unlock them from the candidate page.`, confirmLabel: "Lock" });
       if (ok) await run({ action: "lock", id: c.id }, "Locked"); else btn.disabled = false;
     } else if (btn.dataset.act === "feature") {
-      const live = all.filter(boFeatIsLive).sort((a, b) => boFeatShownDate(b).localeCompare(boFeatShownDate(a)))[0];
+      const live = boFeatCurrent(all);
       const ok = await boConfirm({
         title: "Switch the featured profile?",
         message: `<strong>${name}</strong> goes live now and becomes the featured profile on the homepage${live ? `, replacing <strong>${boEscapeHTML(boCandName(live))}</strong>` : ""}. The interview is published immediately, with today as its date. Anyone watching the homepage sees the change within about a minute.`,
