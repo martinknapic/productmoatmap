@@ -12,6 +12,18 @@ const MIN_W = 64, MAX_W = 2000;
 
 // Returns { buffer, type } to send. `type`/`buffer` are the stored original; `req` supplies ?w= and Accept.
 async function sized(req, type, buffer) {
+  // ?og=1: a 1200x630 JPEG for link previews (LinkedIn / Facebook / X crop anything else), cropped
+  // around the most interesting region so faces stay in frame.
+  if (sharp && String((req.query || {}).og || "") === "1" && /^image\/(jpeg|png|webp)$/.test(type)) {
+    try {
+      const out = await sharp(buffer, { failOn: "none" }).rotate()
+        .resize({ width: 1200, height: 630, fit: "cover", position: sharp.strategy.attention })
+        .jpeg({ quality: 82, mozjpeg: true }).toBuffer();
+      return { buffer: out, type: "image/jpeg", varyAccept: false };
+    } catch (err) {
+      console.error("[image] og crop failed, serving original:", (err && err.message) || err);
+    }
+  }
   const w = Math.round(Number((req.query || {}).w));
   if (!sharp || !(w >= MIN_W) || !/^image\/(jpeg|png|webp)$/.test(type)) return { buffer, type, varyAccept: false };
   try {

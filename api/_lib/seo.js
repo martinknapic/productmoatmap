@@ -98,10 +98,12 @@ function descriptionFor(p) {
   return clip(`${lead} ${body}`.trim(), 158);
 }
 
+// Interview photos are served as a 1200x630 crop for previews (see ?og=1 in image.js).
 function imageFor(p) {
   const u = (p.featuredPhoto && p.featuredPhoto.url) || p.photo || DEFAULT_IMAGE;
-  return abs(u);
+  return abs(/^\/api\/interview-photo\?/.test(u) ? `${u}&og=1` : u);
 }
+const hasOgCrop = p => /\/api\/interview-photo\?/.test(imageFor(p));
 
 function jsonLd(obj) {
   // "<" escaped so a stray "</script>" in interview text can never break out of the tag.
@@ -161,6 +163,7 @@ function headTags(p) {
     `<meta property="og:description" content="${attr(description)}">`,
     `<meta property="og:url" content="${attr(url)}">`,
     `<meta property="og:image" content="${attr(image)}">`,
+    hasOgCrop(p) ? `<meta property="og:image:type" content="image/jpeg">\n  <meta property="og:image:width" content="1200">\n  <meta property="og:image:height" content="630">` : "",
     `<meta property="og:image:alt" content="${attr(`${p.name}, ${p.role} at ${p.company}`)}">`,
     published ? `<meta property="article:published_time" content="${published}">` : "",
     p.focus ? `<meta property="article:section" content="${attr(p.focus)}">` : "",
