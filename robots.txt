@@ -5,6 +5,7 @@
 User-agent: *
 Allow: /
 Disallow: /api/
+Allow: /api/interview-photo
 Disallow: /backoffice/
 
 Sitemap: https://www.productmoat.com/sitemap.xml
