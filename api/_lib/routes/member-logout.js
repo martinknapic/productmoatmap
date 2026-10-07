@@ -8,7 +8,7 @@
 
 function safeNext(raw) {
   if (typeof raw !== "string") return "/";
-  if (!raw.startsWith("/") || raw.startsWith("//")) return "/";
+  if (!raw.startsWith("/") || raw.startsWith("//") || /[\\\u0000-\u001f]/.test(raw)) return "/"; // no "//", no backslash (browsers read "/\\host" as "//host"), no control chars
   return raw;
 }
 

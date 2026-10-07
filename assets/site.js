@@ -251,6 +251,7 @@ function initSignup() {
     errorEl.hidden = true;
     const nonce = crypto.randomUUID();
     sessionStorage.setItem("li_oauth_state", nonce);
+    document.cookie = `li_state=${nonce}; Path=/api; Max-Age=600; Secure; SameSite=Lax`; // checked server-side by /api/linkedin-callback
     sessionStorage.setItem("su_newsletter", newsletterCheckbox.checked ? "1" : "0");
     const redirectUri = `${window.location.origin}/api/linkedin-callback`;
     const params = new URLSearchParams({
@@ -1903,6 +1904,7 @@ function initLinkedInGate({ page, formId, submitBtnId, onLocked, onVerified }) {
     errorEl.hidden = true;
     const nonce = crypto.randomUUID();
     sessionStorage.setItem("li_oauth_state", nonce);
+    document.cookie = `li_state=${nonce}; Path=/api; Max-Age=600; Secure; SameSite=Lax`; // checked server-side by /api/linkedin-callback
     rememberNewsletterChoice();
     const redirectUri = `${window.location.origin}/api/linkedin-callback`;
     const params = new URLSearchParams({
@@ -1993,7 +1995,7 @@ function initApplyLinkedInGate() {
         if (snip && counter) counter.textContent = `${snip.value.length} / ${snip.maxLength}`;
       });
       if (profile.picture) {
-        document.getElementById("photo-preview").innerHTML = `<img src="${profile.picture}" alt="">`;
+        document.getElementById("photo-preview").innerHTML = `<img src="${escapeAttr(profile.picture)}" alt="">`;
         document.getElementById("photo-filename").textContent = "Using your LinkedIn photo - choose a file to replace it.";
       }
     }
@@ -2238,6 +2240,7 @@ function initJoinMap() {
     errorEl.hidden = true;
     const nonce = crypto.randomUUID();
     sessionStorage.setItem("li_oauth_state", nonce);
+    document.cookie = `li_state=${nonce}; Path=/api; Max-Age=600; Secure; SameSite=Lax`; // checked server-side by /api/linkedin-callback
     rememberNewsletterChoice();
     const redirectUri = `${window.location.origin}/api/linkedin-callback`;
     const params = new URLSearchParams({

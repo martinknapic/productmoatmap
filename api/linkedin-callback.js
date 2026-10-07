@@ -22,12 +22,14 @@
 // record to storage — apply/recommend/join-map just leave the session
 // cookie set as a side effect of verifying for their own form.
 
-const crypto = require("crypto");
+const S = require("./_lib/session");
 
-const COOKIE_NAME = "li_verify";
+const COOKIE_NAME = S.TYPES.liverify;
 const COOKIE_TTL_SECONDS = 300; // just long enough to survive the redirect + profile fetch
 
-const SESSION_COOKIE_NAME = "pm_session";
+const SESSION_COOKIE_NAME = S.TYPES.member;
+const STATE_COOKIE = "li_state"; // the nonce the browser set just before leaving for LinkedIn (CSRF check)
+const clearState = `${STATE_COOKIE}=; Max-Age=0; Path=/api; Secure; SameSite=Lax`;
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
 // The frontend embeds which page started the OAuth flow into the `state`
@@ -66,12 +68,21 @@ module.exports = async (req, res) => {
   const { code, error, state } = req.query;
   const { nonce, page, token } = parseState(state);
 
+  // CSRF: the sign-in must have been started by this browser. Its nonce is in the cookie the page
+  // set before redirecting to LinkedIn and must match the one LinkedIn echoed back in `state`.
+  const stateCookie = S.parseCookies(req.headers.cookie)[STATE_COOKIE];
   if (error) {
     console.error("[linkedin-callback] denied by user:", error, req.query.error_description);
     return redirectToApply(res, page, "li=denied", token);
   }
   if (!code || typeof code !== "string") {
     console.error("[linkedin-callback] missing/invalid code param:", req.query);
+    return redirectToApply(res, page, "li=error", token);
+  }
+
+  if (!nonce || !stateCookie || nonce !== stateCookie) {
+    console.error("[linkedin-callback] state mismatch (possible CSRF)");
+    res.setHeader("Set-Cookie", clearState);
     return redirectToApply(res, page, "li=error", token);
   }
 
@@ -118,21 +129,13 @@ module.exports = async (req, res) => {
       picture: claims.picture || null
     };
 
-    const payload = Buffer.from(
-      JSON.stringify({ ...profile, exp: Date.now() + COOKIE_TTL_SECONDS * 1000 })
-    ).toString("base64url");
-    const signature = crypto.createHmac("sha256", clientSecret).update(payload).digest("base64url");
-    const cookieValue = `${payload}.${signature}`;
-
-    const sessionPayload = Buffer.from(
-      JSON.stringify({ ...profile, exp: Date.now() + SESSION_TTL_SECONDS * 1000 })
-    ).toString("base64url");
-    const sessionSignature = crypto.createHmac("sha256", clientSecret).update(sessionPayload).digest("base64url");
-    const sessionCookieValue = `${sessionPayload}.${sessionSignature}`;
+    const cookieValue = S.issue("liverify", profile, COOKIE_TTL_SECONDS);
+    const sessionCookieValue = S.issue("member", profile, SESSION_TTL_SECONDS);
 
     res.setHeader("Set-Cookie", [
       `${COOKIE_NAME}=${cookieValue}; Max-Age=${COOKIE_TTL_SECONDS}; Path=/api; HttpOnly; Secure; SameSite=Lax`,
-      `${SESSION_COOKIE_NAME}=${sessionCookieValue}; Max-Age=${SESSION_TTL_SECONDS}; Path=/; HttpOnly; Secure; SameSite=Lax`
+      `${SESSION_COOKIE_NAME}=${sessionCookieValue}; Max-Age=${SESSION_TTL_SECONDS}; Path=/; HttpOnly; Secure; SameSite=Lax`,
+      clearState
     ]);
 
     const query = new URLSearchParams({ li: "ok" });

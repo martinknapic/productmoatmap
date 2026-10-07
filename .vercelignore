@@ -1,0 +1,7 @@
+# Not part of the site: keep out of the deployed (publicly served) files.
+PROJECT_CONTEXT.md
+README.md
+scripts/
+.githooks/
+.github/
+data.stress.js

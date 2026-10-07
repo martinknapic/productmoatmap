@@ -9,6 +9,10 @@ let sharp = null;
 try { sharp = require("sharp"); } catch (err) { console.error("[image] sharp unavailable, serving originals:", err && err.message); }
 
 const MIN_W = 64, MAX_W = 2000;
+// Only these widths are produced: any ?w= is rounded UP to the next one, so a caller cannot make the
+// server resize (and the CDN cache) a new variant for every pixel width.
+const WIDTHS = [160, 320, 480, 640, 800, 1000, 1280, 1600, 2000];
+const snapWidth = w => WIDTHS.find(x => x >= w) || MAX_W;
 
 // Returns { buffer, type } to send. `type`/`buffer` are the stored original; `req` supplies ?w= and Accept.
 async function sized(req, type, buffer) {
@@ -28,7 +32,7 @@ async function sized(req, type, buffer) {
   if (!sharp || !(w >= MIN_W) || !/^image\/(jpeg|png|webp)$/.test(type)) return { buffer, type, varyAccept: false };
   try {
     const wantsWebp = /image\/webp/.test((req.headers && req.headers.accept) || "");
-    let img = sharp(buffer, { failOn: "none" }).rotate().resize({ width: Math.min(w, MAX_W), withoutEnlargement: true });
+    let img = sharp(buffer, { failOn: "none" }).rotate().resize({ width: snapWidth(w), withoutEnlargement: true });
     img = wantsWebp ? img.webp({ quality: 78 }) : type === "image/png" ? img.png() : img.jpeg({ quality: 80, mozjpeg: true });
     const out = await img.toBuffer();
     if (out.length >= buffer.length) return { buffer, type, varyAccept: true }; // never make it bigger

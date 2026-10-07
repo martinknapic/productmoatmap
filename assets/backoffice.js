@@ -123,7 +123,10 @@ function initBackofficeLogin() {
 
   btn.addEventListener("click", () => {
     const redirectUri = `${window.location.origin}/api/backoffice-callback`;
+    const nonce = crypto.randomUUID();
+    document.cookie = `li_state=${nonce}; Path=/api; Max-Age=600; Secure; SameSite=Lax`;
     const authParams = new URLSearchParams({
+      state: nonce,
       response_type: "code",
       client_id: BACKOFFICE_LINKEDIN_CLIENT_ID,
       redirect_uri: redirectUri,

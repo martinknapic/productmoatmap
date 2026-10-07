@@ -7,7 +7,7 @@
 // and every /api/backoffice-* route stay reachable without a session.
 
 import { next } from "@vercel/functions";
-import { createHmac, timingSafeEqual } from "node:crypto";
+import session from "./api/_lib/session.js";
 
 export const config = {
   runtime: "nodejs",
@@ -27,41 +27,10 @@ export const config = {
   ]
 };
 
-const SESSION_COOKIE = "bo_session";
-
-function parseCookies(header) {
-  const out = {};
-  (header || "").split(";").forEach(part => {
-    const idx = part.indexOf("=");
-    if (idx === -1) return;
-    out[part.slice(0, idx).trim()] = part.slice(idx + 1).trim();
-  });
-  return out;
-}
-
-function verify(cookieValue, secret) {
-  if (!cookieValue) return null;
-  const [payload, signature] = cookieValue.split(".");
-  if (!payload || !signature) return null;
-
-  const expected = createHmac("sha256", secret).update(payload).digest("base64url");
-  const sigBuf = Buffer.from(signature);
-  const expectedBuf = Buffer.from(expected);
-  if (sigBuf.length !== expectedBuf.length || !timingSafeEqual(sigBuf, expectedBuf)) {
-    return null;
-  }
-
-  const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
-  if (!data.exp || Date.now() > data.exp) return null;
-  return data;
-}
-
 export default function middleware(request) {
-  const secret = process.env.LINKEDIN_CLIENT_SECRET;
-  const cookies = parseCookies(request.headers.get("cookie"));
-  const session = secret ? verify(cookies[SESSION_COOKIE], secret) : null;
-
-  if (!session) {
+  // Admin cookies only: signed for the "admin" type and re-checked against BACKOFFICE_ALLOWED_EMAIL
+  // (a LinkedIn member's own pm_session cookie is not accepted here).
+  if (!session.fromHeader("admin", request.headers.get("cookie"))) {
     return Response.redirect(new URL("/backoffice", request.url));
   }
 

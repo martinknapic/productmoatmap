@@ -5,48 +5,15 @@ const crypto = require("crypto");
 const { list, get, put, del } = require("@vercel/blob");
 const defaults = require("../../assets/questions-default.js");
 
-const SESSION_COOKIE = "bo_session"; // admin (backoffice) session
-const MEMBER_COOKIE = "pm_session";  // site-wide LinkedIn member session
+const session = require("./session");
+const { parseCookies } = session;
 
-function parseCookies(header) {
-  const out = {};
-  (header || "").split(";").forEach(part => {
-    const idx = part.indexOf("=");
-    if (idx === -1) return;
-    out[part.slice(0, idx).trim()] = part.slice(idx + 1).trim();
-  });
-  return out;
-}
-
-function verifySigned(cookieValue, secret) {
-  if (!cookieValue || !secret) return null;
-  const [payload, signature] = cookieValue.split(".");
-  if (!payload || !signature) return null;
-  const expected = crypto.createHmac("sha256", secret).update(payload).digest("base64url");
-  const a = Buffer.from(signature);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
-  try {
-    const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
-    if (!data.exp || Date.now() > data.exp) return null;
-    return data;
-  } catch (err) {
-    return null;
-  }
-}
-
-function adminSession(req) {
-  return verifySigned(parseCookies(req.headers.cookie)[SESSION_COOKIE], process.env.LINKEDIN_CLIENT_SECRET);
-}
-function memberSession(req) {
-  return verifySigned(parseCookies(req.headers.cookie)[MEMBER_COOKIE], process.env.LINKEDIN_CLIENT_SECRET);
-}
+function adminSession(req) { return session.fromHeader("admin", req.headers.cookie); }
+function memberSession(req) { return session.fromHeader("member", req.headers.cookie); }
 
 // Admin = a backoffice session, or a signed-in member whose LinkedIn email is on the admin list.
 // (Used to let admins see private previews while browsing the public site.)
-function adminEmails() {
-  return (process.env.BACKOFFICE_ALLOWED_EMAIL || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
-}
+const adminEmails = session.adminEmails;
 function isAdminRequest(req) {
   if (adminSession(req)) return true;
   const m = memberSession(req);

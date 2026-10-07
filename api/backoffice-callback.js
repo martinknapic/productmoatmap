@@ -5,9 +5,10 @@
 // verified LinkedIn email against BACKOFFICE_ALLOWED_EMAIL and, if it matches,
 // issues a persistent signed session cookie instead of a one-shot handoff.
 
-const crypto = require("crypto");
+const S = require("./_lib/session");
 
-const SESSION_COOKIE = "bo_session";
+const SESSION_COOKIE = S.TYPES.admin;
+const STATE_COOKIE = "li_state";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
 function allowedEmails() {
@@ -29,7 +30,9 @@ function decodeIdToken(idToken) {
 }
 
 module.exports = async (req, res) => {
-  const { code, error } = req.query;
+  const { code, error, state } = req.query;
+  const stateCookie = S.parseCookies(req.headers.cookie)[STATE_COOKIE];
+  res.setHeader("Set-Cookie", `${STATE_COOKIE}=; Max-Age=0; Path=/api; Secure; SameSite=Lax`);
 
   if (error) {
     console.error("[backoffice-callback] denied by user:", error);
@@ -37,6 +40,12 @@ module.exports = async (req, res) => {
   }
   if (!code || typeof code !== "string") {
     console.error("[backoffice-callback] missing/invalid code param");
+    return redirectToLogin(res, "bo=error");
+  }
+
+  // CSRF: the login must have been started by this browser (see assets/backoffice.js).
+  if (typeof state !== "string" || !state || !stateCookie || state !== stateCookie) {
+    console.error("[backoffice-callback] state mismatch (possible CSRF)");
     return redirectToLogin(res, "bo=error");
   }
 
@@ -89,16 +98,12 @@ module.exports = async (req, res) => {
       return redirectToLogin(res, "bo=unauthorized");
     }
 
-    const payload = Buffer.from(
-      JSON.stringify({ email, name: claims.name || "", exp: Date.now() + SESSION_TTL_SECONDS * 1000 })
-    ).toString("base64url");
-    const signature = crypto.createHmac("sha256", clientSecret).update(payload).digest("base64url");
-    const cookieValue = `${payload}.${signature}`;
+    const cookieValue = S.issue("admin", { email, name: claims.name || "" }, SESSION_TTL_SECONDS);
 
-    res.setHeader(
-      "Set-Cookie",
-      `${SESSION_COOKIE}=${cookieValue}; Max-Age=${SESSION_TTL_SECONDS}; Path=/; HttpOnly; Secure; SameSite=Lax`
-    );
+    res.setHeader("Set-Cookie", [
+      `${SESSION_COOKIE}=${cookieValue}; Max-Age=${SESSION_TTL_SECONDS}; Path=/; HttpOnly; Secure; SameSite=Lax`,
+      `${STATE_COOKIE}=; Max-Age=0; Path=/api; Secure; SameSite=Lax`
+    ]);
     res.setHeader("Location", "/backoffice/candidates");
     return res.status(302).end();
   } catch (err) {

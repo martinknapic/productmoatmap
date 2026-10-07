@@ -246,6 +246,7 @@ function initInterview() {
   function startSignIn() {
     const nonce = crypto.randomUUID();
     sessionStorage.setItem("li_oauth_state", nonce);
+    document.cookie = `li_state=${nonce}; Path=/api; Max-Age=600; Secure; SameSite=Lax`; // checked server-side by /api/linkedin-callback
     const box = document.getElementById("iv-reg-newsletter");
     sessionStorage.setItem("iv_newsletter", box && box.checked ? "1" : "0");
     const params = new URLSearchParams({
