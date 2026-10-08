@@ -220,6 +220,7 @@ function boPublishedCell(c) {
 function boFeaturedCell(c) {
   const e = typeof boCalEntry === "function" ? boCalEntry(c) : null;
   if (!e) return `<span class="bo-cell-dim">-</span>`;
+  if (!e.feat) return `<span class="bo-cell-dim">Not featured</span>`;
   const d = new Date(`${e.feat}T00:00:00Z`);
   const mon = new Date(d); mon.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
   const sun = new Date(mon); sun.setUTCDate(mon.getUTCDate() + 6);
@@ -231,7 +232,7 @@ function boFeaturedCell(c) {
 // Moving the publish date keeps a separately set featured date at least in the same week.
 function boDatesPayload(c, field, value) {
   const e = boCalEntry(c), p = { action: "setDates", [field]: value };
-  if (field === "publishDate" && e && e.kind !== "published" && c.publish.displayDate) p.featureDate = e.feat === e.date ? value : (e.feat > value ? e.feat : value);
+  if (field === "publishDate" && e && e.kind !== "published" && c.publish.featureOn) p.featureDate = e.feat === e.date ? value : (e.feat > value ? e.feat : value);
   return p;
 }
 const boDatesPill = (label, cls) => `<span class="bo-pill bo-pill-${cls}">${boEscapeHTML(label)}</span>`;
@@ -240,18 +241,21 @@ function boDatesHTML(c) {
   const monday = day => { const d = new Date(`${day}T00:00:00Z`); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d; };
   const todayStr = new Date().toLocaleDateString("en-CA");
   const range = day => { const m = monday(day), u = new Date(m); u.setUTCDate(m.getUTCDate() + 6); const f = x => x.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" }); return `${f(m)} - ${f(u)}`; };
-  let featState = ["Planned", "scheduled"], featHelp = "Pick the week this person is featured on the homepage. It can be the week they are published or later.";
-  if (c.publish && c.publish.featured === false && live) { featState = ["Not featured", "declined"]; featHelp = "Live, but published without the homepage spotlight."; }
-  else if (e && live) {
+  const unfeatured = live && c.publish && c.publish.featured === false;
+  let featState = ["Planned", "scheduled"], featHelp = "Pick the week this person is featured on the homepage: the week they are published or later. This is a plan only; you feature someone yourself.";
+  if (unfeatured) {
+    featState = e && e.feat ? ["Planned", "scheduled"] : ["Not featured", "declined"];
+    featHelp = "Live, but not featured. Pick the week you plan to feature them. It won't happen on its own: use Feature on homepage now in Sign-off &amp; preview when you are ready.";
+  } else if (e && live) {
     const endOfWeek = new Date(monday(e.feat)); endOfWeek.setUTCDate(endOfWeek.getUTCDate() + 6);
-    featState = e.feat > todayStr && monday(e.feat) > monday(todayStr) ? ["Planned", "scheduled"] : endOfWeek < monday(todayStr) ? ["Was featured", "published"] : ["Is featured", "published"];
-    featHelp = "A live interview is featured from its publish date, so this is the same date as above.";
+    featState = monday(e.feat) > monday(todayStr) ? ["Planned", "scheduled"] : endOfWeek < monday(todayStr) ? ["Was featured", "published"] : ["Is featured", "published"];
+    featHelp = "A featured live interview is featured from its publish date, so this is the same date as above.";
   }
   const pubLabel = live ? "Published on" : sched ? "Scheduled for" : "Est. publish date";
   const canEstimate = live || sched || !!c.invitation;
   return `
     <h3>Dates</h3>
-    <p class="bo-section-note">Change a date here and the Applied list and the calendar update with it. You can also drag people between weeks on the <a class="bracket-link" href="calendar${e ? `?mode=featured&date=${e.feat}` : ""}">[ calendar ]</a>.</p>
+    <p class="bo-section-note">Change a date here and the Applied list and the calendar update with it. You can also drag people between weeks on the <a class="bracket-link" href="calendar${e && e.feat ? `?mode=featured&date=${e.feat}` : ""}">[ calendar ]</a>.</p>
     <div class="bo-form-grid">
       <div class="bo-lbl">
         <span>Publish date ${boDatesPill(live ? "Published" : "Not published", live ? "published" : "new")}</span>
@@ -260,8 +264,8 @@ function boDatesHTML(c) {
       </div>
       <div class="bo-lbl">
         <span>Featured ${boDatesPill(featState[0], featState[1])}</span>
-        <label class="bo-lbl">${live ? "Featured from" : "Est. featured date"}<input class="bo-input" type="date" id="bo-date-feature" value="${boEscapeHTML(e ? e.feat : "")}" ${live || !e ? "disabled" : ""}></label>
-        <span class="bo-cell-dim">${e ? `Featured week: ${boEscapeHTML(range(e.feat))}. ` : ""}${featHelp}</span>
+        <label class="bo-lbl">${live && !unfeatured ? "Featured from" : "Est. featured date"}<input class="bo-input" type="date" id="bo-date-feature" value="${boEscapeHTML(e ? e.feat : "")}" ${(live && !unfeatured) || !e ? "disabled" : ""}></label>
+        <span class="bo-cell-dim">${e && e.feat ? `Featured week: ${boEscapeHTML(range(e.feat))}. ` : ""}${featHelp}</span>
       </div>
     </div>`;
 }

@@ -153,8 +153,9 @@ module.exports = async (req, res) => {
       case "setDates": {
         // One place that moves a candidate's dates: { publishDate, featureDate } as YYYY-MM-DD (null clears).
         // The publish date is the day it went live (published: stored as the article's display date),
-        // the scheduled go-live day, or the estimate. The feature date is the homepage week; it may be the
-        // same week as publishing or later, never earlier.
+        // the scheduled go-live day, or the estimate. The feature date (publish.featureOn) is only a plan
+        // for the calendar: it may be the same week as publishing or later, never earlier, and it never
+        // features anyone - an admin does that by hand ("Feature on homepage now").
         const pub = c.publish;
         const live = c.status === "published";
         const monday = day => { const d = new Date(`${day}T00:00:00Z`); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d.toISOString().slice(0, 10); };
@@ -170,6 +171,7 @@ module.exports = async (req, res) => {
             if (!d) return res.status(400).json({ error: "invalid_date" });
             const when = `${d}${pub.scheduledPublishAt.slice(10)}`;
             if (Date.parse(when) <= Date.now()) return res.status(400).json({ error: "date_in_past" });
+            if (pub.displayDate === pub.scheduledPublishAt.slice(0, 10)) pub.displayDate = d; // the shown date follows the go-live day
             pub.scheduledPublishAt = new Date(when).toISOString();
             if (c.invitation) c.invitation.estimatedPublishDate = d;
           } else {
@@ -177,11 +179,10 @@ module.exports = async (req, res) => {
             c.invitation.estimatedPublishDate = d;
           }
         }
-        if (body.featureDate !== undefined && !live) pub.displayDate = body.featureDate;
-        if (!live) {
-          const pubDay = pub.scheduledPublishAt ? pub.scheduledPublishAt.slice(0, 10) : (c.invitation && c.invitation.estimatedPublishDate) || "";
-          if (pub.displayDate && pubDay && monday(pub.displayDate) < monday(pubDay)) return res.status(400).json({ error: "feature_before_publish" });
-        }
+        if (body.featureDate !== undefined) pub.featureOn = body.featureDate;
+        const pubDay = live ? (pub.displayDate || (pub.publishedAt || "").slice(0, 10))
+          : pub.scheduledPublishAt ? pub.scheduledPublishAt.slice(0, 10) : (c.invitation && c.invitation.estimatedPublishDate) || "";
+        if (pub.featureOn && pubDay && monday(pub.featureOn) < monday(pubDay)) return res.status(400).json({ error: "feature_before_publish" });
         break;
       }
 

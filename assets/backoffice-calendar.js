@@ -35,10 +35,13 @@ function boCalEntry(c) {
   if (c.status === "published") { kind = "published"; date = boCalDay(pub.displayDate) || boCalDay(pub.publishedAt) || boCalDay(pub.scheduledPublishAt); }
   else if (pub.scheduledPublishAt) { kind = "scheduled"; date = boCalDay(pub.scheduledPublishAt); }
   else if (c.invitation && c.invitation.estimatedPublishDate) { kind = "estimated"; date = boCalDay(c.invitation.estimatedPublishDate); }
-  // The week they are featured on the homepage: the display date when it is later than the publish
-  // date (never earlier). A live interview has one date, so it is featured on the day it counts from.
-  let feat = date;
-  if (kind !== "published" && pub.displayDate && /^\d{4}-\d{2}-\d{2}$/.test(pub.displayDate) && pub.displayDate > date) feat = pub.displayDate;
+  // The week they are featured on the homepage. A planned feature date (publish.featureOn, set by an
+  // admin, never automatic) counts when it is not before the publish date. A live interview that is
+  // already featured is featured from its own date; one published without the spotlight has no feature
+  // week until an admin plans one.
+  const plan = /^\d{4}-\d{2}-\d{2}$/.test(pub.featureOn || "") && pub.featureOn >= date ? pub.featureOn : "";
+  const notFeatured = kind === "published" && pub.featured === false;
+  const feat = notFeatured ? plan : kind === "published" ? date : plan || date;
   return date ? { c, kind, date, feat } : null;
 }
 
@@ -53,7 +56,7 @@ function boCalWeekOf(weeks, year, dateStr) {
 }
 
 // The date a candidate sits on in each view: the publish date, or the date they are featured.
-const boCalKeyDate = (e, mode) => (mode === "featured" ? e.feat : e.date);
+const boCalKeyDate = (e, mode) => (mode === "featured" ? e.feat : e.date); // "" = not on this calendar
 
 const BO_CAL_MODES = { publishing: "Publishing", featured: "Featured" };
 const BO_CAL_EYEBROWS = { publishing: "The publishing calendar", featured: "The featured calendar" };
@@ -218,7 +221,7 @@ async function initBackofficeCalendar() {
     return;
   }
 
-  const inYear = y => { const weeks = calBuildYearWeeks(y); return entries.filter(e => boCalWeekOf(weeks, y, boCalKeyDate(e, mode))); };
+  const inYear = y => { const weeks = calBuildYearWeeks(y); return entries.filter(e => boCalKeyDate(e, mode) && boCalWeekOf(weeks, y, boCalKeyDate(e, mode))); };
 
   function render() {
     modeEl.innerHTML = Object.entries(BO_CAL_MODES).map(([k, label]) =>
@@ -233,7 +236,7 @@ async function initBackofficeCalendar() {
     const weeks = calBuildYearWeeks(year);
     const byWeek = new Map();
     entries.forEach(e => {
-      const i = boCalWeekOf(weeks, year, boCalKeyDate(e, mode));
+      const i = boCalKeyDate(e, mode) && boCalWeekOf(weeks, year, boCalKeyDate(e, mode));
       if (i) byWeek.set(i, [...(byWeek.get(i) || []), e]);
     });
     byWeek.forEach(list => list.sort((a, b) => boCalKeyDate(a, mode).localeCompare(boCalKeyDate(b, mode)) || boCalNameOf(a.c).localeCompare(boCalNameOf(b.c))));
@@ -292,6 +295,8 @@ async function initBackofficeCalendar() {
     const source = shownWeeks.find(w => w.index === fromIndex);
     if (!entry || !target || !source || fromIndex === weekIndex || saving) return;
     const name = boCalNameOf(entry.c), live = entry.kind === "published";
+    const unfeatured = live && entry.c.publish.featured === false;
+    const movesFeature = featuredView && (!live || unfeatured); // only the plan moves, never the publish date
 
     // Same weekday in the target week.
     const offset = Math.min(6, Math.max(0, Math.round((calDateUTC(fromDate) - source.start) / 864e5)));
@@ -299,27 +304,28 @@ async function initBackofficeCalendar() {
     next.setUTCDate(next.getUTCDate() + offset);
     let newDay = dayStr(next);
 
-    // A live interview can't be pushed into the future (the homepage would feature it at once);
-    // anything not live yet can't be moved into the past.
-    if (live && target.start > today) { boToast(`${name} is already live, so they can't be moved to a future week.`); return; }
-    if (live && newDay > dayStr(today)) newDay = dayStr(today);
-    if (!live && target.end < today) { boToast(`${name} can't be moved to a week that has passed.`); return; }
-    if (!live && newDay < dayStr(today)) newDay = dayStr(today);
+    // Moving a live interview's own date can't go into the future (the homepage would pick it up at
+    // once); anything planned can't go into a week that has passed.
+    if (!movesFeature && live && target.start > today) { boToast(`${name} is already live, so they can't be moved to a future week.`); return; }
+    if (!movesFeature && live && newDay > dayStr(today)) newDay = dayStr(today);
+    if ((movesFeature || !live) && target.end < today) { boToast(`${name} can't be moved to a week that has passed.`); return; }
+    if ((movesFeature || !live) && newDay < dayStr(today)) newDay = dayStr(today);
 
     const payload = { action: "setDates", id };
-    if (featuredView && !live) {
-      // Only the featuring moves. It can't start before the week the interview goes live.
+    if (movesFeature) {
+      // Only the plan moves. It can't start before the week the interview goes live, and it never
+      // features anyone: an admin does that by hand.
       if (target.end < mondayOf(entry.date)) {
-        boToast(`${name} can't be featured before they are published. They go live ${boCalDayLabel(calDateUTC(entry.date))}: pick that week or a later one, or move the publish date first in the Publishing view.`);
+        boToast(`${name} can't be featured before they are published. They ${live ? "went live" : "go live"} ${boCalDayLabel(calDateUTC(entry.date))}: pick that week or a later one${live ? "" : ", or move the publish date first in the Publishing view"}.`);
         return;
       }
       payload.featureDate = newDay < entry.date ? entry.date : newDay; // same week as publishing, but not before it
     } else {
-      // Publishing view (or a live interview, which has one date): the publish date moves, and the
-      // featuring moves with it unless it was set to a later week on purpose.
+      // Publishing view (or a live, already featured interview, which has one date): the publish date
+      // moves, and a planned feature date moves with it unless it was set to a later week on purpose.
       payload.publishDate = newDay;
-      const pubDisplay = entry.c.publish && entry.c.publish.displayDate;
-      if (!live && pubDisplay) payload.featureDate = entry.feat === entry.date ? newDay : (entry.feat > newDay ? entry.feat : newDay);
+      const plan = entry.c.publish && entry.c.publish.featureOn;
+      if (!live && plan) payload.featureDate = entry.feat === entry.date ? newDay : (entry.feat > newDay ? entry.feat : newDay);
     }
 
     saving = true;
