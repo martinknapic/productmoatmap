@@ -123,6 +123,7 @@ function initInterview() {
     state.approval = data.approval || { approved: false };
     state.status = data.status;
     state.estimatedPublishDate = data.estimatedPublishDate;
+    state.estimatedFeaturedDate = data.estimatedFeaturedDate || null;
     state.published = data.published;
     state.registered = !!data.registered;
     state.source = data.source;
@@ -146,6 +147,28 @@ function initInterview() {
   const requiredTotal = () => state.questionnaire.sections.flatMap(s => s.questions).filter(q => q.required).length;
 
   // ---------- rendering ----------
+
+  // The publish date and (when one is planned) the featured date, each with an info tooltip.
+  const IV_TIPS = {
+    publish: "The publish date is when your interview will be published.",
+    feature: "The featured date is assigned only to some profiles. Featured profiles are assigned as we go and are part of Product Moat's distribution plan, so not every interview will be featured. Being featured means your interview is presented on the landing page for a whole week. We plan 52 featured profiles per year."
+  };
+  const ivInfo = (key, label) => `<span class="iv-info-wrap"><button type="button" class="iv-info" data-iv-tip="${key}" aria-label="What is the ${label}?" aria-expanded="false">i</button><span class="iv-tip" role="tooltip">${escapeHTML(IV_TIPS[key])}</span></span>`;
+  function datesLine() {
+    if (state.published) return "";
+    const rows = [];
+    if (state.estimatedPublishDate) rows.push(`<p class="iv-est">Estimated publish date: <strong>${escapeHTML(formatDay(state.estimatedPublishDate))}</strong>${ivInfo("publish", "estimated publish date")}</p>`);
+    if (state.estimatedFeaturedDate) rows.push(`<p class="iv-est">Estimated featured date: <strong>${escapeHTML(formatDay(state.estimatedFeaturedDate))}</strong>${ivInfo("feature", "estimated featured date")}</p>`);
+    return rows.length ? `<div class="iv-dates">${rows.join("")}</div>` : "";
+  }
+  if (!window.__ivTipWired) {
+    window.__ivTipWired = true;
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest(".iv-info");
+      document.querySelectorAll(".iv-info-wrap.is-open").forEach(w => { if (!btn || w !== btn.parentElement) { w.classList.remove("is-open"); w.firstChild.setAttribute("aria-expanded", "false"); } });
+      if (btn) { const open = btn.parentElement.classList.toggle("is-open"); btn.setAttribute("aria-expanded", String(open)); }
+    });
+  }
 
   // Once live: the official URL, right at the top, to open and share. Not shown to admins previewing.
   function livePanel() {
@@ -174,12 +197,10 @@ function initInterview() {
             ${livePanel() || `<h1>Hi ${escapeHTML(first)} - let's hear your story.</h1>
             <p class="about-lede">
               This page is yours alone. Open a question to answer it - press <strong>Save</strong> under an answer
-              to keep it, then leave and come back to the same link any time. Only the
-              <span class="q-badge q-badge-req">Required</span> questions are needed; skip any
-              <span class="q-badge q-badge-opt">Optional</span> ones. The wording may be adjusted as we
+              to keep it, then leave and come back to the same link any time. The wording may be adjusted as we
               go, and when you're happy, tell us with the button at the bottom.
             </p>`}
-            ${!state.published && state.estimatedPublishDate ? `<p class="iv-est">Estimated publish date: <strong>${escapeHTML(formatDay(state.estimatedPublishDate))}</strong></p>` : ""}
+            ${datesLine()}
             <div class="iv-progress" id="iv-progress"></div>
           </div>
           <div class="iv-hero-photo">${heroPhoto()}</div>

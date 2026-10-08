@@ -63,11 +63,22 @@ function view(c) {
     locked: !!c.locked,
     approval: c.approval,
     estimatedPublishDate: inv.estimatedPublishDate || null,
+    estimatedFeaturedDate: plannedFeature(c, inv),
     published: c.status === "published" ? { url: `/interview/${c.publish.category || C.defaultCategory(c.profile)}/${c.publish.slug}` } : null,
     updatedAt: c.answersUpdatedAt,
     source: c.source,
     registered: !!c.verified // a signed-in member has linked their LinkedIn identity to this page
   };
+}
+
+// The week an admin planned to feature this interview on the homepage (null when none is planned or it is
+// not after the publish week). Only a plan: nothing is featured automatically.
+function plannedFeature(c, inv) {
+  const on = c.publish && c.publish.featureOn;
+  if (!on || c.status === "published") return null;
+  const monday = day => { const d = new Date(`${day}T00:00:00Z`); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d.getTime(); };
+  const pubDay = c.publish.scheduledPublishAt ? c.publish.scheduledPublishAt.slice(0, 10) : inv.estimatedPublishDate;
+  return !pubDay || monday(on) >= monday(pubDay) ? on : null;
 }
 
 module.exports = async (req, res) => {

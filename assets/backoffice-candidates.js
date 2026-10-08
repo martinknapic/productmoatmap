@@ -335,16 +335,40 @@ function boActionsHTML(c) {
 async function initBackofficeCandidates() {
   if (!(await boCurrentGuard())) return;
 
-  const state = { all: [], status: "all", source: "all", q: "", sort: "updated" };
+  const state = { all: [], status: "all", source: "all", q: "", sort: "updated", dir: "desc" };
   const listEl = document.getElementById("bo-cand-body");
   const chipsEl = document.getElementById("bo-cand-chips");
 
+  // Sortable columns: the value each row is ordered by. Rows with no value always go last.
+  const STATUS_ORDER = Object.keys(BO_STATUS_LABELS);
   const SORTS = {
-    updated: (x, y) => (y.updatedAt || "").localeCompare(x.updatedAt || ""),
-    created: (x, y) => (y.createdAt || "").localeCompare(x.createdAt || ""),
-    published: (x, y) => boPublishedTime(y) - boPublishedTime(x),
-    name: (x, y) => boCandName(x).localeCompare(boCandName(y))
+    name: c => boCandName(c).toLowerCase(),
+    role: c => `${c.profile.role || ""} ${c.profile.company || ""}`.trim().toLowerCase(),
+    location: c => (c.profile.location || "").toLowerCase(),
+    source: c => BO_SOURCE_LABELS[c.source] || c.source || "",
+    alumni: c => (c.network && c.network.optedIn ? 1 : 0),
+    status: c => STATUS_ORDER.indexOf(c.status),
+    published: c => { const e = boCalEntry(c); return e ? e.date : ""; },
+    featured: c => { const e = boCalEntry(c); return e ? e.feat : ""; },
+    updated: c => c.updatedAt || "",
+    created: c => c.createdAt || ""
   };
+  const DEFAULT_DIR = { name: "asc", role: "asc", location: "asc", source: "asc", status: "asc" }; // everything else starts newest / highest first
+  const compare = (x, y) => {
+    const a = SORTS[state.sort](x), b = SORTS[state.sort](y);
+    const empty = v => v === "" || v == null;
+    if (empty(a) || empty(b)) return empty(a) && empty(b) ? 0 : empty(a) ? 1 : -1;
+    const r = typeof a === "number" ? a - b : String(a).localeCompare(String(b));
+    return state.dir === "asc" ? r : -r;
+  };
+  // A header click on the sorted column flips it; on another column it starts that column's default order.
+  const setSort = (key, dir) => {
+    const same = state.sort === key;
+    state.sort = key;
+    state.dir = dir || (same ? (state.dir === "asc" ? "desc" : "asc") : DEFAULT_DIR[key] || "desc");
+  };
+
+
 
   function render() {
     const counts = {};
@@ -357,7 +381,14 @@ async function initBackofficeCandidates() {
       (state.status === "all" || c.status === state.status) &&
       (state.source === "all" || c.source === state.source) &&
       (!q || [c.profile.name, c.profile.company, c.profile.role, c.profile.email, c.profile.location].join(" ").toLowerCase().includes(q))
-    ).sort(SORTS[state.sort] || SORTS.updated);
+    ).sort(compare);
+    document.querySelectorAll("#bo-cand-head [data-sort]").forEach(th => {
+      const on = th.dataset.sort === state.sort;
+      th.setAttribute("aria-sort", on ? (state.dir === "asc" ? "ascending" : "descending") : "none");
+      th.querySelector(".bo-sort-arrow").textContent = on ? (state.dir === "asc" ? "▲" : "▼") : "";
+    });
+    const sel = document.getElementById("bo-cand-sort");
+    sel.value = [...sel.options].some(o => o.value === state.sort) ? state.sort : sel.value;
     document.getElementById("bo-cand-count").textContent = `(${rows.length})`;
     document.getElementById("bo-cand-empty").hidden = rows.length > 0;
     listEl.innerHTML = rows.map(c => `
@@ -391,7 +422,11 @@ async function initBackofficeCandidates() {
 
   chipsEl.addEventListener("click", (e) => { const b = e.target.closest("[data-status]"); if (b) { state.status = b.dataset.status; render(); } });
   document.getElementById("bo-cand-source").addEventListener("change", (e) => { state.source = e.target.value; render(); });
-  document.getElementById("bo-cand-sort").addEventListener("change", (e) => { state.sort = e.target.value; render(); });
+  document.getElementById("bo-cand-sort").addEventListener("change", (e) => { setSort(e.target.value, DEFAULT_DIR[e.target.value] || "desc"); render(); });
+  const head = document.getElementById("bo-cand-head");
+  const headSort = e => { const th = e.target.closest("[data-sort]"); if (th) { setSort(th.dataset.sort); render(); } };
+  head.addEventListener("click", headSort);
+  head.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); headSort(e); } });
   document.getElementById("bo-cand-search").addEventListener("input", (e) => { state.q = e.target.value; render(); });
   const tip = boContactTooltip();
   boIconTooltips(listEl);

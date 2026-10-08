@@ -623,3 +623,7 @@ textarea.bo-input { resize: vertical; line-height: 1.5; }
 
 .bo-feat-link { color: inherit; text-decoration: underline; text-decoration-color: var(--ink-dim); text-underline-offset: 3px; white-space: nowrap; }
 .bo-feat-link:hover { text-decoration-color: currentColor; }
+
+.bo-th-sort { cursor: pointer; user-select: none; white-space: nowrap; }
+.bo-th-sort:hover { color: var(--ink); }
+.bo-th-sort .bo-sort-arrow { display: inline-block; min-width: 10px; font-size: 9px; color: var(--ink); }

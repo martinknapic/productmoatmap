@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg?v=2">
   <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png?v=2">
   <link rel="stylesheet" href="../assets/swiss.css?v=d1f105c0">
-  <link rel="stylesheet" href="../assets/backoffice.css?v=0cf0fd2e">
+  <link rel="stylesheet" href="../assets/backoffice.css?v=53061dd5">
 </head>
 <body class="light">
   <nav class="nav bo-nav">
@@ -59,7 +59,7 @@
 
     <div class="bo-table-wrap">
       <table class="bo-table">
-        <thead><tr><th></th><th>Person</th><th>Role / Company</th><th>Location</th><th>Source</th><th>Alumni</th><th>Status</th><th>Published</th><th>Featured</th><th>Article</th><th>Questionnaire</th><th>Updated</th><th class="bo-th-actions">Actions</th></tr></thead>
+        <thead><tr id="bo-cand-head"><th></th><th data-sort="name" class="bo-th-sort" tabindex="0" aria-sort="none">Person <span class="bo-sort-arrow" aria-hidden="true"></span></th><th data-sort="role" class="bo-th-sort" tabindex="0" aria-sort="none">Role / Company <span class="bo-sort-arrow" aria-hidden="true"></span></th><th data-sort="location" class="bo-th-sort" tabindex="0" aria-sort="none">Location <span class="bo-sort-arrow" aria-hidden="true"></span></th><th data-sort="source" class="bo-th-sort" tabindex="0" aria-sort="none">Source <span class="bo-sort-arrow" aria-hidden="true"></span></th><th data-sort="alumni" class="bo-th-sort" tabindex="0" aria-sort="none">Alumni <span class="bo-sort-arrow" aria-hidden="true"></span></th><th data-sort="status" class="bo-th-sort" tabindex="0" aria-sort="none">Status <span class="bo-sort-arrow" aria-hidden="true"></span></th><th data-sort="published" class="bo-th-sort" tabindex="0" aria-sort="none">Published <span class="bo-sort-arrow" aria-hidden="true"></span></th><th data-sort="featured" class="bo-th-sort" tabindex="0" aria-sort="none">Featured <span class="bo-sort-arrow" aria-hidden="true"></span></th><th>Article</th><th>Questionnaire</th><th data-sort="updated" class="bo-th-sort" tabindex="0" aria-sort="none">Updated <span class="bo-sort-arrow" aria-hidden="true"></span></th><th class="bo-th-actions">Actions</th></tr></thead>
         <tbody id="bo-cand-body"></tbody>
       </table>
       <p class="bo-empty" id="bo-cand-empty" hidden>No one here yet. Applications and recommendations from the site will appear automatically.</p>
@@ -68,7 +68,7 @@
   </main>
 
   <script src="../assets/backoffice.js?v=53073438"></script>
-  <script src="../assets/backoffice-candidates.js?v=f2dc9009"></script>
+  <script src="../assets/backoffice-candidates.js?v=430e697f"></script>
   <script src="../assets/backoffice-calendar.js?v=69c4441a"></script>
   <script>initBackofficeCandidates();</script>
 </body>
