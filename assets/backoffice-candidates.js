@@ -208,7 +208,7 @@ function boConfirm({ title, message, confirmLabel = "Confirm", danger = false })
 function boPublishedCell(c) {
   const pub = c.publish || {};
   const day = iso => (iso ? new Date(iso).toLocaleDateString([], { dateStyle: "medium" }) : "");
-  if (c.status === "published") return `<span class="bo-cell-strong">${boEscapeHTML(day(pub.publishedAt || pub.displayDate) || "-")}</span>`;
+  if (c.status === "published") return `<span class="bo-cell-strong">${boEscapeHTML(day(pub.displayDate || pub.publishedAt) || "-")}</span>`;
   if (c.status === "scheduled") return `<span class="bo-pub-sched">Scheduled</span><br><span class="bo-cell-dim">${boEscapeHTML(day(pub.scheduledPublishAt))}</span>`;
   const est = c.invitation && c.invitation.estimatedPublishDate;
   if (est) return `<span class="bo-cell-dim">Est. ${boEscapeHTML(new Date(`${est}T00:00:00`).toLocaleDateString([], { dateStyle: "medium" }))}</span>`;
@@ -226,6 +226,44 @@ function boFeaturedCell(c) {
   const fmt = x => x.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
   const state = e.kind === "published" ? "" : `<br><span class="bo-cell-dim">${e.kind === "scheduled" ? "Planned" : "Est."}</span>`;
   return `<a class="bo-feat-link" href="calendar?mode=featured&date=${e.feat}" title="Show this week on the Featured calendar">${boEscapeHTML(fmt(mon))} - ${boEscapeHTML(fmt(sun))}</a>${state}`;
+}
+// ---- The candidate's Dates tab: publish date (published / not published) and featured date (was / is / planned) ----
+// Moving the publish date keeps a separately set featured date at least in the same week.
+function boDatesPayload(c, field, value) {
+  const e = boCalEntry(c), p = { action: "setDates", [field]: value };
+  if (field === "publishDate" && e && e.kind !== "published" && c.publish.displayDate) p.featureDate = e.feat === e.date ? value : (e.feat > value ? e.feat : value);
+  return p;
+}
+const boDatesPill = (label, cls) => `<span class="bo-pill bo-pill-${cls}">${boEscapeHTML(label)}</span>`;
+function boDatesHTML(c) {
+  const e = boCalEntry(c), live = c.status === "published", sched = c.status === "scheduled" || (!live && !!(c.publish || {}).scheduledPublishAt);
+  const monday = day => { const d = new Date(`${day}T00:00:00Z`); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d; };
+  const todayStr = new Date().toLocaleDateString("en-CA");
+  const range = day => { const m = monday(day), u = new Date(m); u.setUTCDate(m.getUTCDate() + 6); const f = x => x.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" }); return `${f(m)} - ${f(u)}`; };
+  let featState = ["Planned", "scheduled"], featHelp = "Pick the week this person is featured on the homepage. It can be the week they are published or later.";
+  if (c.publish && c.publish.featured === false && live) { featState = ["Not featured", "declined"]; featHelp = "Live, but published without the homepage spotlight."; }
+  else if (e && live) {
+    const endOfWeek = new Date(monday(e.feat)); endOfWeek.setUTCDate(endOfWeek.getUTCDate() + 6);
+    featState = e.feat > todayStr && monday(e.feat) > monday(todayStr) ? ["Planned", "scheduled"] : endOfWeek < monday(todayStr) ? ["Was featured", "published"] : ["Is featured", "published"];
+    featHelp = "A live interview is featured from its publish date, so this is the same date as above.";
+  }
+  const pubLabel = live ? "Published on" : sched ? "Scheduled for" : "Est. publish date";
+  const canEstimate = live || sched || !!c.invitation;
+  return `
+    <h3>Dates</h3>
+    <p class="bo-section-note">Change a date here and the Applied list and the calendar update with it. You can also drag people between weeks on the <a class="bracket-link" href="calendar${e ? `?mode=featured&date=${e.feat}` : ""}">[ calendar ]</a>.</p>
+    <div class="bo-form-grid">
+      <div class="bo-lbl">
+        <span>Publish date ${boDatesPill(live ? "Published" : "Not published", live ? "published" : "new")}</span>
+        <label class="bo-lbl">${pubLabel}<input class="bo-input" type="date" id="bo-date-publish" value="${boEscapeHTML(e ? e.date : "")}" ${canEstimate ? "" : "disabled"}></label>
+        <span class="bo-cell-dim">${canEstimate ? (live ? "Moves the date the article shows and counts from." : "Not live yet - go to Sign-off &amp; preview to publish or schedule it.") : "Invite the person first to set an estimated date."}</span>
+      </div>
+      <div class="bo-lbl">
+        <span>Featured ${boDatesPill(featState[0], featState[1])}</span>
+        <label class="bo-lbl">${live ? "Featured from" : "Est. featured date"}<input class="bo-input" type="date" id="bo-date-feature" value="${boEscapeHTML(e ? e.feat : "")}" ${live || !e ? "disabled" : ""}></label>
+        <span class="bo-cell-dim">${e ? `Featured week: ${boEscapeHTML(range(e.feat))}. ` : ""}${featHelp}</span>
+      </div>
+    </div>`;
 }
 const boPublishedTime = c => { const p = c.publish || {}; return Date.parse(p.publishedAt || p.scheduledPublishAt || "") || 0; };
 
@@ -539,7 +577,7 @@ async function initBackofficeCandidate() {
       if (okMsg) boToast(okMsg);
       return data;
     } catch (err) {
-      boToast(({ slug_taken: "That URL is already taken.", lock_first: "Lock it first.", unpublish_first: "Unpublish first." })[err.message] || "That didn't work - try again.");
+      boToast(({ feature_before_publish: "Featuring can't start before the week they are published.", date_in_past: "A scheduled date can't be in the past.", invite_first: "Invite the person first to set an estimated date.", slug_taken: "That URL is already taken.", lock_first: "Lock it first.", unpublish_first: "Unpublish first." })[err.message] || "That didn't work - try again.");
       return null;
     }
   }
@@ -555,7 +593,7 @@ async function initBackofficeCandidate() {
     const ro = c.status === "published";
 
     // Before the invitation only Profile and Invitation exist; the rest appear once the questionnaire does.
-    const tabs = [["profile", "Profile"], ["invitation", "Invitation"],
+    const tabs = [["profile", "Profile"], ["invitation", "Invitation"], ["dates", "Dates"],
       ...(invited ? [["questions", "Questions"], ["answers", `Answers <span class="bo-tab-count">${answered}</span>`], ["signoff", "Sign-off &amp; preview"]] : [])];
     if (!tabs.some(([k]) => k === activeTab)) activeTab = "profile";
     const tab = k => `data-tab="${k}"${k === activeTab ? "" : " hidden"}`;
@@ -636,6 +674,8 @@ async function initBackofficeCandidate() {
             ${msgChannel === "linkedin" && p.linkedin ? `<a class="btn btn-ghost" href="${boEscapeHTML(p.linkedin)}" target="_blank" rel="noopener">Open their LinkedIn</a>` : ""}
           </div>`}
       </section>
+
+      <section class="bo-card" ${tab("dates")}>${boDatesHTML(c)}</section>
 
       ${invited ? `
       <section class="bo-card" ${tab("questions")}>
@@ -742,6 +782,10 @@ async function initBackofficeCandidate() {
       f.forEach((v, k) => { if (k !== "notes") profile[k] = v; });
       act({ action: "update", profile, notes: String(f.get("notes") || "") }, "Profile saved");
     });
+
+    const pubIn = root.querySelector("#bo-date-publish"), featIn = root.querySelector("#bo-date-feature");
+    if (pubIn) pubIn.addEventListener("change", () => { if (pubIn.value) act(boDatesPayload(c, "publishDate", pubIn.value), "Publish date saved - calendar updated"); });
+    if (featIn) featIn.addEventListener("change", () => { if (featIn.value) act({ action: "setDates", featureDate: featIn.value }, "Featured date saved - calendar updated"); });
 
     on("#bo-inv-create", () => act({ action: "invite", channel: root.querySelector("#bo-inv-channel").value, estimatedPublishDate: root.querySelector("#bo-inv-est").value || null }, "Questionnaire created - now send them the link"));
     on("#bo-copy-link", async () => { await navigator.clipboard.writeText(boQuestionnaireLink(c)); boToast("Link copied"); });
@@ -855,7 +899,7 @@ async function initBackofficePreview() {
       if (data.deleted) { location.href = "candidates"; return null; }
       c = data.candidate; render(); if (msg) boToast(msg); return data;
     } catch (err) {
-      boToast(({ slug_taken: "That URL is already taken.", lock_first: "Lock the interview first.", missing_schedule: "Pick a schedule date/time first." })[err.message] || "That didn't work - try again.");
+      boToast(({ feature_before_publish: "Featuring can't start before the week they are published.", date_in_past: "A scheduled date can't be in the past.", invite_first: "Invite the person first to set an estimated date.", slug_taken: "That URL is already taken.", lock_first: "Lock the interview first.", missing_schedule: "Pick a schedule date/time first." })[err.message] || "That didn't work - try again.");
       return null;
     }
   }

@@ -35,9 +35,10 @@ function boCalEntry(c) {
   if (c.status === "published") { kind = "published"; date = boCalDay(pub.displayDate) || boCalDay(pub.publishedAt) || boCalDay(pub.scheduledPublishAt); }
   else if (pub.scheduledPublishAt) { kind = "scheduled"; date = boCalDay(pub.scheduledPublishAt); }
   else if (c.invitation && c.invitation.estimatedPublishDate) { kind = "estimated"; date = boCalDay(c.invitation.estimatedPublishDate); }
-  // The week they are featured on the homepage: the display date, never earlier than the publish date's week.
+  // The week they are featured on the homepage: the display date when it is later than the publish
+  // date (never earlier). A live interview has one date, so it is featured on the day it counts from.
   let feat = date;
-  if (kind === "scheduled" && pub.displayDate && /^\d{4}-\d{2}-\d{2}$/.test(pub.displayDate) && pub.displayDate > date) feat = pub.displayDate;
+  if (kind !== "published" && pub.displayDate && /^\d{4}-\d{2}-\d{2}$/.test(pub.displayDate) && pub.displayDate > date) feat = pub.displayDate;
   return date ? { c, kind, date, feat } : null;
 }
 
@@ -57,14 +58,15 @@ const boCalKeyDate = (e, mode) => (mode === "featured" ? e.feat : e.date);
 const BO_CAL_MODES = { publishing: "Publishing", featured: "Featured" };
 const BO_CAL_EYEBROWS = { publishing: "The publishing calendar", featured: "The featured calendar" };
 const BO_CAL_MODE_KEY = "bo-cal-mode";
+const BO_CAL_HIDE_KEY = "bo-cal-hide-past";
 
 // "Mon 5 Oct" for a week boundary (the week dates are UTC midnights, see calBuildYearWeeks).
 const boCalDayLabel = d => d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
 
 const boCalNameOf = c => c.profile.name || "(name not known yet)";
 const boCalHref = c => `candidate?id=${encodeURIComponent(c.id)}`;
-// Anything not live yet can be picked up and dropped on another week.
-const boCalDragAttrs = e => (e.kind === "published" ? "" : ` draggable="true" data-drag-id="${boEscapeHTML(e.c.id)}"`);
+// Every card can be picked up and dropped on another week.
+const boCalDragAttrs = e => ` draggable="true" data-drag-id="${boEscapeHTML(e.c.id)}"`;
 const boCalKindTag = e => `<span class="cal-kind cal-kind-${e.kind}">${BO_CAL_KIND_LABELS[e.kind]}</span>`;
 
 // The from-to block on a featured card: the week the candidate holds the homepage, Monday to Sunday.
@@ -90,7 +92,7 @@ function boCalRenderCell(week, today, entries, mode) {
   if (entries.length === 1) {
     const e = entries[0];
     bodyHTML = `
-      <a class="cal-card" href="${boCalHref(e.c)}" title="${boEscapeHTML(featured ? boCalFeaturedTitle(e, week) : boCalNameOf(e.c))}${e.kind === "published" ? "" : " - drag to another week to move"}"${boCalDragAttrs(e)}>
+      <a class="cal-card" href="${boCalHref(e.c)}" title="${boEscapeHTML(featured ? boCalFeaturedTitle(e, week) : boCalNameOf(e.c))}${" - drag to another week to move"}"${boCalDragAttrs(e)}>
         ${boCandAvatar(e.c.profile, "cal-card-avatar")}
         <span class="cal-card-name">${boEscapeHTML(boCalNameOf(e.c))}</span>
         ${featured ? boCalFeaturedDates(week) : boCalKindTag(e)}
@@ -109,7 +111,7 @@ function boCalRenderCell(week, today, entries, mode) {
   const hoverHTML = isPast ? "" : `<div class="cal-hover"><a class="cal-hover-btn" href="/recommend" target="_blank" rel="noopener">Recommend</a></div>`;
 
   return `
-    <td class="cal-cell" data-status="${status}" data-week="${week.index}"${isPast ? "" : ' data-droppable="true"'}${isCurrent ? ' data-current="true"' : ""}>
+    <td class="cal-cell" data-status="${status}" data-week="${week.index}" data-droppable="true"${isCurrent ? ' data-current="true"' : ""}>
       <div class="cal-cell-inner">
         <div class="cal-cell-head">
           <span class="cal-week-no">W${boCalPad(week.index)}</span>
@@ -194,6 +196,15 @@ async function initBackofficeCalendar() {
   let focusDone = false;
   if (focusDate) year = Number(focusDate.slice(0, 4));
   if (!years.includes(year)) year = thisYear;
+  let hidePast = false;
+  try { hidePast = localStorage.getItem(BO_CAL_HIDE_KEY) === "1"; } catch (e) { /* default: show everything */ }
+  const hideEl = document.getElementById("cal-hide-past");
+  hideEl.checked = hidePast;
+  hideEl.addEventListener("change", () => {
+    hidePast = hideEl.checked;
+    try { localStorage.setItem(BO_CAL_HIDE_KEY, hidePast ? "1" : "0"); } catch (err) { /* per-viewer convenience only */ }
+    render();
+  });
   let entries = [];
   let undated = 0;
   try {
@@ -227,7 +238,10 @@ async function initBackofficeCalendar() {
     });
     byWeek.forEach(list => list.sort((a, b) => boCalKeyDate(a, mode).localeCompare(boCalKeyDate(b, mode)) || boCalNameOf(a.c).localeCompare(boCalNameOf(b.c))));
 
-    board.innerHTML = [1, 2, 3, 4].map(q =>
+    // "Hide past quarters": in the current year, the quarters that ended before this one.
+    const currentQ = Math.floor(today.getUTCMonth() / 3) + 1;
+    const quarters = [1, 2, 3, 4].filter(q => !(hidePast && year === thisYear && q < currentQ));
+    board.innerHTML = quarters.map(q =>
       calRenderQuarter(weeks.filter(w => w.quarter === q), q, today, byWeek, (w, t, list) => boCalRenderCell(w, t, list, mode))
     ).join("");
     shown = byWeek;
@@ -262,6 +276,13 @@ async function initBackofficeCalendar() {
   };
   const dayStr = d => d.toISOString().slice(0, 10);
 
+  const mondayOf = day => { const d = calDateUTC(day); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d; };
+  const BO_CAL_ERRORS = {
+    feature_before_publish: "can't be featured before they are published. Pick their publish week or a later one.",
+    date_in_past: "can't be scheduled in the past. Pick a later week.",
+    invite_first: "has no invitation yet, so there is no estimated date to move."
+  };
+
   async function moveTo(id, weekIndex) {
     const entry = entries.find(x => x.c.id === id);
     const target = shownWeeks.find(w => w.index === weekIndex);
@@ -269,38 +290,36 @@ async function initBackofficeCalendar() {
     const fromDate = entry && boCalKeyDate(entry, mode);
     const fromIndex = entry && boCalWeekOf(shownWeeks, year, fromDate);
     const source = shownWeeks.find(w => w.index === fromIndex);
-    if (!entry || !target || !source || entry.kind === "published" || fromIndex === weekIndex || saving) return;
+    if (!entry || !target || !source || fromIndex === weekIndex || saving) return;
+    const name = boCalNameOf(entry.c), live = entry.kind === "published";
 
-    // Same weekday in the target week, but never earlier than today (the current week is allowed).
+    // Same weekday in the target week.
     const offset = Math.min(6, Math.max(0, Math.round((calDateUTC(fromDate) - source.start) / 864e5)));
-    let next = new Date(target.start);
+    const next = new Date(target.start);
     next.setUTCDate(next.getUTCDate() + offset);
-    if (next < today) next = new Date(today);
     let newDay = dayStr(next);
 
-    const payload = { action: "setPublishing", id };
-    if (featuredView && entry.kind === "scheduled") {
+    // A live interview can't be pushed into the future (the homepage would feature it at once);
+    // anything not live yet can't be moved into the past.
+    if (live && target.start > today) { boToast(`${name} is already live, so they can't be moved to a future week.`); return; }
+    if (live && newDay > dayStr(today)) newDay = dayStr(today);
+    if (!live && target.end < today) { boToast(`${name} can't be moved to a week that has passed.`); return; }
+    if (!live && newDay < dayStr(today)) newDay = dayStr(today);
+
+    const payload = { action: "setDates", id };
+    if (featuredView && !live) {
       // Only the featuring moves. It can't start before the week the interview goes live.
-      const pubDay = calDateUTC(entry.date);
-      const pubMonday = new Date(pubDay); pubMonday.setUTCDate(pubDay.getUTCDate() - ((pubDay.getUTCDay() + 6) % 7));
-      if (target.end < pubMonday) {
-        boToast(`${boCalNameOf(entry.c)} can't be featured before they are published. They go live ${boCalDayLabel(calDateUTC(entry.date))}: pick that week or a later one, or move the publish date first in the Publishing view.`);
+      if (target.end < mondayOf(entry.date)) {
+        boToast(`${name} can't be featured before they are published. They go live ${boCalDayLabel(calDateUTC(entry.date))}: pick that week or a later one, or move the publish date first in the Publishing view.`);
         return;
       }
-      if (newDay < entry.date) newDay = entry.date; // same week as the publish date, but not before it
-      payload.displayDate = newDay;
-    } else if (entry.kind === "estimated") {
-      payload.estimatedPublishDate = newDay;
+      payload.featureDate = newDay < entry.date ? entry.date : newDay; // same week as publishing, but not before it
     } else {
-      // Scheduled, moved in the Publishing view: shift the go-live moment by the same number of days
-      // (keeps the time of day). Featuring moves with it, unless it was set later on purpose.
-      const shift = Math.round((calDateUTC(newDay) - calDateUTC(entry.date)) / 864e5);
-      const when = new Date(entry.c.publish.scheduledPublishAt);
-      when.setDate(when.getDate() + shift);
-      if (when.getTime() <= Date.now()) { boToast("That would be in the past. Pick a later week."); return; }
-      payload.scheduledPublishAt = when.toISOString();
-      payload.displayDate = entry.feat === entry.date ? newDay : (entry.feat > newDay ? entry.feat : newDay);
-      payload.estimatedPublishDate = newDay;
+      // Publishing view (or a live interview, which has one date): the publish date moves, and the
+      // featuring moves with it unless it was set to a later week on purpose.
+      payload.publishDate = newDay;
+      const pubDisplay = entry.c.publish && entry.c.publish.displayDate;
+      if (!live && pubDisplay) payload.featureDate = entry.feat === entry.date ? newDay : (entry.feat > newDay ? entry.feat : newDay);
     }
 
     saving = true;
@@ -312,9 +331,7 @@ async function initBackofficeCalendar() {
       render();
       boToast(`${boCalNameOf(entry.c)} moved to W${boCalPad(weekIndex)} (${boCalDayLabel(target.start)} - ${boCalDayLabel(target.end)})`);
     } catch (err) {
-      boToast(err && err.message === "feature_before_publish"
-        ? `${boCalNameOf(entry.c)} can't be featured before they are published. Pick their publish week or a later one.`
-        : `Couldn't move ${boCalNameOf(entry.c)}. Nothing was changed.`);
+      boToast(BO_CAL_ERRORS[err && err.message] ? `${name} ${BO_CAL_ERRORS[err.message]}` : `Couldn't move ${name}. Nothing was changed.`);
     } finally {
       saving = false;
       board.classList.remove("is-saving");

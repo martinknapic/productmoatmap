@@ -13,7 +13,7 @@ const C = require("../common");
 
 const STATUS_ACTIONS_NEED_ID = new Set([
   "update", "invite", "setQuestionnaire", "resetQuestionnaire", "setAnswers", "approve", "lock", "decline",
-  "revokeLink", "setPublishing", "publish", "unpublish", "setNetwork", "delete"
+  "revokeLink", "setPublishing", "setDates", "publish", "unpublish", "setNetwork", "delete"
 ]);
 
 function withPreview(c) {
@@ -147,6 +147,41 @@ module.exports = async (req, res) => {
         const email = candidateEmail(c);
         if (!email) return res.status(400).json({ error: "missing_email" });
         await C.setNetworkOptIn({ email, name: c.profile.name, picture: c.profile.photo || null }, body.optedIn !== false, "backoffice");
+        break;
+      }
+
+      case "setDates": {
+        // One place that moves a candidate's dates: { publishDate, featureDate } as YYYY-MM-DD (null clears).
+        // The publish date is the day it went live (published: stored as the article's display date),
+        // the scheduled go-live day, or the estimate. The feature date is the homepage week; it may be the
+        // same week as publishing or later, never earlier.
+        const pub = c.publish;
+        const live = c.status === "published";
+        const monday = day => { const d = new Date(`${day}T00:00:00Z`); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d.toISOString().slice(0, 10); };
+        for (const k of ["publishDate", "featureDate"]) {
+          if (body[k] !== undefined && body[k] !== null && !isDate(body[k])) return res.status(400).json({ error: "invalid_date" });
+        }
+        if (body.publishDate !== undefined) {
+          const d = body.publishDate;
+          if (live) {
+            if (!d) return res.status(400).json({ error: "invalid_date" });
+            pub.displayDate = d;
+          } else if (pub.scheduledPublishAt) {
+            if (!d) return res.status(400).json({ error: "invalid_date" });
+            const when = `${d}${pub.scheduledPublishAt.slice(10)}`;
+            if (Date.parse(when) <= Date.now()) return res.status(400).json({ error: "date_in_past" });
+            pub.scheduledPublishAt = new Date(when).toISOString();
+            if (c.invitation) c.invitation.estimatedPublishDate = d;
+          } else {
+            if (!c.invitation) return res.status(400).json({ error: "invite_first" });
+            c.invitation.estimatedPublishDate = d;
+          }
+        }
+        if (body.featureDate !== undefined && !live) pub.displayDate = body.featureDate;
+        if (!live) {
+          const pubDay = pub.scheduledPublishAt ? pub.scheduledPublishAt.slice(0, 10) : (c.invitation && c.invitation.estimatedPublishDate) || "";
+          if (pub.displayDate && pubDay && monday(pub.displayDate) < monday(pubDay)) return res.status(400).json({ error: "feature_before_publish" });
+        }
         break;
       }
 
