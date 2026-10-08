@@ -6,7 +6,7 @@
 // Declined candidates and candidates with no date yet are left off.
 //
 // A switch above the board flips between two views of the same data: "Publishing" (the week each
-// candidate goes live) and "Homepage" (who is featured on the main page that week, with the
+// candidate goes live) and "Featured" (who is featured on the main page that week, with the
 // from-to dates). The homepage features the newest interview, so a candidate is featured for the
 // full Monday to Sunday week of their publish date.
 //
@@ -35,7 +35,10 @@ function boCalEntry(c) {
   if (c.status === "published") { kind = "published"; date = boCalDay(pub.displayDate) || boCalDay(pub.publishedAt) || boCalDay(pub.scheduledPublishAt); }
   else if (pub.scheduledPublishAt) { kind = "scheduled"; date = boCalDay(pub.scheduledPublishAt); }
   else if (c.invitation && c.invitation.estimatedPublishDate) { kind = "estimated"; date = boCalDay(c.invitation.estimatedPublishDate); }
-  return date ? { c, kind, date } : null;
+  // The week they are featured on the homepage: the display date, never earlier than the publish date's week.
+  let feat = date;
+  if (kind === "scheduled" && pub.displayDate && /^\d{4}-\d{2}-\d{2}$/.test(pub.displayDate) && pub.displayDate > date) feat = pub.displayDate;
+  return date ? { c, kind, date, feat } : null;
 }
 
 // Which week (1..52) of `year` a YYYY-MM-DD date falls in, or 0. The trailing days of a year that
@@ -48,8 +51,11 @@ function boCalWeekOf(weeks, year, dateStr) {
   return d > last.end && d.getUTCFullYear() === year ? last.index : 0;
 }
 
-const BO_CAL_MODES = { publishing: "Publishing", featured: "Homepage" };
-const BO_CAL_EYEBROWS = { publishing: "The publishing calendar", featured: "The homepage calendar" };
+// The date a candidate sits on in each view: the publish date, or the date they are featured.
+const boCalKeyDate = (e, mode) => (mode === "featured" ? e.feat : e.date);
+
+const BO_CAL_MODES = { publishing: "Publishing", featured: "Featured" };
+const BO_CAL_EYEBROWS = { publishing: "The publishing calendar", featured: "The featured calendar" };
 const BO_CAL_MODE_KEY = "bo-cal-mode";
 
 // "Mon 5 Oct" for a week boundary (the week dates are UTC midnights, see calBuildYearWeeks).
@@ -68,6 +74,10 @@ const boCalFeaturedDates = week => `
     <span class="cal-feat-row"><span class="cal-feat-lbl">To</span>${boEscapeHTML(boCalDayLabel(week.end))}</span>
   </span>`;
 
+// Hover text in the Featured view: the week the person is featured and the date that puts them there.
+const boCalFeaturedTitle = (e, week) =>
+  `${boCalNameOf(e.c)} - ${e.kind === "published" ? "featured" : "planned to be featured"} ${boCalDayLabel(week.start)} to ${boCalDayLabel(week.end)} (${e.kind === "published" ? "published" : BO_CAL_KIND_LABELS[e.kind].toLowerCase() + " publish date"} ${boCalDayLabel(calDateUTC(e.date))})`;
+
 function boCalRenderCell(week, today, entries, mode) {
   entries = entries || [];
   const featured = mode === "featured";
@@ -80,7 +90,7 @@ function boCalRenderCell(week, today, entries, mode) {
   if (entries.length === 1) {
     const e = entries[0];
     bodyHTML = `
-      <a class="cal-card" href="${boCalHref(e.c)}" title="${boEscapeHTML(boCalNameOf(e.c))}${e.kind === "published" ? "" : " - drag to another week to move"}"${boCalDragAttrs(e)}>
+      <a class="cal-card" href="${boCalHref(e.c)}" title="${boEscapeHTML(featured ? boCalFeaturedTitle(e, week) : boCalNameOf(e.c))}${e.kind === "published" ? "" : " - drag to another week to move"}"${boCalDragAttrs(e)}>
         ${boCandAvatar(e.c.profile, "cal-card-avatar")}
         <span class="cal-card-name">${boEscapeHTML(boCalNameOf(e.c))}</span>
         ${featured ? boCalFeaturedDates(week) : boCalKindTag(e)}
@@ -129,7 +139,7 @@ function boCalWirePopover(board, weekEntries, weekOf, mode) {
     const week = weekOf(Number(btn.dataset.week));
     const featured = mode() === "featured" && week;
     pop.innerHTML = list.map(e => `
-      <a class="cal-pop-row" href="${boCalHref(e.c)}"${boCalDragAttrs(e)}>
+      <a class="cal-pop-row" href="${boCalHref(e.c)}" title="${boEscapeHTML(featured ? boCalFeaturedTitle(e, week) : boCalNameOf(e.c))}"${boCalDragAttrs(e)}>
         ${boCandAvatar(e.c.profile, "cal-pop-avatar")}
         <span class="cal-pop-main">
           <span class="cal-pop-name">${boEscapeHTML(boCalNameOf(e.c))}</span>
@@ -137,7 +147,7 @@ function boCalWirePopover(board, weekEntries, weekOf, mode) {
         </span>
         <span class="cal-pop-meta">${boCalKindTag(e)}<span class="cal-pop-date">${boEscapeHTML(featured
             ? `${boCalDayLabel(week.start)} - ${boCalDayLabel(week.end)}`
-            : new Date(`${e.date}T00:00:00`).toLocaleDateString([], { day: "numeric", month: "short" }))}</span></span>
+            : new Date(`${boCalKeyDate(e, mode())}T00:00:00`).toLocaleDateString([], { day: "numeric", month: "short" }))}</span></span>
       </a>`).join("");
     pop.hidden = false;
     const r = btn.closest(".cal-cell").getBoundingClientRect();
@@ -176,8 +186,14 @@ async function initBackofficeCalendar() {
   let shown = new Map(); // week index -> entries, for the year on screen
   let shownWeeks = [];
   let mode = "publishing";
-  try { if (localStorage.getItem(BO_CAL_MODE_KEY) in BO_CAL_MODES) mode = localStorage.getItem(BO_CAL_MODE_KEY); } catch (e) { /* storage blocked: default view */ }
+  const params = new URLSearchParams(location.search);
+  const focusDate = /^\d{4}-\d{2}-\d{2}$/.test(params.get("date") || "") ? params.get("date") : "";
+  if (params.get("mode") in BO_CAL_MODES) mode = params.get("mode");
+  else try { if (localStorage.getItem(BO_CAL_MODE_KEY) in BO_CAL_MODES) mode = localStorage.getItem(BO_CAL_MODE_KEY); } catch (e) { /* storage blocked: default view */ }
 
+  let focusDone = false;
+  if (focusDate) year = Number(focusDate.slice(0, 4));
+  if (!years.includes(year)) year = thisYear;
   let entries = [];
   let undated = 0;
   try {
@@ -191,7 +207,7 @@ async function initBackofficeCalendar() {
     return;
   }
 
-  const inYear = y => { const weeks = calBuildYearWeeks(y); return entries.filter(e => boCalWeekOf(weeks, y, e.date)); };
+  const inYear = y => { const weeks = calBuildYearWeeks(y); return entries.filter(e => boCalWeekOf(weeks, y, boCalKeyDate(e, mode))); };
 
   function render() {
     modeEl.innerHTML = Object.entries(BO_CAL_MODES).map(([k, label]) =>
@@ -206,16 +222,24 @@ async function initBackofficeCalendar() {
     const weeks = calBuildYearWeeks(year);
     const byWeek = new Map();
     entries.forEach(e => {
-      const i = boCalWeekOf(weeks, year, e.date);
+      const i = boCalWeekOf(weeks, year, boCalKeyDate(e, mode));
       if (i) byWeek.set(i, [...(byWeek.get(i) || []), e]);
     });
-    byWeek.forEach(list => list.sort((a, b) => a.date.localeCompare(b.date) || boCalNameOf(a.c).localeCompare(boCalNameOf(b.c))));
+    byWeek.forEach(list => list.sort((a, b) => boCalKeyDate(a, mode).localeCompare(boCalKeyDate(b, mode)) || boCalNameOf(a.c).localeCompare(boCalNameOf(b.c))));
 
     board.innerHTML = [1, 2, 3, 4].map(q =>
       calRenderQuarter(weeks.filter(w => w.quarter === q), q, today, byWeek, (w, t, list) => boCalRenderCell(w, t, list, mode))
     ).join("");
     shown = byWeek;
     shownWeeks = weeks;
+    // Arrived from a date link (e.g. the Featured column on Candidates): show that week.
+    if (focusDate) {
+      const cell = board.querySelector(`[data-week="${boCalWeekOf(weeks, year, focusDate)}"]`);
+      if (cell && calDateUTC(focusDate).getUTCFullYear() === year) {
+        cell.classList.add("is-focus");
+        if (!focusDone) { focusDone = true; cell.scrollIntoView({ block: "center", inline: "center" }); }
+      }
+    }
   }
 
   boCalWirePopover(board, () => shown, i => shownWeeks.find(w => w.index === i), () => mode);
@@ -241,28 +265,41 @@ async function initBackofficeCalendar() {
   async function moveTo(id, weekIndex) {
     const entry = entries.find(x => x.c.id === id);
     const target = shownWeeks.find(w => w.index === weekIndex);
-    const fromIndex = entry && boCalWeekOf(shownWeeks, year, entry.date);
+    const featuredView = mode === "featured";
+    const fromDate = entry && boCalKeyDate(entry, mode);
+    const fromIndex = entry && boCalWeekOf(shownWeeks, year, fromDate);
     const source = shownWeeks.find(w => w.index === fromIndex);
     if (!entry || !target || !source || entry.kind === "published" || fromIndex === weekIndex || saving) return;
 
     // Same weekday in the target week, but never earlier than today (the current week is allowed).
-    const offset = Math.min(6, Math.max(0, Math.round((calDateUTC(entry.date) - source.start) / 864e5)));
+    const offset = Math.min(6, Math.max(0, Math.round((calDateUTC(fromDate) - source.start) / 864e5)));
     let next = new Date(target.start);
     next.setUTCDate(next.getUTCDate() + offset);
     if (next < today) next = new Date(today);
-    const newDay = dayStr(next);
+    let newDay = dayStr(next);
 
     const payload = { action: "setPublishing", id };
-    if (entry.kind === "estimated") {
+    if (featuredView && entry.kind === "scheduled") {
+      // Only the featuring moves. It can't start before the week the interview goes live.
+      const pubDay = calDateUTC(entry.date);
+      const pubMonday = new Date(pubDay); pubMonday.setUTCDate(pubDay.getUTCDate() - ((pubDay.getUTCDay() + 6) % 7));
+      if (target.end < pubMonday) {
+        boToast(`${boCalNameOf(entry.c)} can't be featured before they are published. They go live ${boCalDayLabel(calDateUTC(entry.date))}: pick that week or a later one, or move the publish date first in the Publishing view.`);
+        return;
+      }
+      if (newDay < entry.date) newDay = entry.date; // same week as the publish date, but not before it
+      payload.displayDate = newDay;
+    } else if (entry.kind === "estimated") {
       payload.estimatedPublishDate = newDay;
     } else {
-      // Scheduled: shift the go-live moment by the same number of days (keeps the time of day).
+      // Scheduled, moved in the Publishing view: shift the go-live moment by the same number of days
+      // (keeps the time of day). Featuring moves with it, unless it was set later on purpose.
       const shift = Math.round((calDateUTC(newDay) - calDateUTC(entry.date)) / 864e5);
       const when = new Date(entry.c.publish.scheduledPublishAt);
       when.setDate(when.getDate() + shift);
       if (when.getTime() <= Date.now()) { boToast("That would be in the past. Pick a later week."); return; }
       payload.scheduledPublishAt = when.toISOString();
-      payload.displayDate = newDay;
+      payload.displayDate = entry.feat === entry.date ? newDay : (entry.feat > newDay ? entry.feat : newDay);
       payload.estimatedPublishDate = newDay;
     }
 
@@ -275,7 +312,9 @@ async function initBackofficeCalendar() {
       render();
       boToast(`${boCalNameOf(entry.c)} moved to W${boCalPad(weekIndex)} (${boCalDayLabel(target.start)} - ${boCalDayLabel(target.end)})`);
     } catch (err) {
-      boToast(`Couldn't move ${boCalNameOf(entry.c)}. Nothing was changed.`);
+      boToast(err && err.message === "feature_before_publish"
+        ? `${boCalNameOf(entry.c)} can't be featured before they are published. Pick their publish week or a later one.`
+        : `Couldn't move ${boCalNameOf(entry.c)}. Nothing was changed.`);
     } finally {
       saving = false;
       board.classList.remove("is-saving");

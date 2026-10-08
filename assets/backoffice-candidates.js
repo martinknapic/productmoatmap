@@ -214,6 +214,19 @@ function boPublishedCell(c) {
   if (est) return `<span class="bo-cell-dim">Est. ${boEscapeHTML(new Date(`${est}T00:00:00`).toLocaleDateString([], { dateStyle: "medium" }))}</span>`;
   return `<span class="bo-cell-dim">-</span>`;
 }
+// The Featured column: the Monday to Sunday week the candidate holds the homepage (the week of the
+// same date the calendar places them by - boCalEntry in backoffice-calendar.js), linked to that week
+// on the Featured calendar.
+function boFeaturedCell(c) {
+  const e = typeof boCalEntry === "function" ? boCalEntry(c) : null;
+  if (!e) return `<span class="bo-cell-dim">-</span>`;
+  const d = new Date(`${e.feat}T00:00:00Z`);
+  const mon = new Date(d); mon.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  const sun = new Date(mon); sun.setUTCDate(mon.getUTCDate() + 6);
+  const fmt = x => x.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+  const state = e.kind === "published" ? "" : `<br><span class="bo-cell-dim">${e.kind === "scheduled" ? "Planned" : "Est."}</span>`;
+  return `<a class="bo-feat-link" href="calendar?mode=featured&date=${e.feat}" title="Show this week on the Featured calendar">${boEscapeHTML(fmt(mon))} - ${boEscapeHTML(fmt(sun))}</a>${state}`;
+}
 const boPublishedTime = c => { const p = c.publish || {}; return Date.parse(p.publishedAt || p.scheduledPublishAt || "") || 0; };
 
 // Alumni network column: read live off their member record (attached by the API as c.network),
@@ -317,6 +330,7 @@ async function initBackofficeCandidates() {
         <td>${boNetPill(c)}</td>
         <td>${boPill(c.status)}</td>
         <td>${boPublishedCell(c)}</td>
+        <td>${boFeaturedCell(c)}</td>
         <td class="bo-cell-url">${(() => {
           const a = boArticleLink(c);
           if (!a) return `<span class="bo-cell-dim">-</span>`;

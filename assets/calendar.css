@@ -413,3 +413,4 @@
 #cal-board.is-saving { opacity: 0.6; pointer-events: none; }
 
 .cal-pop.is-dragging { opacity: 0; pointer-events: none; }
+#cal-board .cal-cell.is-focus { box-shadow: inset 0 0 0 2px var(--accent); }

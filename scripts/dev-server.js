@@ -17,6 +17,8 @@ const ROOT = path.join(__dirname, "..");
 const PORT = Number(process.env.PORT) || 8766;
 const DATA_FILE = path.join(ROOT, ".dev-data", "blob.json");
 process.env.LINKEDIN_CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET || "dev-only-secret";
+process.env.BACKOFFICE_ALLOWED_EMAIL = process.env.BACKOFFICE_ALLOWED_EMAIL || "admin@dev.local";
+const session = require("../api/_lib/session");
 
 let store = new Map();
 try { store = new Map(Object.entries(JSON.parse(fs.readFileSync(DATA_FILE, "utf8")))); } catch (err) { /* fresh store */ }
@@ -43,10 +45,8 @@ const rewrites = vercelConfig.rewrites || [];
 const redirects = vercelConfig.redirects || [];
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".jpg": "image/jpeg", ".png": "image/png", ".json": "application/json" };
 
-function signedCookie(name, data) {
-  const payload = Buffer.from(JSON.stringify({ ...data, exp: Date.now() + 8 * 3600e3 })).toString("base64url");
-  const sig = crypto.createHmac("sha256", process.env.LINKEDIN_CLIENT_SECRET).update(payload).digest("base64url");
-  return `${name}=${payload}.${sig}; Path=/`;
+function signedCookie(type, data) {
+  return `${session.TYPES[type]}=${session.issue(type, data, 8 * 3600)}; Path=/`;
 }
 
 http.createServer(async (req, res) => {
@@ -56,13 +56,13 @@ http.createServer(async (req, res) => {
   if (redirect) { res.writeHead(redirect.permanent ? 308 : 307, { Location: redirect.destination }); return res.end(); }
 
   if (url.pathname === "/dev-login") {
-    res.writeHead(302, { "Set-Cookie": signedCookie("bo_session", { email: "admin@dev.local", name: "Dev Admin" }), Location: "/backoffice/candidates" });
+    res.writeHead(302, { "Set-Cookie": signedCookie("admin", { email: "admin@dev.local", name: "Dev Admin" }), Location: "/backoffice/candidates" });
     return res.end();
   }
   if (url.pathname === "/dev-member-login") {
     const email = url.searchParams.get("email") || "member@dev.local";
     const name = url.searchParams.get("name") || "Dev Member";
-    res.writeHead(302, { "Set-Cookie": signedCookie("pm_session", { email, name }), Location: url.searchParams.get("to") || "/apply" });
+    res.writeHead(302, { "Set-Cookie": signedCookie("member", { email, name }), Location: url.searchParams.get("to") || "/apply" });
     return res.end();
   }
   if (url.pathname === "/dev-logout") {

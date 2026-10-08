@@ -165,6 +165,11 @@ module.exports = async (req, res) => {
           if (body.scheduledPublishAt && !isDateTime(body.scheduledPublishAt)) return res.status(400).json({ error: "invalid_date" });
           pub.scheduledPublishAt = body.scheduledPublishAt ? new Date(body.scheduledPublishAt).toISOString() : null;
         }
+        // Featuring can't start before the week the interview goes live (the same week is fine).
+        if ((body.displayDate !== undefined || body.scheduledPublishAt !== undefined) && pub.displayDate && pub.scheduledPublishAt) {
+          const monday = day => { const d = new Date(`${day}T00:00:00Z`); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d.toISOString().slice(0, 10); };
+          if (monday(pub.displayDate) < monday(pub.scheduledPublishAt.slice(0, 10))) return res.status(400).json({ error: "feature_before_publish" });
+        }
         if (body.estimatedPublishDate !== undefined && c.invitation) {
           c.invitation.estimatedPublishDate = isDate(body.estimatedPublishDate) ? body.estimatedPublishDate : null;
         }
