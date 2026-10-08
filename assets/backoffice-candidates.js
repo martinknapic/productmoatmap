@@ -695,6 +695,7 @@ async function initBackofficeCandidate() {
           <p class="bo-section-note">Invited by ${boEscapeHTML(c.invitation.channel === "linkedin" ? "LinkedIn" : "email")} on ${boEscapeHTML(boWhen(c.invitation.sentAt))}. The message below is a starting point for the manual send - edit it freely.</p>
           <div class="bo-linkrow">
             <input class="bo-input" id="bo-q-link" readonly value="${boEscapeHTML(link)}">
+            <a class="btn btn-ghost" href="${boEscapeHTML(link)}" target="_blank" rel="noopener" aria-label="Open the questionnaire in a new tab" title="Open in a new tab" style="display:inline-flex;align-items:center;padding-inline:10px"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5"/></svg></a>
             <button class="btn btn-ghost" id="bo-copy-link">Copy link</button>
             <button class="btn btn-ghost" id="bo-revoke">${c.linkRevoked ? "Restore link" : "Revoke link"}</button>
           </div>

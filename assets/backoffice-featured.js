@@ -108,7 +108,7 @@ function boFeatBar(label, done, total, tone) {
     </div>`;
 }
 
-function boFeatCurrentCard(c, today) {
+function boFeatCurrentCard(c, today, featDate) {
   if (!c) {
     return `
       <article class="feat-card feat-card-now">
@@ -116,7 +116,8 @@ function boFeatCurrentCard(c, today) {
         <p class="feat-empty">No interview is live yet, so the homepage has nobody to feature.</p>
       </article>`;
   }
-  const week = boFeatWeek(boFeatShownDate(c));
+  const shown = featDate || boFeatShownDate(c);
+  const week = boFeatWeek(shown);
   const pub = c.publish || {};
   const url = pub.slug ? `/interview/${pub.category || (c.profile.focusTag === "design" ? "productux" : "productmanagement")}/${pub.slug}` : "";
   return `
@@ -124,7 +125,7 @@ function boFeatCurrentCard(c, today) {
       <div class="feat-slot"><span class="feat-live-dot"></span>On the homepage now</div>
       ${boFeatPerson(c)}
       ${boFeatDatesHTML(week)}
-      <p class="feat-note">Featured since ${boEscapeHTML(boCalDayLabel(calDateUTC(boFeatShownDate(c))))}. Stays featured until the next interview goes live.</p>
+      <p class="feat-note">Featured since ${boEscapeHTML(boCalDayLabel(calDateUTC(shown)))}. Stays featured until the next interview goes live.</p>
       <div class="feat-actions">
         ${url ? `<a class="btn btn-ghost" href="${boEscapeHTML(url)}" target="_blank" rel="noopener">View live</a>` : ""}
         <a class="btn btn-ghost" href="candidate?id=${encodeURIComponent(c.id)}">Open candidate</a>
@@ -134,10 +135,11 @@ function boFeatCurrentCard(c, today) {
 
 function boFeatNextCard(entry, slotLabel, today, isFirst) {
   const c = entry.c, p = boFeatProgress(c);
-  const week = boFeatWeek(entry.date);
+  const week = boFeatWeek(entry.feat);
+  const live = boFeatIsLive(c);
   const overdue = week.end < today;
   const pub = c.publish || {};
-  const kindWord = { scheduled: "Scheduled for", estimated: "Estimated for" }[entry.kind];
+  const kindWord = "Featured from";
 
   const stepRows = p.steps.map(s => {
     let action = "";
@@ -159,7 +161,7 @@ function boFeatNextCard(entry, slotLabel, today, isFirst) {
       <div class="feat-slot">${slotLabel}${overdue ? ' <span class="feat-flag">Overdue</span>' : ""}</div>
       ${boFeatPerson(c)}
       ${boFeatDatesHTML(week)}
-      <p class="feat-note">${kindWord} ${boEscapeHTML(boCalDayLabel(calDateUTC(entry.date)))}.${overdue ? " That week has already passed." : ""} ${autoNote}</p>
+      <p class="feat-note">${kindWord} ${boEscapeHTML(boCalDayLabel(week.start))}${live ? "" : ` (publishes ${boEscapeHTML(boCalDayLabel(calDateUTC(entry.date)))})`}.${overdue ? " That week has already passed." : ""} ${autoNote}</p>
       <div class="feat-status">${boPill(c.status)}<span class="feat-ready ${p.ready ? "is-ready" : ""}">${p.ready ? "Ready to feature" : "Not ready"}</span></div>
       ${p.invited ? boFeatBar("Required questions", p.reqDone, p.reqTotal, p.requiredComplete ? "ok" : "") + boFeatBar("Optional questions", p.optDone, p.optTotal, "") : `<p class="feat-note">No questionnaire yet. Invite them from the candidate page.</p>`}
       ${p.own ? `<p class="feat-note">Plus ${p.own} question${p.own === 1 ? "" : "s"} of their own.</p>` : ""}
@@ -202,15 +204,24 @@ async function initBackofficeFeatured() {
   }
 
   function render() {
-    const current = boFeatCurrent(all);
+    // Everything comes from the featured calendar: each candidate's feature week is boCalEntry().feat.
+    const mon = d => boFeatWeek(d).start.getTime();
+    const thisWeek = mon(today.toISOString().slice(0, 10));
+    const entries = all.map(boCalEntry).filter(e => e && e.feat)
+      .sort((a, b) => a.feat.localeCompare(b.feat) || boCandName(a.c).localeCompare(boCandName(b.c)));
 
-    // The queue: everyone not live and not declined that has a planned date, soonest first.
-    const queue = all.filter(c => !boFeatIsLive(c)).map(boCalEntry).filter(e => e && e.kind !== "published")
-      .sort((a, b) => a.date.localeCompare(b.date) || boCandName(a.c).localeCompare(boCandName(b.c)));
+    // On the homepage now: the latest live, featured candidate whose feature week has started.
+    const started = entries.filter(e => boFeatIsLive(e.c) && (e.c.publish || {}).featured !== false && mon(e.feat) <= thisWeek);
+    const currentEntry = started[started.length - 1] || null;
+    const current = currentEntry ? currentEntry.c : boFeatCurrent(all);
+
+    // The queue: everyone planned after that, in calendar order. Live profiles still waiting for
+    // their feature week stay in it; ones whose week has passed without being featured do not.
+    const queue = entries.filter(e => e !== currentEntry && (!boFeatIsLive(e.c) ? true : mon(e.feat) > thisWeek));
     const undated = all.filter(c => c.status !== "declined" && !boFeatIsLive(c) && !boCalEntry(c)).length;
 
     const next = queue.slice(0, 2);
-    const cards = [boFeatCurrentCard(current, today)]
+    const cards = [boFeatCurrentCard(current, today, currentEntry && currentEntry.feat)]
       .concat(BO_FEAT_SLOTS.map((label, i) => (next[i] ? boFeatNextCard(next[i], label, today, i === 0) : boFeatEmptyCard(label))));
 
     board.innerHTML = `
@@ -251,11 +262,12 @@ async function initBackofficeFeatured() {
       const live = boFeatCurrent(all);
       const ok = await boConfirm({
         title: "Switch the featured profile?",
-        message: `<strong>${name}</strong> goes live now and becomes the featured profile on the homepage${live ? `, replacing <strong>${boEscapeHTML(boCandName(live))}</strong>` : ""}. The interview is published immediately, with today as its date. Anyone watching the homepage sees the change within about a minute.`,
+        message: `<strong>${name}</strong> goes live now and becomes the featured profile on the homepage${live ? `, replacing <strong>${boEscapeHTML(boCandName(live))}</strong>` : ""}. The interview is published immediately if it is not live yet, with today as its date. Anyone watching the homepage sees the change within about a minute.`,
         confirmLabel: "Make featured now"
       });
       if (!ok) { btn.disabled = false; return; }
-      await run({ action: "publish", id: c.id, mode: "now" }, `${boCandName(c)} is now featured on the homepage`);
+      const payload = boFeatIsLive(c) ? { action: "feature", id: c.id } : { action: "publish", id: c.id, mode: "now" };
+      await run(payload, `${boCandName(c)} is now featured on the homepage`);
     }
     render();
   });
