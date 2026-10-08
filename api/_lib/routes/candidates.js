@@ -234,6 +234,7 @@ module.exports = async (req, res) => {
         await C.ensureCoords(c); // so the interview also appears on the globe
         if (body.mode === "now") {
           pub.featured = body.feature !== false;
+          if (pub.featured) pub.featureOn = null; // featuring right now replaces any plan for later
           pub.publishedAt = new Date().toISOString();
           pub.scheduledPublishAt = null;
           // Going live now makes this the newest interview (the one the homepage features), so a
@@ -255,6 +256,7 @@ module.exports = async (req, res) => {
         // Promotes an already-live, not-yet-featured interview to the homepage spotlight.
         if (!c.publish.publishedAt) return res.status(400).json({ error: "not_published" });
         c.publish.featured = true;
+        c.publish.featureOn = null; // the admin chose to feature now, so a plan for later no longer applies
         c.publish.displayDate = new Date().toISOString().slice(0, 10);
         break;
       }

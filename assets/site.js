@@ -1059,7 +1059,9 @@ function renderChips(hydrate) {
 // preload and the grid below all use this one definition, so the grid always starts with it.
 function featuredInterview() {
   const eligible = INTERVIEWS.filter(p => p.featured !== false); // published-only ones skip the spotlight
-  return [...(eligible.length ? eligible : INTERVIEWS)].sort((a, b) => String(b.publishedDate).localeCompare(String(a.publishedDate)))[0] || null;
+  // With nobody eligible the newest still leads, but never one that is waiting for its planned feature week.
+  const open = INTERVIEWS.filter(p => !p.featureHeld);
+  return [...(eligible.length ? eligible : open.length ? open : INTERVIEWS)].sort((a, b) => String(b.publishedDate).localeCompare(String(a.publishedDate)))[0] || null;
 }
 
 function renderGrid() {

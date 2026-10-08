@@ -553,6 +553,14 @@ const FOCUS_LABELS = {
 
 // The public shape (same as an INTERVIEWS entry in assets/people-data.js). Nothing private
 // (email, phone, notes, tokens, recommender) ever leaves through here.
+// True while a planned feature week (publish.featureOn, Monday to Sunday) has not started yet.
+function featureHeldBack(pub, now = new Date()) {
+  if (!pub || !/^\d{4}-\d{2}-\d{2}$/.test(pub.featureOn || "")) return false;
+  const d = new Date(`${pub.featureOn}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  return d.toISOString().slice(0, 10) > now.toISOString().slice(0, 10);
+}
+
 function toPublicInterview(c) {
   const p = c.profile;
   const pub = c.publish || {};
@@ -584,7 +592,10 @@ function toPublicInterview(c) {
     pullQuote: p.pullQuote,
     publishedDate: pub.displayDate || (pub.publishedAt || pub.scheduledPublishAt || new Date().toISOString()).slice(0, 10),
     foreword: pub.foreword || "",
-    featured: pub.featured !== false, // false = published without taking the homepage spotlight
+    // false = published without taking the homepage spotlight, or held back until the week an admin
+    // planned for featuring it (publish.featureOn) begins
+    featured: pub.featured !== false && !featureHeldBack(pub),
+    featureHeld: featureHeldBack(pub), // still waiting for its planned feature week
     interview: {
       sections,
       custom: (c.custom || []).filter(x => x.q && x.a)

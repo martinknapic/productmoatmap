@@ -54,12 +54,21 @@ const boFeatShownDate = c => {
   return pub.displayDate || String(pub.publishedAt || pub.scheduledPublishAt || "").slice(0, 10);
 };
 
+// Held back from the spotlight until the week an admin planned for it begins (same rule as the public data).
+function boFeatHeldBack(c) {
+  const on = (c.publish || {}).featureOn;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(on || "")) return false;
+  const d = new Date(`${on}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  return d.toISOString().slice(0, 10) > new Date().toISOString().slice(0, 10);
+}
+
 // Who the homepage features: the newest live interview, skipping ones published without the
 // spotlight (same rule as featuredInterview() in assets/site.js, which falls back to everyone live).
 function boFeatCurrent(all) {
   const live = all.filter(boFeatIsLive).sort((a, b) =>
     boFeatShownDate(b).localeCompare(boFeatShownDate(a)) || String((b.publish || {}).publishedAt || "").localeCompare(String((a.publish || {}).publishedAt || "")));
-  return live.find(c => (c.publish || {}).featured !== false) || live[0] || null;
+  return live.find(c => (c.publish || {}).featured !== false && !boFeatHeldBack(c)) || live[0] || null;
 }
 
 // The Monday to Sunday week a date falls in, as UTC midnights (same convention as the calendar).
