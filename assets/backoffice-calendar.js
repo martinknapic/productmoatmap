@@ -39,7 +39,8 @@ function boCalEntry(c) {
   // admin, never automatic) counts when it is not before the publish date. A live interview that is
   // already featured is featured from its own date; one published without the spotlight has no feature
   // week until an admin plans one.
-  const plan = /^\d{4}-\d{2}-\d{2}$/.test(pub.featureOn || "") && pub.featureOn >= date ? pub.featureOn : "";
+  const monday = day => { const d = new Date(`${day}T00:00:00Z`); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d.toISOString().slice(0, 10); };
+  const plan = /^\d{4}-\d{2}-\d{2}$/.test(pub.featureOn || "") && monday(pub.featureOn) >= monday(date) ? pub.featureOn : ""; // same week counts
   const notFeatured = kind === "published" && pub.featured === false;
   const feat = notFeatured ? plan : kind === "published" ? date : plan || date;
   return date ? { c, kind, date, feat } : null;
@@ -95,7 +96,7 @@ function boCalRenderCell(week, today, entries, mode) {
   if (entries.length === 1) {
     const e = entries[0];
     bodyHTML = `
-      <a class="cal-card" href="${boCalHref(e.c)}" title="${boEscapeHTML(featured ? boCalFeaturedTitle(e, week) : boCalNameOf(e.c))}${" - drag to another week to move"}"${boCalDragAttrs(e)}>
+      <a class="cal-card" href="${boCalHref(e.c)}"${boCalDragAttrs(e)}>
         ${boCandAvatar(e.c.profile, "cal-card-avatar")}
         <span class="cal-card-name">${boEscapeHTML(boCalNameOf(e.c))}</span>
         ${featured ? boCalFeaturedDates(week) : boCalKindTag(e)}
@@ -126,6 +127,23 @@ function boCalRenderCell(week, today, entries, mode) {
     </td>`;
 }
 
+// The two lines the hover list shows for a person: where publishing stands and where featuring stands.
+const boCalShort = day => new Date(`${day}T00:00:00`).toLocaleDateString([], { day: "numeric", month: "short" });
+function boCalStatusLines(e) {
+  const live = e.kind === "published", pub = e.c.publish || {};
+  const publish = live ? ["Published", e.date] : e.kind === "scheduled" ? ["Scheduled", e.date] : ["Est. publish", e.date];
+  let feature;
+  if (!e.feat) feature = ["Not featured", ""];
+  else {
+    const mon = d => { const x = new Date(`${d}T00:00:00Z`); x.setUTCDate(x.getUTCDate() - ((x.getUTCDay() + 6) % 7)); return x.getTime(); };
+    const started = live && pub.featured !== false && mon(e.feat) <= mon(new Date().toLocaleDateString("en-CA"));
+    feature = [started ? "Featured" : "Est. featured", e.feat];
+  }
+  return [publish, feature];
+}
+const boCalStatusHTML = e => `<span class="cal-pop-meta">${boCalStatusLines(e).map(([label, day]) =>
+  `<span class="cal-pop-date"><b>${boEscapeHTML(label)}</b>${day ? ` ${boEscapeHTML(boCalShort(day))}` : ""}</span>`).join("")}</span>`;
+
 // One floating list for every "N candidates" cell (position: fixed, so the table's horizontal
 // scroll can't clip it). Opens on hover or keyboard focus, and stays open while the pointer is
 // over it so the names in it can be clicked.
@@ -138,10 +156,13 @@ function boCalWirePopover(board, weekEntries, weekOf, mode) {
   const hideSoon = () => { clearTimeout(timer); timer = setTimeout(hide, 120); };
   const keep = () => clearTimeout(timer);
 
+  // `btn` is a "N candidates" button (lists everyone that week) or a single card (just that person).
   function show(btn) {
     keep();
-    const list = weekEntries().get(Number(btn.dataset.week)) || [];
-    const week = weekOf(Number(btn.dataset.week));
+    const weekNo = Number(btn.dataset.week || btn.closest(".cal-cell").dataset.week);
+    let list = weekEntries().get(weekNo) || [];
+    if (btn.classList.contains("cal-card")) list = list.filter(e => e.c.id === btn.dataset.dragId);
+    const week = weekOf(weekNo);
     const featured = mode() === "featured" && week;
     pop.innerHTML = list.map(e => `
       <a class="cal-pop-row" href="${boCalHref(e.c)}" title="${boEscapeHTML(featured ? boCalFeaturedTitle(e, week) : boCalNameOf(e.c))}"${boCalDragAttrs(e)}>
@@ -150,9 +171,7 @@ function boCalWirePopover(board, weekEntries, weekOf, mode) {
           <span class="cal-pop-name">${boEscapeHTML(boCalNameOf(e.c))}</span>
           <span class="cal-pop-sub">${boEscapeHTML([e.c.profile.role, e.c.profile.company].filter(Boolean).join(" at ") || "-")}</span>
         </span>
-        <span class="cal-pop-meta">${boCalKindTag(e)}<span class="cal-pop-date">${boEscapeHTML(featured
-            ? `${boCalDayLabel(week.start)} - ${boCalDayLabel(week.end)}`
-            : new Date(`${boCalKeyDate(e, mode())}T00:00:00`).toLocaleDateString([], { day: "numeric", month: "short" }))}</span></span>
+        ${boCalStatusHTML(e)}
       </a>`).join("");
     pop.hidden = false;
     const r = btn.closest(".cal-cell").getBoundingClientRect();
@@ -164,10 +183,11 @@ function boCalWirePopover(board, weekEntries, weekOf, mode) {
     pop.style.top = `${top}px`;
   }
 
-  board.addEventListener("mouseover", e => { const b = e.target.closest(".cal-multi"); if (b) show(b); });
-  board.addEventListener("mouseout", e => { if (e.target.closest(".cal-multi")) hideSoon(); });
-  board.addEventListener("focusin", e => { const b = e.target.closest(".cal-multi"); if (b) show(b); });
-  board.addEventListener("focusout", e => { if (e.target.closest(".cal-multi")) hideSoon(); });
+  const trigger = e => e.target.closest(".cal-multi, .cal-card");
+  board.addEventListener("mouseover", e => { const b = trigger(e); if (b) show(b); });
+  board.addEventListener("mouseout", e => { if (trigger(e)) hideSoon(); });
+  board.addEventListener("focusin", e => { const b = trigger(e); if (b) show(b); });
+  board.addEventListener("focusout", e => { if (trigger(e)) hideSoon(); });
   pop.onmouseenter = keep;
   pop.onmouseleave = hideSoon;
   window.addEventListener("scroll", hide, { passive: true });
