@@ -546,31 +546,6 @@ async function initBackofficeCandidates() {
     }
   });
 
-  // One date for everyone invited but not yet live: sets "Complete answers by" and recalculates their
-  // estimated publish date from it (replacing any hand-set estimate). Already scheduled go-live times stay.
-  const bulkBtn = document.getElementById("bo-bulk-due");
-  if (bulkBtn) bulkBtn.addEventListener("click", async () => {
-    const targets = state.all.filter(c => c.invitation && !["published", "declined"].includes(c.status));
-    if (!targets.length) return boToast("No unpublished invited candidates.");
-    let due = "2026-10-12";
-    const track = e => { if (e.target && e.target.id === "bo-bulk-due-in") due = e.target.value; };
-    document.addEventListener("input", track);
-    const ok = await boConfirm({
-      title: "Set one answers date for everyone?",
-      message: `Applies to <strong>${targets.length}</strong> invited candidate${targets.length === 1 ? "" : "s"} that aren't published yet. Their estimated publish date is recalculated (first Monday at least 5 days later) and replaces any date set by hand.<br><br><label>Complete answers by <input class="bo-input" type="date" id="bo-bulk-due-in" value="${due}"></label>`,
-      confirmLabel: "Apply to all"
-    });
-    document.removeEventListener("input", track);
-    if (!ok || !due) return;
-    const est = boPublishAfter(due);
-    let failed = 0;
-    for (const c of targets) {
-      try { await boCandApi({ id: c.id, action: "setPublishing", answersDueDate: due, estimatedPublishDate: est }); } catch (e) { failed++; }
-    }
-    boToast(failed ? `Updated ${targets.length - failed}, ${failed} failed - try again.` : `Updated ${targets.length}. Estimated publish date: ${est}.`);
-    try { state.all = await (await fetch("/api/candidates", { credentials: "same-origin" })).json(); render(); } catch (e) {}
-  });
-
   try {
     state.all = await (await fetch("/api/candidates", { credentials: "same-origin" })).json();
     render();
