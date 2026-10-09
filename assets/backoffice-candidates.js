@@ -339,6 +339,23 @@ async function initBackofficeCandidates() {
   const listEl = document.getElementById("bo-cand-body");
   const chipsEl = document.getElementById("bo-cand-chips");
 
+  // Remember the last filters and sorting in this browser and restore them on the next visit.
+  const VIEW_KEY = "bo-candidates-view";
+  const saveView = () => {
+    try { localStorage.setItem(VIEW_KEY, JSON.stringify({ status: state.status, source: state.source, q: state.q, sort: state.sort, dir: state.dir })); } catch (e) { /* storage unavailable */ }
+  };
+  const restoreView = () => {
+    try {
+      const v = JSON.parse(localStorage.getItem(VIEW_KEY) || "null");
+      if (!v || typeof v !== "object") return;
+      if (typeof v.status === "string") state.status = v.status;
+      if (typeof v.source === "string") state.source = v.source;
+      if (typeof v.q === "string") state.q = v.q;
+      if (typeof v.sort === "string") state.sort = v.sort;
+      if (v.dir === "asc" || v.dir === "desc") state.dir = v.dir;
+    } catch (e) { /* ignore bad saved view */ }
+  };
+
   // Sortable columns: the value each row is ordered by. Rows with no value always go last.
   const STATUS_ORDER = Object.keys(BO_STATUS_LABELS);
   const SORTS = {
@@ -371,6 +388,7 @@ async function initBackofficeCandidates() {
 
 
   function render() {
+    saveView();
     const counts = {};
     state.all.forEach(c => { counts[c.status] = (counts[c.status] || 0) + 1; });
     chipsEl.innerHTML = [["all", "All", state.all.length], ...Object.keys(BO_STATUS_LABELS).map(s => [s, BO_STATUS_LABELS[s], counts[s] || 0])]
@@ -548,6 +566,13 @@ async function initBackofficeCandidates() {
 
   try {
     state.all = await (await fetch("/api/candidates", { credentials: "same-origin" })).json();
+    restoreView();
+    if (!SORTS[state.sort]) { state.sort = "updated"; state.dir = "desc"; }
+    if (state.status !== "all" && !(state.status in BO_STATUS_LABELS)) state.status = "all";
+    const srcEl = document.getElementById("bo-cand-source");
+    if (![...srcEl.options].some(o => o.value === state.source)) state.source = "all";
+    srcEl.value = state.source;
+    document.getElementById("bo-cand-search").value = state.q;
     render();
   } catch (err) {
     document.getElementById("bo-cand-error").hidden = false;
