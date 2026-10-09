@@ -335,7 +335,7 @@ function blankCandidate(source, profile, extra) {
     profile: cleanProfile(profile),
     recommendation: null,
     notes: "",
-    invitation: null,     // { channel, sentAt, estimatedPublishDate }
+    invitation: null,     // { channel, sentAt, answersDueDate, estimatedPublishDate }
     linkRevoked: false,
     questionnaire: null,  // { sections } snapshot taken at invite time, editable by admin
     answers: {},

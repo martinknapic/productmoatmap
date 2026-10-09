@@ -38,6 +38,14 @@ async function attachNetworkMany(list) {
   return list.map(c => withNetwork(c, byEmail.get(norm(candidateEmail(c)))));
 }
 
+// The estimated publish date that follows from the "complete answers by" date: the first Monday that is
+// at least 5 days after it (so 5 days exactly is fine, 4 days or fewer rolls to the next Monday).
+const publishAfter = due => {
+  const d = new Date(`${due}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 5);
+  d.setUTCDate(d.getUTCDate() + ((8 - d.getUTCDay()) % 7));
+  return d.toISOString().slice(0, 10);
+};
 const isDate = v => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
 const isDateTime = v => typeof v === "string" && !Number.isNaN(Date.parse(v));
 
@@ -88,10 +96,15 @@ module.exports = async (req, res) => {
         const channel = body.channel === "linkedin" ? "linkedin" : "email";
         if (!c.questionnaire) c.questionnaire = { sections: (await C.readBank()).sections };
         const est = body.estimatedPublishDate;
+        const due = isDate(body.answersDueDate) ? body.answersDueDate : (c.invitation && c.invitation.answersDueDate) || null;
         c.invitation = {
           channel,
           sentAt: (c.invitation && c.invitation.sentAt) || new Date().toISOString(),
-          estimatedPublishDate: isDate(est) ? est : (c.invitation && c.invitation.estimatedPublishDate) || null
+          answersDueDate: due,
+          // a publish date typed by hand (not the one derived from the answers date) is kept when the answers date changes
+          publishManual: isDate(est) ? !(isDate(body.answersDueDate) && est === publishAfter(body.answersDueDate)) : !!(c.invitation && c.invitation.publishManual),
+          // choosing the answers date comes first and sets the publish estimate; an explicit estimate can still override it
+          estimatedPublishDate: isDate(est) ? est : isDate(body.answersDueDate) ? publishAfter(body.answersDueDate) : (c.invitation && c.invitation.estimatedPublishDate) || null
         };
         c.linkRevoked = false;
         break;
@@ -173,10 +186,11 @@ module.exports = async (req, res) => {
             if (Date.parse(when) <= Date.now()) return res.status(400).json({ error: "date_in_past" });
             if (pub.displayDate === pub.scheduledPublishAt.slice(0, 10)) pub.displayDate = d; // the shown date follows the go-live day
             pub.scheduledPublishAt = new Date(when).toISOString();
-            if (c.invitation) c.invitation.estimatedPublishDate = d;
+            if (c.invitation) { c.invitation.estimatedPublishDate = d; c.invitation.publishManual = true; }
           } else {
             if (!c.invitation) return res.status(400).json({ error: "invite_first" });
             c.invitation.estimatedPublishDate = d;
+            c.invitation.publishManual = true;
           }
         }
         if (body.featureDate !== undefined) pub.featureOn = body.featureDate;
@@ -206,8 +220,14 @@ module.exports = async (req, res) => {
           const monday = day => { const d = new Date(`${day}T00:00:00Z`); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d.toISOString().slice(0, 10); };
           if (monday(pub.displayDate) < monday(pub.scheduledPublishAt.slice(0, 10))) return res.status(400).json({ error: "feature_before_publish" });
         }
+        if (body.answersDueDate !== undefined && c.invitation) {
+          if (body.answersDueDate && !isDate(body.answersDueDate)) return res.status(400).json({ error: "invalid_date" });
+          c.invitation.answersDueDate = body.answersDueDate || null;
+          if (body.answersDueDate && body.estimatedPublishDate === undefined && !c.invitation.publishManual) c.invitation.estimatedPublishDate = publishAfter(body.answersDueDate);
+        }
         if (body.estimatedPublishDate !== undefined && c.invitation) {
           c.invitation.estimatedPublishDate = isDate(body.estimatedPublishDate) ? body.estimatedPublishDate : null;
+          c.invitation.publishManual = !!c.invitation.estimatedPublishDate && c.invitation.estimatedPublishDate !== (c.invitation.answersDueDate ? publishAfter(c.invitation.answersDueDate) : null);
         }
         if (typeof body.slug === "string" && !pub.publishedAt) {
           const slug = C.slugify(body.slug);

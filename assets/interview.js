@@ -122,6 +122,7 @@ function initInterview() {
     state.locked = !!data.locked;
     state.approval = data.approval || { approved: false };
     state.status = data.status;
+    state.answersDueDate = data.answersDueDate || null;
     state.estimatedPublishDate = data.estimatedPublishDate;
     state.estimatedFeaturedDate = data.estimatedFeaturedDate || null;
     state.published = data.published;
@@ -157,6 +158,7 @@ function initInterview() {
   function datesLine() {
     if (state.published) return "";
     const rows = [];
+    if (state.answersDueDate) rows.push(`<p class="iv-est">Complete answers by: <strong>${escapeHTML(formatDay(state.answersDueDate))}</strong></p>`);
     if (state.estimatedPublishDate) rows.push(`<p class="iv-est">Estimated publish date: <strong>${escapeHTML(formatDay(state.estimatedPublishDate))}</strong>${ivInfo("publish", "estimated publish date")}</p>`);
     if (state.estimatedFeaturedDate) rows.push(`<p class="iv-est">Estimated featured date: <strong>${escapeHTML(formatDay(state.estimatedFeaturedDate))}</strong>${ivInfo("feature", "estimated featured date")}</p>`);
     return rows.length ? `<div class="iv-dates">${rows.join("")}</div>` : "";

@@ -62,6 +62,7 @@ function view(c) {
     status: c.status,
     locked: !!c.locked,
     approval: c.approval,
+    answersDueDate: inv.answersDueDate || null,
     estimatedPublishDate: inv.estimatedPublishDate || null,
     estimatedFeaturedDate: plannedFeature(c, inv),
     published: c.status === "published" ? { url: `/interview/${c.publish.category || C.defaultCategory(c.profile)}/${c.publish.slug}` } : null,

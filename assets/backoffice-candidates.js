@@ -556,7 +556,14 @@ async function initBackofficeCandidates() {
 
 // ============================ detail ============================
 
-function boInviteMessage(c, channel, link, estimated) {
+// Mirrors the server: the first Monday at least 5 days after the "complete answers by" date.
+function boPublishAfter(due) {
+  const d = new Date(`${due}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 5);
+  d.setUTCDate(d.getUTCDate() + ((8 - d.getUTCDay()) % 7));
+  return d.toISOString().slice(0, 10);
+}
+function boInviteMessage(c, channel, link, estimated, due) {
   const first = (c.profile.name || "").split(/\s+/)[0] || "there";
   const est = estimated ? new Date(`${estimated}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "";
   const rec = c.recommendation || {};
@@ -565,7 +572,8 @@ function boInviteMessage(c, channel, link, estimated) {
   const signupLine = c.source === "recommended" || !c.profile.email
     ? `\n\nThe page is private, so you'll be asked to sign in with LinkedIn first - one click, and you land right back on it.`
     : `\n\nThe page is private, so you'll be asked to sign in with LinkedIn first - please use the account that goes with ${c.profile.email}.`;
-  const estLine = est ? `\n\nWe're aiming to publish around ${est}.` : "";
+  const dueDay = due ? new Date(`${due}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "";
+  const estLine = (dueDay ? `\n\nIt would be great if you could complete your answers by ${dueDay}.` : "") + (est ? `${dueDay ? " " : "\n\n"}We're aiming to publish around ${est}.` : "");
 
   let opening;
   if (c.source === "applied") {
@@ -627,7 +635,8 @@ async function initBackofficeCandidate() {
     const link = boQuestionnaireLink(c);
     const est = (c.invitation && c.invitation.estimatedPublishDate) || "";
     msgChannel = msgChannel || (c.invitation && c.invitation.channel) || (c.source === "recommended" ? "linkedin" : "email");
-    const msg = boInviteMessage(c, msgChannel, link, est);
+    const due = (c.invitation && c.invitation.answersDueDate) || "";
+    const msg = boInviteMessage(c, msgChannel, link, est, due);
     const answered = Object.keys(c.answers || {}).length;
     const ro = c.status === "published";
 
@@ -689,6 +698,7 @@ async function initBackofficeCandidate() {
             <label class="bo-lbl">Send via
               <select class="bo-input" id="bo-inv-channel"><option value="email"${msgChannel === "email" ? " selected" : ""}>Email</option><option value="linkedin"${msgChannel === "linkedin" ? " selected" : ""}>LinkedIn message</option></select>
             </label>
+            <label class="bo-lbl">Complete answers by<input class="bo-input" type="date" id="bo-inv-due"></label>
             <label class="bo-lbl">Estimated publish date<input class="bo-input" type="date" id="bo-inv-est"></label>
             <button class="btn btn-primary" id="bo-inv-create" ${c.declined ? "disabled" : ""}>Create questionnaire &amp; mark as invited</button>
           </div>` : `
@@ -704,8 +714,10 @@ async function initBackofficeCandidate() {
             <label class="bo-lbl">Message for
               <select class="bo-input" id="bo-msg-channel"><option value="email"${msgChannel === "email" ? " selected" : ""}>Email</option><option value="linkedin"${msgChannel === "linkedin" ? " selected" : ""}>LinkedIn message</option></select>
             </label>
+            <label class="bo-lbl">Complete answers by<input class="bo-input" type="date" id="bo-inv-due" value="${boEscapeHTML(due)}"></label>
             <label class="bo-lbl">Estimated publish date<input class="bo-input" type="date" id="bo-inv-est" value="${boEscapeHTML(est)}"></label>
           </div>
+          <p class="bo-section-note">Pick "Complete answers by" first (about a week before publishing). The estimated publish date then follows automatically: the first Monday at least 5 days later. You can still change it.</p>
           ${msgChannel === "email" ? `<label class="bo-lbl">Subject<input class="bo-input" id="bo-msg-subject" value="${boEscapeHTML(msg.subject)}"></label>` : ""}
           <label class="bo-lbl">Message<textarea class="bo-input bo-msg" id="bo-msg-body" rows="14">${boEscapeHTML(msg.body)}</textarea></label>
           <div class="bo-inline">
@@ -827,13 +839,18 @@ async function initBackofficeCandidate() {
     if (pubIn) pubIn.addEventListener("change", () => { if (pubIn.value) act(boDatesPayload(c, "publishDate", pubIn.value), "Publish date saved - calendar updated"); });
     if (featIn) featIn.addEventListener("change", () => { if (featIn.value) act({ action: "setDates", featureDate: featIn.value }, "Featured date saved - calendar updated"); });
 
-    on("#bo-inv-create", () => act({ action: "invite", channel: root.querySelector("#bo-inv-channel").value, estimatedPublishDate: root.querySelector("#bo-inv-est").value || null }, "Questionnaire created - now send them the link"));
+    on("#bo-inv-create", () => act({ action: "invite", channel: root.querySelector("#bo-inv-channel").value, answersDueDate: root.querySelector("#bo-inv-due").value || null, estimatedPublishDate: root.querySelector("#bo-inv-est").value || null }, "Questionnaire created - now send them the link"));
     on("#bo-copy-link", async () => { await navigator.clipboard.writeText(boQuestionnaireLink(c)); boToast("Link copied"); });
     on("#bo-revoke", () => act({ action: "revokeLink", revoked: !c.linkRevoked }, c.linkRevoked ? "Link restored" : "Link revoked"));
 
     const chan = root.querySelector("#bo-msg-channel");
     if (chan) chan.addEventListener("change", () => { msgChannel = chan.value; render(); });
+    const dueInput = root.querySelector("#bo-inv-due");
     const estInput = root.querySelector("#bo-inv-est");
+    if (dueInput) dueInput.addEventListener("change", async () => {
+      if (c.invitation) return act({ action: "setPublishing", answersDueDate: dueInput.value || null }, "Dates saved - publish date follows");
+      if (dueInput.value && estInput) estInput.value = boPublishAfter(dueInput.value);
+    });
     if (estInput && c.invitation) estInput.addEventListener("change", async () => {
       await act({ action: "setPublishing", estimatedPublishDate: estInput.value || null }, "Estimated date saved");
     });
